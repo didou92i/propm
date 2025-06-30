@@ -1,0 +1,257 @@
+
+import { useState, useRef, useEffect } from "react";
+import { Send, Bot, User } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+
+interface Message {
+  id: string;
+  content: string;
+  role: "user" | "assistant";
+  timestamp: Date;
+}
+
+interface ChatAreaProps {
+  selectedAgent: string;
+  apiKey: string;
+}
+
+const agentInfo = {
+  redacpro: {
+    name: "RedacPro",
+    description: "Assistant IA pour les agents de police municipale",
+    suggestions: [
+      "Améliorer un rapport",
+      "Rédiger un procès-verbal",
+      "Rédiger une note de service",
+      "Modifier un arrêté existant"
+    ]
+  },
+  cdspro: {
+    name: "CDS Pro",
+    description: "Assistant pour la gestion des événements",
+    suggestions: [
+      "Planifier un événement",
+      "Organiser une réunion",
+      "Créer un planning",
+      "Gérer les ressources"
+    ]
+  },
+  arrete: {
+    name: "ArreteForritorial",
+    description: "Spécialiste des arrêtés municipaux",
+    suggestions: [
+      "Rédiger un arrêté municipal",
+      "Modifier un arrêté existant",
+      "Vérifier la conformité",
+      "Consulter la jurisprudence"
+    ]
+  }
+};
+
+export function ChatArea({ selectedAgent, apiKey }: ChatAreaProps) {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const sendMessage = async (content: string) => {
+    if (!content.trim() || !apiKey) return;
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      content: content.trim(),
+      role: "user",
+      timestamp: new Date(),
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setInput("");
+    setIsLoading(true);
+
+    try {
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          messages: [
+            {
+              role: "system",
+              content: `Tu es ${agentInfo[selectedAgent as keyof typeof agentInfo]?.name || "un assistant IA"}. ${agentInfo[selectedAgent as keyof typeof agentInfo]?.description || ""}. Réponds en français de manière professionnelle et utile.`
+            },
+            ...messages.map(msg => ({
+              role: msg.role,
+              content: msg.content
+            })),
+            { role: "user", content: content }
+          ],
+          temperature: 0.7,
+          max_tokens: 1000,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Erreur lors de l'appel à l'API OpenAI");
+      }
+
+      const data = await response.json();
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: data.choices[0].message.content,
+        role: "assistant",
+        timestamp: new Date(),
+      };
+
+      setMessages(prev => [...prev, assistantMessage]);
+    } catch (error) {
+      console.error("Erreur:", error);
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: "Désolé, une erreur s'est produite. Vérifiez votre clé API OpenAI.",
+        role: "assistant",
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    sendMessage(input);
+  };
+
+  const currentAgent = agentInfo[selectedAgent as keyof typeof agentInfo];
+
+  if (!apiKey) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <Bot className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+          <h2 className="text-xl font-semibold mb-2">Configuration requise</h2>
+          <p className="text-muted-foreground">
+            Veuillez entrer votre clé API OpenAI pour commencer à utiliser l'assistant.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex-1 flex flex-col">
+      {messages.length === 0 ? (
+        <div className="flex-1 flex items-center justify-center p-8">
+          <div className="text-center max-w-2xl">
+            <div className="w-16 h-16 rounded-full gradient-primary flex items-center justify-center mx-auto mb-6">
+              <Bot className="w-8 h-8 text-white" />
+            </div>
+            <h1 className="text-2xl font-bold mb-2">
+              {currentAgent?.name || "Assistant IA"}
+            </h1>
+            <p className="text-muted-foreground mb-8">
+              {currentAgent?.description || "Comment puis-je vous aider ?"}
+            </p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {currentAgent?.suggestions.map((suggestion, index) => (
+                <button
+                  key={index}
+                  onClick={() => sendMessage(suggestion)}
+                  className="p-4 rounded-xl gradient-card hover:scale-105 transition-all duration-200 text-left group"
+                >
+                  <div className="font-medium text-sm group-hover:text-primary transition-colors">
+                    {suggestion}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          {messages.map((message) => (
+            <div
+              key={message.id}
+              className={`flex gap-4 ${message.role === "user" ? "justify-end" : "justify-start"}`}
+            >
+              {message.role === "assistant" && (
+                <div className="w-8 h-8 rounded-full gradient-primary flex items-center justify-center flex-shrink-0">
+                  <Bot className="w-4 h-4 text-white" />
+                </div>
+              )}
+              <div
+                className={`max-w-3xl p-4 rounded-2xl ${
+                  message.role === "user"
+                    ? "bg-primary text-primary-foreground"
+                    : "gradient-card"
+                }`}
+              >
+                <div className="whitespace-pre-wrap">{message.content}</div>
+              </div>
+              {message.role === "user" && (
+                <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
+                  <User className="w-4 h-4" />
+                </div>
+              )}
+            </div>
+          ))}
+          {isLoading && (
+            <div className="flex gap-4">
+              <div className="w-8 h-8 rounded-full gradient-primary flex items-center justify-center">
+                <Bot className="w-4 h-4 text-white" />
+              </div>
+              <div className="gradient-card p-4 rounded-2xl">
+                <div className="flex gap-1">
+                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" />
+                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "0.1s" }} />
+                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "0.2s" }} />
+                </div>
+              </div>
+            </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+      )}
+
+      <div className="p-6 border-t border-border/40">
+        <form onSubmit={handleSubmit} className="flex gap-4">
+          <Textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Écrivez un message..."
+            className="flex-1 min-h-[60px] max-h-32 resize-none bg-card border-border/40 focus:border-primary transition-colors"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleSubmit(e);
+              }
+            }}
+          />
+          <Button
+            type="submit"
+            disabled={!input.trim() || isLoading}
+            className="gradient-primary hover:opacity-90 transition-opacity px-6"
+          >
+            <Send className="w-4 h-4" />
+          </Button>
+        </form>
+        <p className="text-xs text-muted-foreground mt-2 text-center">
+          Notre assistant conversationnel peut faire des erreurs. Vérifiez les informations importantes.
+        </p>
+      </div>
+    </div>
+  );
+}
