@@ -54,6 +54,8 @@ export function ChatArea({ selectedAgent }: ChatAreaProps) {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  console.log("ChatArea component loaded - no apiKey needed");
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
