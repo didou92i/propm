@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { Send, Bot, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Message {
   id: string;
@@ -13,7 +14,6 @@ interface Message {
 
 interface ChatAreaProps {
   selectedAgent: string;
-  apiKey: string;
 }
 
 const agentInfo = {
@@ -49,7 +49,7 @@ const agentInfo = {
   }
 };
 
-export function ChatArea({ selectedAgent, apiKey }: ChatAreaProps) {
+export function ChatArea({ selectedAgent }: ChatAreaProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -64,7 +64,7 @@ export function ChatArea({ selectedAgent, apiKey }: ChatAreaProps) {
   }, [messages]);
 
   const sendMessage = async (content: string) => {
-    if (!content.trim() || !apiKey) return;
+    if (!content.trim()) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -78,38 +78,30 @@ export function ChatArea({ selectedAgent, apiKey }: ChatAreaProps) {
     setIsLoading(true);
 
     try {
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
+      const { data, error } = await supabase.functions.invoke('chat-openai', {
+        body: {
           messages: [
-            {
-              role: "system",
-              content: `Tu es ${agentInfo[selectedAgent as keyof typeof agentInfo]?.name || "un assistant IA"}. ${agentInfo[selectedAgent as keyof typeof agentInfo]?.description || ""}. Réponds en français de manière professionnelle et utile.`
-            },
             ...messages.map(msg => ({
               role: msg.role,
               content: msg.content
             })),
             { role: "user", content: content }
           ],
-          temperature: 0.7,
-          max_tokens: 1000,
-        }),
+          selectedAgent
+        }
       });
 
-      if (!response.ok) {
-        throw new Error("Erreur lors de l'appel à l'API OpenAI");
+      if (error) {
+        throw new Error(error.message || "Erreur lors de l'appel à l'API");
       }
 
-      const data = await response.json();
+      if (!data.success) {
+        throw new Error(data.error || "Erreur inconnue");
+      }
+
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: data.choices[0].message.content,
+        content: data.message,
         role: "assistant",
         timestamp: new Date(),
       };
@@ -119,7 +111,7 @@ export function ChatArea({ selectedAgent, apiKey }: ChatAreaProps) {
       console.error("Erreur:", error);
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: "Désolé, une erreur s'est produite. Vérifiez votre clé API OpenAI.",
+        content: "Désolé, une erreur s'est produite lors de la communication avec l'assistant IA.",
         role: "assistant",
         timestamp: new Date(),
       };
@@ -136,19 +128,6 @@ export function ChatArea({ selectedAgent, apiKey }: ChatAreaProps) {
 
   const currentAgent = agentInfo[selectedAgent as keyof typeof agentInfo];
 
-  if (!apiKey) {
-    return (
-      <div className="flex-1 flex items-center justify-center">
-        <div className="text-center max-w-md">
-          <Bot className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-          <h2 className="text-xl font-semibold mb-2">Configuration requise</h2>
-          <p className="text-muted-foreground">
-            Veuillez entrer votre clé API OpenAI pour commencer à utiliser l'assistant.
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="flex-1 flex flex-col">
