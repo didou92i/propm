@@ -38,11 +38,11 @@ const agentInfo = {
     ]
   },
   arrete: {
-    name: "ArreteForritorial",
+    name: "ArreteForritorial", 
     description: "Spécialiste des arrêtés municipaux",
     suggestions: [
       "Rédiger un arrêté municipal",
-      "Modifier un arrêté existant",
+      "Modifier un arrêté existant", 
       "Vérifier la conformité",
       "Consulter la jurisprudence"
     ]

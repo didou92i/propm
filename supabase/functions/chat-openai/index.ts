@@ -21,40 +21,129 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
-    // Agent system prompts
-    const agentPrompts = {
-      redacpro: "Vous êtes un assistant spécialisé dans la rédaction professionnelle pour les administrations municipales. Vous aidez à rédiger des documents officiels, des courriers administratifs, et des communications publiques avec un style formel et approprié.",
-      juridique: "Vous êtes un assistant juridique spécialisé dans le droit municipal et administratif français. Vous aidez à comprendre la réglementation, les procédures administratives, et fournissez des conseils juridiques dans le contexte municipal.",
-      citoyen: "Vous êtes un assistant pour l'accueil et l'information des citoyens. Vous aidez à expliquer les démarches administratives, les services municipaux, et répondez aux questions des administrés de manière claire et accessible.",
-      technique: "Vous êtes un assistant technique spécialisé dans la gestion des infrastructures municipales, l'urbanisme, et les projets techniques. Vous aidez avec les aspects techniques des projets municipaux et de l'aménagement."
+    // Assistant IDs mapping
+    const assistantIds = {
+      redacpro: "asst_nVveo2OzbB2h8uHY2oIDpob1",
+      cdspro: "asst_ljWenYnbNEERVydsDaeVSHVl", 
+      arrete: "asst_e4AMY6vpiqgqFwbQuhNCbyeL"
     };
 
-    const systemPrompt = agentPrompts[selectedAgent as keyof typeof agentPrompts] || agentPrompts.redacpro;
+    const assistantId = assistantIds[selectedAgent as keyof typeof assistantIds] || assistantIds.redacpro;
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Create a thread
+    const threadResponse = await fetch('https://api.openai.com/v1/threads', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${openAIApiKey}`,
         'Content-Type': 'application/json',
+        'OpenAI-Beta': 'assistants=v2'
       },
-      body: JSON.stringify({
-        model: 'gpt-4.1-2025-04-14',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          ...messages
-        ],
-        temperature: 0.7,
-        max_tokens: 2000,
-      }),
+      body: JSON.stringify({})
     });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(`OpenAI API error: ${errorData.error?.message || 'Unknown error'}`);
+    if (!threadResponse.ok) {
+      const errorData = await threadResponse.json();
+      throw new Error(`Thread creation error: ${errorData.error?.message || 'Unknown error'}`);
     }
 
-    const data = await response.json();
-    const assistantMessage = data.choices[0].message.content;
+    const threadData = await threadResponse.json();
+    const threadId = threadData.id;
+
+    // Add the latest user message to the thread
+    const latestMessage = messages[messages.length - 1];
+    if (!latestMessage || latestMessage.role !== 'user') {
+      throw new Error('No user message found');
+    }
+
+    const messageResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json',
+        'OpenAI-Beta': 'assistants=v2'
+      },
+      body: JSON.stringify({
+        role: 'user',
+        content: latestMessage.content
+      })
+    });
+
+    if (!messageResponse.ok) {
+      const errorData = await messageResponse.json();
+      throw new Error(`Message creation error: ${errorData.error?.message || 'Unknown error'}`);
+    }
+
+    // Create a run
+    const runResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json',
+        'OpenAI-Beta': 'assistants=v2'
+      },
+      body: JSON.stringify({
+        assistant_id: assistantId
+      })
+    });
+
+    if (!runResponse.ok) {
+      const errorData = await runResponse.json();
+      throw new Error(`Run creation error: ${errorData.error?.message || 'Unknown error'}`);
+    }
+
+    const runData = await runResponse.json();
+    const runId = runData.id;
+
+    // Poll for completion
+    let runStatus = 'queued';
+    let attempts = 0;
+    const maxAttempts = 60; // 30 seconds timeout
+
+    while (runStatus !== 'completed' && runStatus !== 'failed' && attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const statusResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs/${runId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'OpenAI-Beta': 'assistants=v2'
+        }
+      });
+
+      if (statusResponse.ok) {
+        const statusData = await statusResponse.json();
+        runStatus = statusData.status;
+      }
+      
+      attempts++;
+    }
+
+    if (runStatus !== 'completed') {
+      throw new Error(`Run did not complete. Status: ${runStatus}`);
+    }
+
+    // Get messages from the thread
+    const messagesResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'OpenAI-Beta': 'assistants=v2'
+      }
+    });
+
+    if (!messagesResponse.ok) {
+      const errorData = await messagesResponse.json();
+      throw new Error(`Messages retrieval error: ${errorData.error?.message || 'Unknown error'}`);
+    }
+
+    const messagesData = await messagesResponse.json();
+    const assistantMessages = messagesData.data.filter((msg: any) => msg.role === 'assistant');
+    
+    if (assistantMessages.length === 0) {
+      throw new Error('No assistant response found');
+    }
+
+    const assistantMessage = assistantMessages[0].content[0].text.value;
 
     return new Response(JSON.stringify({ 
       success: true, 
