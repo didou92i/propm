@@ -4,6 +4,7 @@ import { Send, Bot, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
+import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 
 interface Message {
   id: string;
@@ -53,6 +54,7 @@ export function ChatArea({ selectedAgent }: ChatAreaProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [typingMessageId, setTypingMessageId] = useState<string | null>(null);
   const [userSession] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
@@ -111,6 +113,7 @@ export function ChatArea({ selectedAgent }: ChatAreaProps) {
       };
 
       setMessages(prev => [...prev, assistantMessage]);
+      setTypingMessageId(assistantMessage.id);
     } catch (error) {
       console.error("Erreur:", error);
       const errorMessage: Message = {
@@ -182,7 +185,16 @@ export function ChatArea({ selectedAgent }: ChatAreaProps) {
                     : "gradient-card"
                 }`}
               >
-                <div className="whitespace-pre-wrap">{message.content}</div>
+                <MarkdownRenderer
+                  content={message.content}
+                  isAssistant={message.role === "assistant"}
+                  enableTypewriter={message.role === "assistant" && message.id === typingMessageId}
+                  onTypingComplete={() => {
+                    if (message.id === typingMessageId) {
+                      setTypingMessageId(null);
+                    }
+                  }}
+                />
               </div>
               {message.role === "user" && (
                 <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
