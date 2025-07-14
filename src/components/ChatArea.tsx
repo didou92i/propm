@@ -53,9 +53,10 @@ export function ChatArea({ selectedAgent }: ChatAreaProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [userSession] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
-  console.log("ChatArea component loaded - no apiKey needed");
+  console.log("ChatArea component loaded - userSession:", userSession);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -89,7 +90,8 @@ export function ChatArea({ selectedAgent }: ChatAreaProps) {
             })),
             { role: "user", content: content }
           ],
-          selectedAgent
+          selectedAgent,
+          userSession
         }
       });
 

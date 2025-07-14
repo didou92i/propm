@@ -38,6 +38,65 @@ export type Database = {
         }
         Relationships: []
       }
+      conversation_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          id: string
+          role: string
+          timestamp: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          id?: string
+          role: string
+          timestamp?: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          id?: string
+          role?: string
+          timestamp?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversations: {
+        Row: {
+          agent_type: string
+          created_at: string
+          id: string
+          thread_id: string
+          updated_at: string
+          user_session: string
+        }
+        Insert: {
+          agent_type: string
+          created_at?: string
+          id?: string
+          thread_id: string
+          updated_at?: string
+          user_session: string
+        }
+        Update: {
+          agent_type?: string
+          created_at?: string
+          id?: string
+          thread_id?: string
+          updated_at?: string
+          user_session?: string
+        }
+        Relationships: []
+      }
       documents: {
         Row: {
           content: string | null
@@ -67,6 +126,10 @@ export type Database = {
       binary_quantize: {
         Args: { "": string } | { "": unknown }
         Returns: unknown
+      }
+      cleanup_old_conversations: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       halfvec_avg: {
         Args: { "": number[] }
