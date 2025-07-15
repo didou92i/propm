@@ -47,6 +47,55 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 213 31% 91%;
     --sidebar-border: 215 25% 27%;
     --sidebar-ring: 217 91% 60%;
+
+    /* Agent specific colors with smooth transitions */
+    --agent-primary: var(--primary);
+    --agent-glow: var(--primary);
+    --agent-accent: var(--accent);
+    
+    /* Animation variables */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    --shadow-glow: 0 0 20px hsl(var(--agent-glow) / 0.3);
+    --shadow-hover: 0 8px 25px hsl(var(--agent-primary) / 0.15);
+    --shadow-active: 0 4px 15px hsl(var(--agent-primary) / 0.25);
+  }
+
+  /* Agent theme transitions */
+  :root[data-agent="redacpro"] {
+    --agent-primary: 217 91% 60%;
+    --agent-glow: 217 91% 60%;
+    --agent-accent: 210 90% 65%;
+  }
+
+  :root[data-agent="cdspro"] {
+    --agent-primary: 263 70% 50%;
+    --agent-glow: 263 70% 55%;
+    --agent-accent: 270 75% 60%;
+  }
+
+  :root[data-agent="arrete"] {
+    --agent-primary: 142 76% 36%;
+    --agent-glow: 142 76% 45%;
+    --agent-accent: 150 80% 40%;
+  }
+
+  :root[data-agent="salary"] {
+    --agent-primary: 45 93% 58%;
+    --agent-glow: 45 93% 65%;
+    --agent-accent: 50 95% 60%;
+  }
+
+  :root[data-agent="natif"] {
+    --agent-primary: 188 94% 43%;
+    --agent-glow: 188 94% 50%;
+    --agent-accent: 195 95% 45%;
+  }
+
+  :root[data-agent="azzabi"] {
+    --agent-primary: 330 81% 60%;
+    --agent-glow: 330 81% 65%;
+    --agent-accent: 340 85% 55%;
   }
 }
 
@@ -68,5 +117,128 @@ All colors MUST be HSL.
   
   .gradient-card {
     background: linear-gradient(135deg, hsl(224 24% 16%) 0%, hsl(215 28% 18%) 100%);
+  }
+
+  .gradient-agent {
+    background: linear-gradient(135deg, hsl(var(--agent-primary)) 0%, hsl(var(--agent-accent)) 100%);
+    transition: var(--transition-smooth);
+  }
+
+  /* Advanced hover effects */
+  .hover-glow {
+    transition: var(--transition-smooth);
+  }
+  .hover-glow:hover {
+    box-shadow: var(--shadow-glow);
+    transform: translateY(-2px);
+  }
+
+  .hover-lift {
+    transition: var(--transition-bounce);
+  }
+  .hover-lift:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: var(--shadow-hover);
+  }
+
+  .hover-lift:active {
+    transform: translateY(0) scale(0.98);
+    box-shadow: var(--shadow-active);
+  }
+
+  /* 3D Transform effects */
+  .transform-3d {
+    transform-style: preserve-3d;
+    perspective: 1000px;
+  }
+
+  .hover-tilt:hover {
+    transform: rotateX(5deg) rotateY(5deg) scale(1.02);
+  }
+
+  /* Ripple effect container */
+  .ripple-container {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ripple-effect {
+    position: absolute;
+    border-radius: 50%;
+    background: hsl(var(--agent-primary) / 0.3);
+    pointer-events: none;
+    animation: ripple 0.6s linear;
+  }
+
+  /* Shimmer loading effect */
+  .shimmer {
+    position: relative;
+    overflow: hidden;
+    background: hsl(var(--muted));
+  }
+
+  .shimmer::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      hsl(var(--background) / 0.4),
+      transparent
+    );
+    animation: shimmer 2s infinite;
+  }
+
+  /* Skeleton loaders */
+  .skeleton-text {
+    height: 1rem;
+    background: hsl(var(--muted));
+    border-radius: 0.25rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .skeleton-text::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      hsl(var(--background) / 0.6),
+      transparent
+    );
+    animation: shimmer 1.5s infinite;
+  }
+
+  /* Message animations */
+  .message-enter {
+    animation: slide-in-right 0.4s ease-out;
+  }
+
+  .message-enter-assistant {
+    animation: slide-in-left 0.4s ease-out;
+  }
+
+  /* Agent transition effect */
+  .agent-transition {
+    transition: var(--transition-smooth);
+  }
+
+  /* Floating animation for special elements */
+  .float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  /* Pulse for active states */
+  .pulse-glow {
+    animation: glow 2s ease-in-out infinite;
   }
 }

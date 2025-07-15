@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
+import { SkeletonTyping } from "@/components/SkeletonMessage";
+import { useRipple } from "@/hooks/useRipple";
 
 interface Message {
   id: string;
@@ -57,6 +59,7 @@ export function ChatArea({ selectedAgent }: ChatAreaProps) {
   const [typingMessageId, setTypingMessageId] = useState<string | null>(null);
   const [userSession] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const createRipple = useRipple();
   
   console.log("ChatArea component loaded - userSession:", userSession);
 
@@ -133,21 +136,25 @@ export function ChatArea({ selectedAgent }: ChatAreaProps) {
     sendMessage(input);
   };
 
+  const handleSendClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    createRipple(e);
+  };
+
   const currentAgent = agentInfo[selectedAgent as keyof typeof agentInfo];
 
 
   return (
     <div className="flex-1 flex flex-col">
       {messages.length === 0 ? (
-        <div className="flex-1 flex items-center justify-center p-8">
+        <div className="flex-1 flex items-center justify-center p-8 animate-fade-in">
           <div className="text-center max-w-2xl">
-            <div className="w-16 h-16 rounded-full gradient-primary flex items-center justify-center mx-auto mb-6">
+            <div className="w-16 h-16 rounded-full gradient-agent flex items-center justify-center mx-auto mb-6 float pulse-glow">
               <Bot className="w-8 h-8 text-white" />
             </div>
-            <h1 className="text-2xl font-bold mb-2">
+            <h1 className="text-2xl font-bold mb-2 animate-scale-in">
               {currentAgent?.name || "Assistant IA"}
             </h1>
-            <p className="text-muted-foreground mb-8">
+            <p className="text-muted-foreground mb-8 animate-fade-in" style={{ animationDelay: '0.2s' }}>
               {currentAgent?.description || "Comment puis-je vous aider ?"}
             </p>
             
@@ -155,8 +162,12 @@ export function ChatArea({ selectedAgent }: ChatAreaProps) {
               {currentAgent?.suggestions.map((suggestion, index) => (
                 <button
                   key={index}
-                  onClick={() => sendMessage(suggestion)}
-                  className="p-4 rounded-xl gradient-card hover:scale-105 transition-all duration-200 text-left group"
+                  onClick={(e) => {
+                    createRipple(e);
+                    sendMessage(suggestion);
+                  }}
+                  className="p-4 rounded-xl gradient-card hover-lift ripple-container text-left group animate-fade-in transform-3d hover-tilt"
+                  style={{ animationDelay: `${(index + 1) * 0.1}s` }}
                 >
                   <div className="font-medium text-sm group-hover:text-primary transition-colors">
                     {suggestion}
@@ -168,21 +179,22 @@ export function ChatArea({ selectedAgent }: ChatAreaProps) {
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {messages.map((message) => (
+          {messages.map((message, index) => (
             <div
               key={message.id}
-              className={`flex gap-4 ${message.role === "user" ? "justify-end" : "justify-start"}`}
+              className={`flex gap-4 ${message.role === "user" ? "justify-end message-enter" : "justify-start message-enter-assistant"}`}
+              style={{ animationDelay: `${index * 0.05}s` }}
             >
               {message.role === "assistant" && (
-                <div className="w-8 h-8 rounded-full gradient-primary flex items-center justify-center flex-shrink-0">
+                <div className="w-8 h-8 rounded-full gradient-agent flex items-center justify-center flex-shrink-0 hover-lift">
                   <Bot className="w-4 h-4 text-white" />
                 </div>
               )}
               <div
-                className={`max-w-3xl p-4 rounded-2xl ${
+                className={`max-w-3xl p-4 rounded-2xl hover-lift transform-3d ${
                   message.role === "user"
-                    ? "bg-primary text-primary-foreground"
-                    : "gradient-card"
+                    ? "gradient-agent text-white"
+                    : "gradient-card hover-glow"
                 }`}
               >
                 <MarkdownRenderer
@@ -197,26 +209,13 @@ export function ChatArea({ selectedAgent }: ChatAreaProps) {
                 />
               </div>
               {message.role === "user" && (
-                <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
+                <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center flex-shrink-0 hover-lift">
                   <User className="w-4 h-4" />
                 </div>
               )}
             </div>
           ))}
-          {isLoading && (
-            <div className="flex gap-4">
-              <div className="w-8 h-8 rounded-full gradient-primary flex items-center justify-center">
-                <Bot className="w-4 h-4 text-white" />
-              </div>
-              <div className="gradient-card p-4 rounded-2xl">
-                <div className="flex gap-1">
-                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" />
-                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "0.1s" }} />
-                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "0.2s" }} />
-                </div>
-              </div>
-            </div>
-          )}
+          {isLoading && <SkeletonTyping />}
           <div ref={messagesEndRef} />
         </div>
       )}
@@ -238,7 +237,8 @@ export function ChatArea({ selectedAgent }: ChatAreaProps) {
           <Button
             type="submit"
             disabled={!input.trim() || isLoading}
-            className="gradient-primary hover:opacity-90 transition-opacity px-6"
+            className="gradient-agent hover-lift ripple-container px-6 border-0 text-white"
+            onClick={handleSendClick}
           >
             <Send className="w-4 h-4" />
           </Button>
