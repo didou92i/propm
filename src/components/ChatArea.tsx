@@ -148,7 +148,7 @@ export function ChatArea({ selectedAgent }: ChatAreaProps) {
       {messages.length === 0 ? (
         <div className="flex-1 flex items-center justify-center p-8 animate-fade-in">
           <div className="text-center max-w-2xl">
-            <div className="w-16 h-16 rounded-full gradient-agent flex items-center justify-center mx-auto mb-6 float pulse-glow">
+            <div className="w-16 h-16 rounded-full gradient-agent-animated flex items-center justify-center mx-auto mb-6 float pulse-glow neomorphism">
               <Bot className="w-8 h-8 text-white" />
             </div>
             <h1 className="text-2xl font-bold mb-2 animate-scale-in">
@@ -166,7 +166,7 @@ export function ChatArea({ selectedAgent }: ChatAreaProps) {
                     createRipple(e);
                     sendMessage(suggestion);
                   }}
-                  className="p-4 rounded-xl gradient-card hover-lift ripple-container text-left group animate-fade-in transform-3d hover-tilt"
+                  className="p-4 rounded-xl glass neomorphism-subtle hover-lift ripple-container text-left group animate-fade-in transform-3d hover-tilt glass-hover"
                   style={{ animationDelay: `${(index + 1) * 0.1}s` }}
                 >
                   <div className="font-medium text-sm group-hover:text-primary transition-colors">
@@ -186,15 +186,15 @@ export function ChatArea({ selectedAgent }: ChatAreaProps) {
               style={{ animationDelay: `${index * 0.05}s` }}
             >
               {message.role === "assistant" && (
-                <div className="w-8 h-8 rounded-full gradient-agent flex items-center justify-center flex-shrink-0 hover-lift">
+                <div className="w-8 h-8 rounded-full gradient-agent-animated flex items-center justify-center flex-shrink-0 hover-lift neomorphism-hover">
                   <Bot className="w-4 h-4 text-white" />
                 </div>
               )}
               <div
                 className={`max-w-3xl p-4 rounded-2xl hover-lift transform-3d ${
                   message.role === "user"
-                    ? "gradient-agent text-white"
-                    : "gradient-card hover-glow"
+                    ? "gradient-agent-animated text-white neomorphism-inset"
+                    : "glass neomorphism hover-glow glass-hover"
                 }`}
               >
                 <MarkdownRenderer
@@ -209,7 +209,7 @@ export function ChatArea({ selectedAgent }: ChatAreaProps) {
                 />
               </div>
               {message.role === "user" && (
-                <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center flex-shrink-0 hover-lift">
+                <div className="w-8 h-8 rounded-full neomorphism flex items-center justify-center flex-shrink-0 hover-lift neomorphism-hover">
                   <User className="w-4 h-4" />
                 </div>
               )}
@@ -237,7 +237,7 @@ export function ChatArea({ selectedAgent }: ChatAreaProps) {
           <Button
             type="submit"
             disabled={!input.trim() || isLoading}
-            className="gradient-agent hover-lift ripple-container px-6 border-0 text-white"
+            className="gradient-agent-animated hover-lift ripple-container px-6 border-0 text-white neomorphism-subtle"
             onClick={handleSendClick}
           >
             <Send className="w-4 h-4" />

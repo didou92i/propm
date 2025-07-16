@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Bot, FileText, Calculator, MessageSquare, Search, Settings, Plus, User } from "lucide-react";
+import { Bot, FileText, Calculator, MessageSquare, Search, Settings, Plus, User, Moon, Sun } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -14,6 +14,7 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar";
 import { useRipple } from "@/hooks/useRipple";
+import { useTheme } from "@/hooks/useTheme";
 
 const agents = [
   { id: "redacpro", name: "RedacPro", icon: Bot, color: "text-blue-400" },
@@ -34,6 +35,7 @@ interface AppSidebarProps {
 
 export function AppSidebar({ selectedAgent, onAgentSelect }: AppSidebarProps) {
   const createRipple = useRipple();
+  const { theme, toggleTheme } = useTheme();
 
   const handleAgentSelect = (agentId: string, event: React.MouseEvent<HTMLElement>) => {
     createRipple(event);
@@ -41,15 +43,15 @@ export function AppSidebar({ selectedAgent, onAgentSelect }: AppSidebarProps) {
   };
 
   return (
-    <Sidebar className="border-r border-border/40 bg-sidebar">
+    <Sidebar className="border-r border-border/40 glass-subtle theme-transition">
       <SidebarHeader className="p-4 border-b border-border/40">
         <div className="flex items-center gap-2 mb-4 animate-fade-in">
-          <div className="w-8 h-8 rounded-lg gradient-agent flex items-center justify-center float">
+          <div className="w-8 h-8 rounded-lg gradient-agent-animated flex items-center justify-center float neomorphism-subtle">
             <Bot className="w-4 h-4 text-white" />
           </div>
           <span className="font-semibold text-lg">Propm.fr</span>
         </div>
-        <button className="flex items-center gap-2 w-full p-2 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-sidebar-accent ripple-container hover-lift">
+        <button className="flex items-center gap-2 w-full p-2 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-sidebar-accent ripple-container hover-lift glass-hover neomorphism-hover">
           <Plus className="w-4 h-4" />
           Nouvelle conversation
         </button>
@@ -66,10 +68,10 @@ export function AppSidebar({ selectedAgent, onAgentSelect }: AppSidebarProps) {
                 <SidebarMenuItem key={agent.id} className="animate-fade-in" style={{ animationDelay: `${index * 0.1}s` }}>
                   <SidebarMenuButton
                     onClick={(e) => handleAgentSelect(agent.id, e)}
-                    className={`flex items-center gap-3 p-3 rounded-lg ripple-container hover-lift transform-3d hover-tilt ${
+                    className={`flex items-center gap-3 p-3 rounded-lg ripple-container hover-lift transform-3d hover-tilt glass-hover neomorphism-hover ${
                       selectedAgent === agent.id
-                        ? "bg-sidebar-accent text-sidebar-accent-foreground border-l-2 border-primary pulse-glow"
-                        : "hover:bg-sidebar-accent/50 hover-glow"
+                        ? "glass-intense text-sidebar-accent-foreground border-l-2 border-primary pulse-glow neomorphism"
+                        : "hover:bg-sidebar-accent/50 hover-glow glass-subtle"
                     }`}
                   >
                     <agent.icon className={`w-5 h-5 transition-all duration-300 ${
@@ -93,10 +95,10 @@ export function AppSidebar({ selectedAgent, onAgentSelect }: AppSidebarProps) {
                 <SidebarMenuItem key={tool.id} className="animate-fade-in" style={{ animationDelay: `${(index + 3) * 0.1}s` }}>
                   <SidebarMenuButton
                     onClick={(e) => handleAgentSelect(tool.id, e)}
-                    className={`flex items-center gap-3 p-3 rounded-lg ripple-container hover-lift transform-3d hover-tilt ${
+                    className={`flex items-center gap-3 p-3 rounded-lg ripple-container hover-lift transform-3d hover-tilt glass-hover neomorphism-hover ${
                       selectedAgent === tool.id
-                        ? "bg-sidebar-accent text-sidebar-accent-foreground border-l-2 border-primary pulse-glow"
-                        : "hover:bg-sidebar-accent/50 hover-glow"
+                        ? "glass-intense text-sidebar-accent-foreground border-l-2 border-primary pulse-glow neomorphism"
+                        : "hover:bg-sidebar-accent/50 hover-glow glass-subtle"
                     }`}
                   >
                     <tool.icon className={`w-5 h-5 transition-all duration-300 ${
@@ -112,10 +114,25 @@ export function AppSidebar({ selectedAgent, onAgentSelect }: AppSidebarProps) {
       </SidebarContent>
 
       <SidebarFooter className="p-4 border-t border-border/40">
-        <SidebarMenuButton className="flex items-center gap-3 p-3 rounded-lg hover:bg-sidebar-accent/50 transition-colors">
-          <Settings className="w-5 h-5 text-muted-foreground" />
-          <span>Déconnexion</span>
-        </SidebarMenuButton>
+        <div className="flex gap-2">
+          <SidebarMenuButton className="flex-1 items-center gap-3 p-3 rounded-lg hover:bg-sidebar-accent/50 transition-colors glass-hover neomorphism-hover ripple-container">
+            <Settings className="w-5 h-5 text-muted-foreground" />
+            <span>Déconnexion</span>
+          </SidebarMenuButton>
+          <button
+            onClick={(e) => {
+              createRipple(e);
+              toggleTheme();
+            }}
+            className="p-3 rounded-lg hover:bg-sidebar-accent/50 transition-colors glass-hover neomorphism-hover ripple-container"
+          >
+            {theme === 'light' ? (
+              <Moon className="w-5 h-5 text-muted-foreground" />
+            ) : (
+              <Sun className="w-5 h-5 text-muted-foreground" />
+            )}
+          </button>
+        </div>
       </SidebarFooter>
     </Sidebar>
   );

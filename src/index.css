@@ -61,41 +61,67 @@ All colors MUST be HSL.
     --shadow-active: 0 4px 15px hsl(var(--agent-primary) / 0.25);
   }
 
+  /* Light theme variables */
+  :root {
+    --glass-bg: 255 255 255 / 0.1;
+    --glass-border: 255 255 255 / 0.2;
+    --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+    --neomorphism-light: 255 255 255 / 0.7;
+    --neomorphism-dark: 0 0 0 / 0.1;
+    --gradient-direction: 45deg;
+    --theme-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Dark theme variables */
+  :root[data-theme="dark"] {
+    --glass-bg: 0 0 0 / 0.3;
+    --glass-border: 255 255 255 / 0.1;
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+    --neomorphism-light: 255 255 255 / 0.1;
+    --neomorphism-dark: 0 0 0 / 0.3;
+  }
+
   /* Agent theme transitions */
   :root[data-agent="redacpro"] {
     --agent-primary: 217 91% 60%;
     --agent-glow: 217 91% 60%;
     --agent-accent: 210 90% 65%;
+    --gradient-direction: 135deg;
   }
 
   :root[data-agent="cdspro"] {
     --agent-primary: 263 70% 50%;
     --agent-glow: 263 70% 55%;
     --agent-accent: 270 75% 60%;
+    --gradient-direction: 45deg;
   }
 
   :root[data-agent="arrete"] {
     --agent-primary: 142 76% 36%;
     --agent-glow: 142 76% 45%;
     --agent-accent: 150 80% 40%;
+    --gradient-direction: 90deg;
   }
 
   :root[data-agent="salary"] {
     --agent-primary: 45 93% 58%;
     --agent-glow: 45 93% 65%;
     --agent-accent: 50 95% 60%;
+    --gradient-direction: 180deg;
   }
 
   :root[data-agent="natif"] {
     --agent-primary: 188 94% 43%;
     --agent-glow: 188 94% 50%;
     --agent-accent: 195 95% 45%;
+    --gradient-direction: 225deg;
   }
 
   :root[data-agent="azzabi"] {
     --agent-primary: 330 81% 60%;
     --agent-glow: 330 81% 65%;
     --agent-accent: 340 85% 55%;
+    --gradient-direction: 315deg;
   }
 }
 
@@ -120,8 +146,77 @@ All colors MUST be HSL.
   }
 
   .gradient-agent {
-    background: linear-gradient(135deg, hsl(var(--agent-primary)) 0%, hsl(var(--agent-accent)) 100%);
+    background: linear-gradient(var(--gradient-direction), hsl(var(--agent-primary)) 0%, hsl(var(--agent-accent)) 100%);
     transition: var(--transition-smooth);
+    animation: gradient-shift 8s ease-in-out infinite;
+  }
+
+  .gradient-agent-animated {
+    background: linear-gradient(var(--gradient-direction), hsl(var(--agent-primary)) 0%, hsl(var(--agent-accent)) 50%, hsl(var(--agent-primary)) 100%);
+    background-size: 200% 200%;
+    animation: gradient-move 4s ease-in-out infinite;
+    transition: var(--transition-smooth);
+  }
+
+  /* Glassmorphism effects */
+  .glass {
+    background: rgba(var(--glass-bg));
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(var(--glass-border));
+    box-shadow: var(--glass-shadow);
+    transition: var(--theme-transition);
+  }
+
+  .glass-intense {
+    background: rgba(var(--glass-bg));
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(var(--glass-border));
+    box-shadow: var(--glass-shadow), 0 0 0 1px rgba(var(--glass-border));
+    transition: var(--theme-transition);
+  }
+
+  .glass-subtle {
+    background: rgba(var(--glass-bg));
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(var(--glass-border));
+    transition: var(--theme-transition);
+  }
+
+  /* Neumorphism effects */
+  .neomorphism {
+    background: hsl(var(--background));
+    box-shadow: 
+      8px 8px 16px rgba(var(--neomorphism-dark)),
+      -8px -8px 16px rgba(var(--neomorphism-light));
+    transition: var(--theme-transition);
+  }
+
+  .neomorphism-inset {
+    background: hsl(var(--background));
+    box-shadow: 
+      inset 4px 4px 8px rgba(var(--neomorphism-dark)),
+      inset -4px -4px 8px rgba(var(--neomorphism-light));
+    transition: var(--theme-transition);
+  }
+
+  .neomorphism-subtle {
+    background: hsl(var(--background));
+    box-shadow: 
+      4px 4px 8px rgba(var(--neomorphism-dark)),
+      -4px -4px 8px rgba(var(--neomorphism-light));
+    transition: var(--theme-transition);
+  }
+
+  /* Theme adaptive transition */
+  .theme-transition {
+    transition: var(--theme-transition);
+  }
+
+  .theme-transition * {
+    transition: var(--theme-transition);
   }
 
   /* Advanced hover effects */
@@ -240,5 +335,29 @@ All colors MUST be HSL.
   /* Pulse for active states */
   .pulse-glow {
     animation: glow 2s ease-in-out infinite;
+  }
+
+  /* Advanced hover effects for glass elements */
+  .glass-hover {
+    transition: var(--theme-transition);
+  }
+  .glass-hover:hover {
+    background: rgba(var(--glass-bg));
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    transform: translateY(-2px);
+    box-shadow: var(--glass-shadow), 0 12px 40px rgba(var(--agent-primary) / 0.2);
+  }
+
+  /* Neomorphism hover effects */
+  .neomorphism-hover {
+    transition: var(--theme-transition);
+  }
+  .neomorphism-hover:hover {
+    box-shadow: 
+      12px 12px 24px rgba(var(--neomorphism-dark)),
+      -12px -12px 24px rgba(var(--neomorphism-light)),
+      0 0 20px hsl(var(--agent-primary) / 0.1);
+    transform: translateY(-1px);
   }
 }
