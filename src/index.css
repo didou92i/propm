@@ -251,7 +251,7 @@ All colors MUST be HSL.
     transform: rotateX(5deg) rotateY(5deg) scale(1.02);
   }
 
-  /* Ripple effect container */
+  /* Enhanced ripple effects */
   .ripple-container {
     position: relative;
     overflow: hidden;
@@ -260,9 +260,19 @@ All colors MUST be HSL.
   .ripple-effect {
     position: absolute;
     border-radius: 50%;
-    background: hsl(var(--agent-primary) / 0.3);
+    background: radial-gradient(circle, hsl(var(--agent-primary) / 0.4) 0%, hsl(var(--agent-primary) / 0.1) 50%, transparent 70%);
     pointer-events: none;
-    animation: ripple 0.6s linear;
+    animation: ripple-enhanced 0.8s ease-out;
+    transform-origin: center;
+  }
+
+  .ripple-effect-intense {
+    position: absolute;
+    border-radius: 50%;
+    background: radial-gradient(circle, hsl(var(--agent-primary) / 0.6) 0%, hsl(var(--agent-accent) / 0.3) 40%, transparent 70%);
+    pointer-events: none;
+    animation: ripple-intense 1s ease-out;
+    box-shadow: 0 0 20px hsl(var(--agent-primary) / 0.3);
   }
 
   /* Shimmer loading effect */

@@ -59,7 +59,7 @@ export function ChatArea({ selectedAgent }: ChatAreaProps) {
   const [typingMessageId, setTypingMessageId] = useState<string | null>(null);
   const [userSession] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const createRipple = useRipple();
+  const createRipple = useRipple('intense');
   
   console.log("ChatArea component loaded - userSession:", userSession);
 

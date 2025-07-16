@@ -34,7 +34,7 @@ interface AppSidebarProps {
 }
 
 export function AppSidebar({ selectedAgent, onAgentSelect }: AppSidebarProps) {
-  const createRipple = useRipple();
+  const createRipple = useRipple('enhanced');
   const { theme, toggleTheme } = useTheme();
 
   const handleAgentSelect = (agentId: string, event: React.MouseEvent<HTMLElement>) => {

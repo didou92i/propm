@@ -219,6 +219,8 @@ export default {
 				'shimmer': 'shimmer 2s linear infinite',
 				'glow': 'glow 2s ease-in-out infinite',
 				'ripple': 'ripple 0.6s linear',
+				'ripple-enhanced': 'ripple-enhanced 0.8s ease-out',
+				'ripple-intense': 'ripple-intense 1s ease-out',
 				'float': 'float 3s ease-in-out infinite',
 				'bounce-subtle': 'bounce-subtle 2s infinite',
 				'gradient-move': 'gradient-move 4s ease-in-out infinite',
