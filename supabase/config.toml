@@ -1,1 +1,4 @@
 project_id = "yulhsufpnjkiozkrgyoq"
+
+[functions.process-document]
+verify_jwt = false

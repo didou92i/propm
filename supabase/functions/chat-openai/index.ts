@@ -21,6 +21,9 @@ serve(async (req) => {
 
   try {
     const { messages, selectedAgent, userSession } = await req.json();
+    
+    // Get the latest user message for document search
+    const latestUserMessage = messages[messages.length - 1]?.content || '';
 
     if (!openAIApiKey) {
       throw new Error('OpenAI API key not configured');
@@ -96,6 +99,49 @@ serve(async (req) => {
       throw new Error('No user message found');
     }
 
+    // Search for relevant documents using embeddings
+    let documentContext = '';
+    try {
+      // Generate embedding for the user message
+      const embeddingResponse = await fetch('https://api.openai.com/v1/embeddings', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'text-embedding-3-small',
+          input: latestUserMessage,
+        }),
+      });
+
+      if (embeddingResponse.ok) {
+        const embeddingResult = await embeddingResponse.json();
+        const queryEmbedding = embeddingResult.data[0]?.embedding;
+
+        if (queryEmbedding) {
+          // Search for similar documents
+          const { data: relevantDocs } = await supabase.rpc('match_documents', {
+            query_embedding: queryEmbedding,
+            match_count: 3,
+            filter: {}
+          });
+
+          if (relevantDocs && relevantDocs.length > 0) {
+            console.log(`Found ${relevantDocs.length} relevant documents`);
+            documentContext = '\n\n--- CONTEXTE DOCUMENTAIRE ---\n' +
+              relevantDocs.map((doc: any, index: number) => 
+                `Document ${index + 1} (similarité: ${(doc.similarity * 100).toFixed(1)}%):\n${doc.content.substring(0, 1000)}...`
+              ).join('\n\n') +
+              '\n--- FIN DU CONTEXTE DOCUMENTAIRE ---\n\n';
+          }
+        }
+      }
+    } catch (docError) {
+      console.error('Document search error:', docError);
+      // Continue without document context if search fails
+    }
+
     // Store user message in database
     await supabase
       .from('conversation_messages')
@@ -105,7 +151,11 @@ serve(async (req) => {
         content: latestMessage.content
       });
 
-    // Add message to OpenAI thread
+    // Add message to OpenAI thread with document context
+    const messageContent = documentContext 
+      ? `${documentContext}${latestMessage.content}` 
+      : latestMessage.content;
+
     const messageResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
       method: 'POST',
       headers: {
@@ -115,7 +165,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         role: 'user',
-        content: latestMessage.content
+        content: messageContent
       })
     });
 

@@ -6,12 +6,16 @@ import { ChatArea } from "@/components/ChatArea";
 import { ParallaxBackground } from "@/components/ParallaxBackground";
 import { FloatingActionButton } from "@/components/FloatingActionButton";
 import { MorphingIcon } from "@/components/MorphingIcon";
+import { DocumentUpload } from "@/components/DocumentUpload";
+import { DocumentManager } from "@/components/DocumentManager";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAgentTheme } from "@/hooks/useAgentTheme";
-import { Bot, Sparkles, Plus, Settings } from "lucide-react";
+import { Bot, Sparkles, Plus, Settings, FileText, Upload } from "lucide-react";
 
 const Index = () => {
   const [selectedAgent, setSelectedAgent] = useState("redacpro");
   const [isNewChatMode, setIsNewChatMode] = useState(false);
+  const [activeTab, setActiveTab] = useState("chat");
   
   // Apply agent theme transitions
   useAgentTheme(selectedAgent);
@@ -59,8 +63,52 @@ const Index = () => {
               </div>
             </header>
 
-            {/* Chat Area */}
-            <ChatArea selectedAgent={selectedAgent} />
+            {/* Main Content Tabs */}
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+              <TabsList className="mx-4 mt-4 glass-subtle w-fit">
+                <TabsTrigger value="chat" className="flex items-center gap-2">
+                  <Bot className="w-4 h-4" />
+                  Chat
+                </TabsTrigger>
+                <TabsTrigger value="documents" className="flex items-center gap-2">
+                  <FileText className="w-4 h-4" />
+                  Documents
+                </TabsTrigger>
+                <TabsTrigger value="upload" className="flex items-center gap-2">
+                  <Upload className="w-4 h-4" />
+                  Télécharger
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="chat" className="flex-1 mt-0">
+                <ChatArea selectedAgent={selectedAgent} />
+              </TabsContent>
+
+              <TabsContent value="documents" className="flex-1 p-4 overflow-y-auto">
+                <div className="max-w-4xl mx-auto">
+                  <div className="mb-6">
+                    <h2 className="text-2xl font-bold mb-2">Gestion des documents</h2>
+                    <p className="text-muted-foreground">
+                      Gérez vos documents téléchargés et consultez leur contenu analysé.
+                    </p>
+                  </div>
+                  <DocumentManager />
+                </div>
+              </TabsContent>
+
+              <TabsContent value="upload" className="flex-1 p-4 overflow-y-auto">
+                <div className="max-w-4xl mx-auto">
+                  <div className="mb-6">
+                    <h2 className="text-2xl font-bold mb-2">Téléchargement de documents</h2>
+                    <p className="text-muted-foreground">
+                      Téléchargez vos documents pour les intégrer dans l'analyse des assistants IA.
+                      Les documents seront automatiquement traités et indexés.
+                    </p>
+                  </div>
+                  <DocumentUpload onDocumentProcessed={() => setActiveTab("documents")} />
+                </div>
+              </TabsContent>
+            </Tabs>
           </div>
           
           {/* Floating Action Buttons */}
