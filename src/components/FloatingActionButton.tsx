@@ -47,5 +47,20 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
     createRipple(e);
     onClick();
   };
-  return;
+  return (
+    <Button
+      onClick={handleClick}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      className={`
+        fixed ${positionClasses[position]} ${sizeClasses[size]} ${variantClasses[variant]}
+        rounded-full p-0 transition-all duration-300 overflow-hidden
+        hover-lift active:scale-95 z-50
+        ${className}
+      `}
+      title={tooltip}
+    >
+      <Icon size={iconSizes[size]} />
+    </Button>
+  );
 };
