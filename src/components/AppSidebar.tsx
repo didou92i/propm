@@ -46,8 +46,12 @@ export function AppSidebar({ selectedAgent, onAgentSelect }: AppSidebarProps) {
     <Sidebar className="border-r border-border/40 glass-subtle theme-transition">
       <SidebarHeader className="p-4 border-b border-border/40">
         <div className="flex items-center gap-2 mb-4 animate-fade-in">
-          <div className="w-8 h-8 rounded-lg gradient-agent-animated flex items-center justify-center float neomorphism-subtle">
-            <Bot className="w-4 h-4 text-white" />
+          <div className="w-8 h-8 rounded-lg gradient-agent-animated flex items-center justify-center float neomorphism-subtle overflow-hidden">
+            <img 
+              src="/lovable-uploads/421ea4e9-730f-4336-9bcb-78a111f9c741.png" 
+              alt="Propm.fr Logo" 
+              className="w-6 h-6 object-contain"
+            />
           </div>
           <span className="font-semibold text-lg">Propm.fr</span>
         </div>
