@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Send, Bot, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -6,17 +5,19 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 import { SkeletonTyping } from "@/components/SkeletonMessage";
+import { ChatAttachment } from "@/components/ChatAttachment";
+import { MessageWithAttachments } from "@/components/MessageWithAttachments";
 import { useRipple } from "@/hooks/useRipple";
-
-interface Message {
-  id: string;
-  content: string;
-  role: "user" | "assistant";
-  timestamp: Date;
-}
+import { Message, MessageAttachment } from "@/types/chat";
 
 interface ChatAreaProps {
   selectedAgent: string;
+}
+
+interface AttachedFile {
+  id: string;
+  file: File;
+  preview?: string;
 }
 
 const agentInfo = {
@@ -55,6 +56,7 @@ const agentInfo = {
 export function ChatArea({ selectedAgent }: ChatAreaProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
+  const [attachments, setAttachments] = useState<AttachedFile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [typingMessageId, setTypingMessageId] = useState<string | null>(null);
   const [userSession] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
@@ -71,21 +73,75 @@ export function ChatArea({ selectedAgent }: ChatAreaProps) {
     scrollToBottom();
   }, [messages]);
 
+  const processAttachments = async (): Promise<MessageAttachment[]> => {
+    const processedAttachments: MessageAttachment[] = [];
+
+    for (const attachment of attachments) {
+      try {
+        const formData = new FormData();
+        formData.append('file', attachment.file);
+
+        const { data, error } = await supabase.functions.invoke('process-document', {
+          body: formData
+        });
+
+        if (error) throw error;
+
+        processedAttachments.push({
+          id: attachment.id,
+          name: attachment.file.name,
+          type: attachment.file.type,
+          size: attachment.file.size,
+          content: data.extractedText || ''
+        });
+      } catch (error) {
+        console.error('Error processing attachment:', error);
+        // Still add the attachment but without processed content
+        processedAttachments.push({
+          id: attachment.id,
+          name: attachment.file.name,
+          type: attachment.file.type,
+          size: attachment.file.size,
+        });
+      }
+    }
+
+    return processedAttachments;
+  };
+
   const sendMessage = async (content: string) => {
-    if (!content.trim()) return;
+    if (!content.trim() && attachments.length === 0) return;
+
+    // Process attachments first
+    const processedAttachments = await processAttachments();
 
     const userMessage: Message = {
       id: Date.now().toString(),
       content: content.trim(),
       role: "user",
       timestamp: new Date(),
+      attachments: processedAttachments.length > 0 ? processedAttachments : undefined,
     };
 
     setMessages(prev => [...prev, userMessage]);
     setInput("");
+    setAttachments([]);
     setIsLoading(true);
 
     try {
+      // Prepare the message with attachment context
+      let messageContent = content;
+      if (processedAttachments.length > 0) {
+        const attachmentContext = processedAttachments
+          .filter(att => att.content)
+          .map(att => `[Document: ${att.name}]\n${att.content}`)
+          .join('\n\n');
+        
+        if (attachmentContext) {
+          messageContent = `${attachmentContext}\n\n${content}`;
+        }
+      }
+
       const { data, error } = await supabase.functions.invoke('chat-openai', {
         body: {
           messages: [
@@ -93,10 +149,11 @@ export function ChatArea({ selectedAgent }: ChatAreaProps) {
               role: msg.role,
               content: msg.content
             })),
-            { role: "user", content: content }
+            { role: "user", content: messageContent }
           ],
           selectedAgent,
-          userSession
+          userSession,
+          hasAttachments: processedAttachments.length > 0
         }
       });
 
@@ -141,7 +198,6 @@ export function ChatArea({ selectedAgent }: ChatAreaProps) {
   };
 
   const currentAgent = agentInfo[selectedAgent as keyof typeof agentInfo];
-
 
   return (
     <div className="flex-1 flex flex-col">
@@ -197,6 +253,12 @@ export function ChatArea({ selectedAgent }: ChatAreaProps) {
                     : "glass neomorphism hover-glow glass-hover"
                 }`}
               >
+                {message.attachments && (
+                  <MessageWithAttachments 
+                    attachments={message.attachments} 
+                    className="mb-3"
+                  />
+                )}
                 <MarkdownRenderer
                   content={message.content}
                   isAssistant={message.role === "assistant"}
@@ -221,11 +283,16 @@ export function ChatArea({ selectedAgent }: ChatAreaProps) {
       )}
 
       <div className="p-6 border-t border-border/40">
-        <form onSubmit={handleSubmit} className="flex gap-4">
+        <ChatAttachment
+          attachments={attachments}
+          onAttachmentsChange={setAttachments}
+          disabled={isLoading}
+        />
+        <form onSubmit={handleSubmit} className="flex gap-4 mt-2">
           <Textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Écrivez un message..."
+            placeholder={attachments.length > 0 ? "Posez votre question sur les documents..." : "Écrivez un message..."}
             className="flex-1 min-h-[60px] max-h-32 resize-none bg-card border-border/40 focus:border-primary transition-colors"
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
@@ -236,7 +303,7 @@ export function ChatArea({ selectedAgent }: ChatAreaProps) {
           />
           <Button
             type="submit"
-            disabled={!input.trim() || isLoading}
+            disabled={(!input.trim() && attachments.length === 0) || isLoading}
             className="gradient-agent-animated hover-lift ripple-container px-6 border-0 text-white neomorphism-subtle"
             onClick={handleSendClick}
           >
@@ -244,7 +311,10 @@ export function ChatArea({ selectedAgent }: ChatAreaProps) {
           </Button>
         </form>
         <p className="text-xs text-muted-foreground mt-2 text-center">
-          Notre assistant conversationnel peut faire des erreurs. Vérifiez les informations importantes.
+          {attachments.length > 0 
+            ? `${attachments.length} document${attachments.length > 1 ? 's' : ''} joint${attachments.length > 1 ? 's' : ''} • Notre assistant conversationnel peut faire des erreurs.`
+            : "Notre assistant conversationnel peut faire des erreurs. Vérifiez les informations importantes."
+          }
         </p>
       </div>
     </div>

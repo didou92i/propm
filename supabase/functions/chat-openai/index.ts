@@ -1,3 +1,4 @@
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.2';
@@ -20,7 +21,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, selectedAgent, userSession } = await req.json();
+    const { messages, selectedAgent, userSession, hasAttachments } = await req.json();
     
     // Get the latest user message for document search
     const latestUserMessage = messages[messages.length - 1]?.content || '';
@@ -99,47 +100,50 @@ serve(async (req) => {
       throw new Error('No user message found');
     }
 
-    // Search for relevant documents using embeddings
+    // Enhanced document search for messages with attachments
     let documentContext = '';
-    try {
-      // Generate embedding for the user message
-      const embeddingResponse = await fetch('https://api.openai.com/v1/embeddings', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${openAIApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'text-embedding-3-small',
-          input: latestUserMessage,
-        }),
-      });
+    if (!hasAttachments) {
+      // Only search existing documents if no attachments are provided
+      try {
+        // Generate embedding for the user message
+        const embeddingResponse = await fetch('https://api.openai.com/v1/embeddings', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openAIApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'text-embedding-3-small',
+            input: latestUserMessage,
+          }),
+        });
 
-      if (embeddingResponse.ok) {
-        const embeddingResult = await embeddingResponse.json();
-        const queryEmbedding = embeddingResult.data[0]?.embedding;
+        if (embeddingResponse.ok) {
+          const embeddingResult = await embeddingResponse.json();
+          const queryEmbedding = embeddingResult.data[0]?.embedding;
 
-        if (queryEmbedding) {
-          // Search for similar documents
-          const { data: relevantDocs } = await supabase.rpc('match_documents', {
-            query_embedding: queryEmbedding,
-            match_count: 3,
-            filter: {}
-          });
+          if (queryEmbedding) {
+            // Search for similar documents
+            const { data: relevantDocs } = await supabase.rpc('match_documents', {
+              query_embedding: queryEmbedding,
+              match_count: 3,
+              filter: {}
+            });
 
-          if (relevantDocs && relevantDocs.length > 0) {
-            console.log(`Found ${relevantDocs.length} relevant documents`);
-            documentContext = '\n\n--- CONTEXTE DOCUMENTAIRE ---\n' +
-              relevantDocs.map((doc: any, index: number) => 
-                `Document ${index + 1} (similarité: ${(doc.similarity * 100).toFixed(1)}%):\n${doc.content.substring(0, 1000)}...`
-              ).join('\n\n') +
-              '\n--- FIN DU CONTEXTE DOCUMENTAIRE ---\n\n';
+            if (relevantDocs && relevantDocs.length > 0) {
+              console.log(`Found ${relevantDocs.length} relevant documents`);
+              documentContext = '\n\n--- CONTEXTE DOCUMENTAIRE ---\n' +
+                relevantDocs.map((doc: any, index: number) => 
+                  `Document ${index + 1} (similarité: ${(doc.similarity * 100).toFixed(1)}%):\n${doc.content.substring(0, 1000)}...`
+                ).join('\n\n') +
+                '\n--- FIN DU CONTEXTE DOCUMENTAIRE ---\n\n';
+            }
           }
         }
+      } catch (docError) {
+        console.error('Document search error:', docError);
+        // Continue without document context if search fails
       }
-    } catch (docError) {
-      console.error('Document search error:', docError);
-      // Continue without document context if search fails
     }
 
     // Store user message in database
@@ -152,9 +156,15 @@ serve(async (req) => {
       });
 
     // Add message to OpenAI thread with document context
-    const messageContent = documentContext 
-      ? `${documentContext}${latestMessage.content}` 
-      : latestMessage.content;
+    let messageContent = latestMessage.content;
+    
+    // Add system context for attachments
+    if (hasAttachments) {
+      const attachmentPrefix = "L'utilisateur a joint des documents à sa question. Le contenu de ces documents est inclus dans le message ci-dessous. Utilisez ces informations pour répondre de manière pertinente et précise.\n\n";
+      messageContent = attachmentPrefix + messageContent;
+    } else if (documentContext) {
+      messageContent = documentContext + messageContent;
+    }
 
     const messageResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
       method: 'POST',
