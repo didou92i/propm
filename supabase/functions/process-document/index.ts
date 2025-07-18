@@ -1,3 +1,4 @@
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.2';
@@ -47,6 +48,8 @@ serve(async (req) => {
       const arrayBuffer = await file.arrayBuffer();
       const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
       
+      console.log('Sending PDF to OpenAI for text extraction...');
+      
       // Use OpenAI vision API to extract text from PDF
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -77,12 +80,38 @@ serve(async (req) => {
         }),
       });
 
+      console.log(`OpenAI API response status: ${response.status}`);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('OpenAI API error:', errorText);
+        throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
+      }
+
       const result = await response.json();
-      extractedText = result.choices[0]?.message?.content || '';
+      console.log('OpenAI API response received');
+      
+      // Robust validation of the response structure
+      if (!result || !result.choices || !Array.isArray(result.choices) || result.choices.length === 0) {
+        console.error('Invalid OpenAI response structure:', result);
+        throw new Error('Invalid response from OpenAI API - no choices array');
+      }
+
+      const firstChoice = result.choices[0];
+      if (!firstChoice || !firstChoice.message || !firstChoice.message.content) {
+        console.error('Invalid choice structure:', firstChoice);
+        throw new Error('Invalid response from OpenAI API - no message content');
+      }
+
+      extractedText = firstChoice.message.content;
+      console.log(`Extracted text length: ${extractedText.length} characters`);
+      
     } else if (file.type.startsWith('image/')) {
       // Handle image files with OCR
       const arrayBuffer = await file.arrayBuffer();
       const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+      
+      console.log('Sending image to OpenAI for OCR...');
       
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -113,19 +142,39 @@ serve(async (req) => {
         }),
       });
 
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('OpenAI API error for image:', errorText);
+        throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
+      }
+
       const result = await response.json();
-      extractedText = result.choices[0]?.message?.content || '';
+      
+      // Robust validation for image OCR response
+      if (!result || !result.choices || !Array.isArray(result.choices) || result.choices.length === 0) {
+        console.error('Invalid OpenAI OCR response structure:', result);
+        throw new Error('Invalid response from OpenAI API for image OCR');
+      }
+
+      const firstChoice = result.choices[0];
+      if (!firstChoice || !firstChoice.message || !firstChoice.message.content) {
+        console.error('Invalid OCR choice structure:', firstChoice);
+        throw new Error('Invalid response from OpenAI API - no OCR content');
+      }
+
+      extractedText = firstChoice.message.content;
     } else {
       throw new Error(`Unsupported file type: ${file.type}`);
     }
 
-    if (!extractedText.trim()) {
+    if (!extractedText || !extractedText.trim()) {
       throw new Error('No text could be extracted from the document');
     }
 
-    console.log(`Extracted text length: ${extractedText.length} characters`);
+    console.log(`Successfully extracted text: ${extractedText.length} characters`);
 
     // Generate embeddings for the extracted text
+    console.log('Generating embeddings...');
     const embeddingResponse = await fetch('https://api.openai.com/v1/embeddings', {
       method: 'POST',
       headers: {
@@ -138,11 +187,25 @@ serve(async (req) => {
       }),
     });
 
+    if (!embeddingResponse.ok) {
+      const errorText = await embeddingResponse.text();
+      console.error('Embedding API error:', errorText);
+      throw new Error(`Embedding API error: ${embeddingResponse.status} - ${errorText}`);
+    }
+
     const embeddingResult = await embeddingResponse.json();
+    
+    // Robust validation for embedding response
+    if (!embeddingResult || !embeddingResult.data || !Array.isArray(embeddingResult.data) || embeddingResult.data.length === 0) {
+      console.error('Invalid embedding response structure:', embeddingResult);
+      throw new Error('Invalid response from embeddings API');
+    }
+
     const embedding = embeddingResult.data[0]?.embedding;
 
-    if (!embedding) {
-      throw new Error('Failed to generate embeddings');
+    if (!embedding || !Array.isArray(embedding)) {
+      console.error('Invalid embedding data:', embeddingResult.data[0]);
+      throw new Error('Failed to generate valid embeddings');
     }
 
     console.log(`Generated embedding with ${embedding.length} dimensions`);
@@ -157,6 +220,7 @@ serve(async (req) => {
                         file.type === 'application/pdf' ? 'vision_api' : 'direct'
     };
 
+    console.log('Storing document in database...');
     const { data: document, error: insertError } = await supabase
       .from('documents')
       .insert({
@@ -172,11 +236,12 @@ serve(async (req) => {
       throw new Error(`Failed to store document: ${insertError.message}`);
     }
 
-    console.log(`Document stored with ID: ${document.id}`);
+    console.log(`Document stored successfully with ID: ${document.id}`);
 
     return new Response(JSON.stringify({
       success: true,
       documentId: document.id,
+      extractedText: extractedText,
       extractedTextLength: extractedText.length,
       metadata: metadata
     }), {
@@ -186,7 +251,9 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in process-document function:', error);
     return new Response(JSON.stringify({
-      error: error.message || 'An unexpected error occurred'
+      success: false,
+      error: error.message || 'An unexpected error occurred',
+      details: error.stack || 'No stack trace available'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

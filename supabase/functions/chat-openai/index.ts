@@ -23,6 +23,8 @@ serve(async (req) => {
   try {
     const { messages, selectedAgent, userSession, hasAttachments } = await req.json();
     
+    console.log(`Chat request - Agent: ${selectedAgent}, Session: ${userSession}, Has attachments: ${hasAttachments}`);
+    
     // Get the latest user message for document search
     const latestUserMessage = messages[messages.length - 1]?.content || '';
 
@@ -55,6 +57,41 @@ serve(async (req) => {
       threadId = existingConversation.thread_id;
       conversationId = existingConversation.id;
       
+      console.log(`Using existing thread: ${threadId}`);
+      
+      // Check for active runs on the thread and cancel them if needed
+      try {
+        const runsResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs?limit=1`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${openAIApiKey}`,
+            'OpenAI-Beta': 'assistants=v2'
+          }
+        });
+
+        if (runsResponse.ok) {
+          const runsData = await runsResponse.json();
+          const activeRuns = runsData.data?.filter((run: any) => 
+            ['queued', 'in_progress', 'requires_action'].includes(run.status)
+          ) || [];
+
+          // Cancel any active runs
+          for (const activeRun of activeRuns) {
+            console.log(`Cancelling active run: ${activeRun.id}`);
+            await fetch(`https://api.openai.com/v1/threads/${threadId}/runs/${activeRun.id}/cancel`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${openAIApiKey}`,
+                'OpenAI-Beta': 'assistants=v2'
+              }
+            });
+          }
+        }
+      } catch (runCheckError) {
+        console.warn('Error checking/cancelling runs:', runCheckError);
+        // Continue anyway
+      }
+      
       // Update conversation timestamp
       await supabase
         .from('conversations')
@@ -62,6 +99,7 @@ serve(async (req) => {
         .eq('id', conversationId);
     } else {
       // Create new thread
+      console.log('Creating new thread...');
       const threadResponse = await fetch('https://api.openai.com/v1/threads', {
         method: 'POST',
         headers: {
@@ -79,6 +117,7 @@ serve(async (req) => {
 
       const threadData = await threadResponse.json();
       threadId = threadData.id;
+      console.log(`Created new thread: ${threadId}`);
 
       // Create new conversation record
       const { data: newConversation } = await supabase
@@ -105,6 +144,7 @@ serve(async (req) => {
     if (!hasAttachments) {
       // Only search existing documents if no attachments are provided
       try {
+        console.log('Searching for relevant documents...');
         // Generate embedding for the user message
         const embeddingResponse = await fetch('https://api.openai.com/v1/embeddings', {
           method: 'POST',
@@ -160,12 +200,15 @@ serve(async (req) => {
     
     // Add system context for attachments
     if (hasAttachments) {
-      const attachmentPrefix = "L'utilisateur a joint des documents à sa question. Le contenu de ces documents est inclus dans le message ci-dessous. Utilisez ces informations pour répondre de manière pertinente et précise.\n\n";
+      console.log('Processing message with attachments');
+      const attachmentPrefix = "L'utilisateur a joint des documents à sa question. Le contenu de ces documents est inclus dans le message ci-dessous. Utilisez ces informations pour répondre de manière pertinente et précise en vous basant sur le contenu des documents fournis.\n\n";
       messageContent = attachmentPrefix + messageContent;
     } else if (documentContext) {
+      console.log('Adding document context from database');
       messageContent = documentContext + messageContent;
     }
 
+    console.log('Adding message to thread...');
     const messageResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
       method: 'POST',
       headers: {
@@ -184,33 +227,54 @@ serve(async (req) => {
       throw new Error(`Message creation error: ${errorData.error?.message || 'Unknown error'}`);
     }
 
-    // Create a run
-    const runResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-        'OpenAI-Beta': 'assistants=v2'
-      },
-      body: JSON.stringify({
-        assistant_id: assistantId
-      })
-    });
+    // Create a run with retry logic
+    console.log('Creating run...');
+    let runResponse;
+    let attempts = 0;
+    const maxRetries = 3;
 
-    if (!runResponse.ok) {
+    while (attempts < maxRetries) {
+      runResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'Content-Type': 'application/json',
+          'OpenAI-Beta': 'assistants=v2'
+        },
+        body: JSON.stringify({
+          assistant_id: assistantId
+        })
+      });
+
+      if (runResponse.ok) {
+        break;
+      }
+
       const errorData = await runResponse.json();
-      throw new Error(`Run creation error: ${errorData.error?.message || 'Unknown error'}`);
+      if (errorData.error?.message?.includes('already has an active run')) {
+        console.log(`Attempt ${attempts + 1}: Thread has active run, retrying in 2 seconds...`);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        attempts++;
+      } else {
+        throw new Error(`Run creation error: ${errorData.error?.message || 'Unknown error'}`);
+      }
+    }
+
+    if (!runResponse || !runResponse.ok) {
+      throw new Error('Failed to create run after multiple attempts');
     }
 
     const runData = await runResponse.json();
     const runId = runData.id;
+    console.log(`Created run: ${runId}`);
 
     // Poll for completion
     let runStatus = 'queued';
-    let attempts = 0;
+    let attempts_poll = 0;
     const maxAttempts = 60; // 30 seconds timeout
 
-    while (runStatus !== 'completed' && runStatus !== 'failed' && attempts < maxAttempts) {
+    console.log('Polling for run completion...');
+    while (runStatus !== 'completed' && runStatus !== 'failed' && attempts_poll < maxAttempts) {
       await new Promise(resolve => setTimeout(resolve, 500));
       
       const statusResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs/${runId}`, {
@@ -224,9 +288,10 @@ serve(async (req) => {
       if (statusResponse.ok) {
         const statusData = await statusResponse.json();
         runStatus = statusData.status;
+        console.log(`Run status: ${runStatus}`);
       }
       
-      attempts++;
+      attempts_poll++;
     }
 
     if (runStatus !== 'completed') {
@@ -234,6 +299,7 @@ serve(async (req) => {
     }
 
     // Get messages from the thread
+    console.log('Retrieving assistant response...');
     const messagesResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
       method: 'GET',
       headers: {
@@ -287,6 +353,8 @@ serve(async (req) => {
       }
     }
 
+    console.log('Chat response completed successfully');
+
     return new Response(JSON.stringify({ 
       success: true, 
       message: assistantMessage 
@@ -297,7 +365,8 @@ serve(async (req) => {
     console.error('Error in chat-openai function:', error);
     return new Response(JSON.stringify({ 
       success: false, 
-      error: error.message 
+      error: error.message || 'An unexpected error occurred',
+      details: error.stack || 'No stack trace available'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

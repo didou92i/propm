@@ -59,6 +59,8 @@ export function ChatArea({ selectedAgent }: ChatAreaProps) {
   const [attachments, setAttachments] = useState<AttachedFile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [typingMessageId, setTypingMessageId] = useState<string | null>(null);
+  const [processingAttachment, setProcessingAttachment] = useState(false);
+  const [attachmentError, setAttachmentError] = useState<string | null>(null);
   const [userSession] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const createRipple = useRipple('intense');
@@ -75,9 +77,13 @@ export function ChatArea({ selectedAgent }: ChatAreaProps) {
 
   const processAttachments = async (): Promise<MessageAttachment[]> => {
     const processedAttachments: MessageAttachment[] = [];
+    setProcessingAttachment(true);
+    setAttachmentError(null);
 
     for (const attachment of attachments) {
       try {
+        console.log(`Processing attachment: ${attachment.file.name}`);
+        
         const formData = new FormData();
         formData.append('file', attachment.file);
 
@@ -85,8 +91,18 @@ export function ChatArea({ selectedAgent }: ChatAreaProps) {
           body: formData
         });
 
-        if (error) throw error;
+        if (error) {
+          console.error('Supabase function error:', error);
+          throw new Error(`Erreur de traitement: ${error.message}`);
+        }
 
+        if (!data.success) {
+          console.error('Document processing failed:', data);
+          throw new Error(data.error || 'Échec du traitement du document');
+        }
+
+        console.log(`Successfully processed: ${attachment.file.name}`);
+        
         processedAttachments.push({
           id: attachment.id,
           name: attachment.file.name,
@@ -96,21 +112,28 @@ export function ChatArea({ selectedAgent }: ChatAreaProps) {
         });
       } catch (error) {
         console.error('Error processing attachment:', error);
+        const errorMsg = `Erreur lors du traitement de ${attachment.file.name}: ${error.message}`;
+        setAttachmentError(errorMsg);
+        
         // Still add the attachment but without processed content
         processedAttachments.push({
           id: attachment.id,
           name: attachment.file.name,
           type: attachment.file.type,
           size: attachment.file.size,
+          content: `[Erreur de traitement: ${error.message}]`
         });
       }
     }
 
+    setProcessingAttachment(false);
     return processedAttachments;
   };
 
   const sendMessage = async (content: string) => {
     if (!content.trim() && attachments.length === 0) return;
+
+    setAttachmentError(null);
 
     // Process attachments first
     const processedAttachments = await processAttachments();
@@ -133,7 +156,7 @@ export function ChatArea({ selectedAgent }: ChatAreaProps) {
       let messageContent = content;
       if (processedAttachments.length > 0) {
         const attachmentContext = processedAttachments
-          .filter(att => att.content)
+          .filter(att => att.content && !att.content.startsWith('[Erreur'))
           .map(att => `[Document: ${att.name}]\n${att.content}`)
           .join('\n\n');
         
@@ -142,6 +165,8 @@ export function ChatArea({ selectedAgent }: ChatAreaProps) {
         }
       }
 
+      console.log('Sending message to chat-openai function...');
+      
       const { data, error } = await supabase.functions.invoke('chat-openai', {
         body: {
           messages: [
@@ -158,12 +183,16 @@ export function ChatArea({ selectedAgent }: ChatAreaProps) {
       });
 
       if (error) {
+        console.error('Chat function error:', error);
         throw new Error(error.message || "Erreur lors de l'appel à l'API");
       }
 
       if (!data.success) {
+        console.error('Chat function failed:', data);
         throw new Error(data.error || "Erreur inconnue");
       }
+
+      console.log('Received response from assistant');
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -178,7 +207,7 @@ export function ChatArea({ selectedAgent }: ChatAreaProps) {
       console.error("Erreur:", error);
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: "Désolé, une erreur s'est produite lors de la communication avec l'assistant IA.",
+        content: `Désolé, une erreur s'est produite: ${error.message || 'Erreur inconnue'}. Veuillez réessayer.`,
         role: "assistant",
         timestamp: new Date(),
       };
@@ -283,10 +312,31 @@ export function ChatArea({ selectedAgent }: ChatAreaProps) {
       )}
 
       <div className="p-6 border-t border-border/40">
+        {attachmentError && (
+          <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+            <p className="text-sm text-destructive">{attachmentError}</p>
+            <button 
+              onClick={() => setAttachmentError(null)}
+              className="text-xs text-destructive/70 hover:text-destructive mt-1"
+            >
+              Fermer
+            </button>
+          </div>
+        )}
+        
+        {processingAttachment && (
+          <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-lg">
+            <div className="flex items-center gap-2">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+              <p className="text-sm text-primary">Traitement des documents en cours...</p>
+            </div>
+          </div>
+        )}
+        
         <ChatAttachment
           attachments={attachments}
           onAttachmentsChange={setAttachments}
-          disabled={isLoading}
+          disabled={isLoading || processingAttachment}
         />
         <form onSubmit={handleSubmit} className="flex gap-4 mt-2">
           <Textarea
@@ -303,7 +353,7 @@ export function ChatArea({ selectedAgent }: ChatAreaProps) {
           />
           <Button
             type="submit"
-            disabled={(!input.trim() && attachments.length === 0) || isLoading}
+            disabled={(!input.trim() && attachments.length === 0) || isLoading || processingAttachment}
             className="gradient-agent-animated hover-lift ripple-container px-6 border-0 text-white neomorphism-subtle"
             onClick={handleSendClick}
           >
