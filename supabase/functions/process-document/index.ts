@@ -8,6 +8,32 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Fonction pour diviser le texte en chunks optimaux
+function chunkText(text: string, maxChunkSize: number = 1000): string[] {
+  const chunks: string[] = [];
+  const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+  
+  let currentChunk = '';
+  
+  for (const sentence of sentences) {
+    const trimmedSentence = sentence.trim();
+    if (currentChunk.length + trimmedSentence.length + 1 <= maxChunkSize) {
+      currentChunk += (currentChunk ? '. ' : '') + trimmedSentence;
+    } else {
+      if (currentChunk) {
+        chunks.push(currentChunk + '.');
+      }
+      currentChunk = trimmedSentence;
+    }
+  }
+  
+  if (currentChunk) {
+    chunks.push(currentChunk + '.');
+  }
+  
+  return chunks.length > 0 ? chunks : [text.substring(0, maxChunkSize)];
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -22,6 +48,8 @@ serve(async (req) => {
     );
 
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+    const openAIEmbeddingsKey = Deno.env.get('OPENAI_EMBEDDINGS_API_KEY') || openAIApiKey;
+    
     if (!openAIApiKey) {
       throw new Error('OpenAI API key not configured');
     }
@@ -43,68 +71,8 @@ serve(async (req) => {
       // Handle plain text files
       extractedText = await file.text();
     } else if (file.type === 'application/pdf') {
-      // For PDF files, we'll use OpenAI to extract content
-      // Convert file to base64
-      const arrayBuffer = await file.arrayBuffer();
-      const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-      
-      console.log('Sending PDF to OpenAI for text extraction...');
-      
-      // Use OpenAI vision API to extract text from PDF
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${openAIApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o',
-          messages: [
-            {
-              role: 'user',
-              content: [
-                {
-                  type: 'text',
-                  text: 'Extract all text content from this document. Preserve the structure and formatting as much as possible. Return only the extracted text content.'
-                },
-                {
-                  type: 'image_url',
-                  image_url: {
-                    url: `data:${file.type};base64,${base64}`
-                  }
-                }
-              ]
-            }
-          ],
-          max_tokens: 4000
-        }),
-      });
-
-      console.log(`OpenAI API response status: ${response.status}`);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('OpenAI API error:', errorText);
-        throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
-      }
-
-      const result = await response.json();
-      console.log('OpenAI API response received');
-      
-      // Robust validation of the response structure
-      if (!result || !result.choices || !Array.isArray(result.choices) || result.choices.length === 0) {
-        console.error('Invalid OpenAI response structure:', result);
-        throw new Error('Invalid response from OpenAI API - no choices array');
-      }
-
-      const firstChoice = result.choices[0];
-      if (!firstChoice || !firstChoice.message || !firstChoice.message.content) {
-        console.error('Invalid choice structure:', firstChoice);
-        throw new Error('Invalid response from OpenAI API - no message content');
-      }
-
-      extractedText = firstChoice.message.content;
-      console.log(`Extracted text length: ${extractedText.length} characters`);
+      // Pour les PDFs, on limite temporairement le support en attendant une vraie extraction PDF
+      throw new Error('PDF processing is temporarily disabled. Please convert your PDF to text or images first.');
       
     } else if (file.type.startsWith('image/')) {
       // Handle image files with OCR
@@ -173,77 +141,98 @@ serve(async (req) => {
 
     console.log(`Successfully extracted text: ${extractedText.length} characters`);
 
-    // Generate embeddings for the extracted text
-    console.log('Generating embeddings...');
-    const embeddingResponse = await fetch('https://api.openai.com/v1/embeddings', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'text-embedding-3-small',
-        input: extractedText,
-      }),
+    // Chunking du texte pour des embeddings plus précis
+    const chunks = chunkText(extractedText, 1000); // Chunks de 1000 caractères
+    console.log(`Text split into ${chunks.length} chunks for embedding`);
+
+    // Generate embeddings pour chaque chunk
+    const embeddingPromises = chunks.map(async (chunk, index) => {
+      console.log(`Generating embedding for chunk ${index + 1}/${chunks.length}`);
+      const response = await fetch('https://api.openai.com/v1/embeddings', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openAIEmbeddingsKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'text-embedding-3-small',
+          input: chunk,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Embedding API error for chunk ${index + 1}:`, errorText);
+        throw new Error(`Embedding API error: ${response.status} - ${errorText}`);
+      }
+
+      const embeddingResult = await response.json();
+      
+      // Robust validation for embedding response
+      if (!embeddingResult || !embeddingResult.data || !Array.isArray(embeddingResult.data) || embeddingResult.data.length === 0) {
+        console.error('Invalid embedding response structure:', embeddingResult);
+        throw new Error('Invalid response from embeddings API');
+      }
+
+      const embedding = embeddingResult.data[0]?.embedding;
+
+      if (!embedding || !Array.isArray(embedding)) {
+        console.error('Invalid embedding data:', embeddingResult.data[0]);
+        throw new Error('Failed to generate valid embeddings');
+      }
+
+      return {
+        chunk,
+        embedding,
+        chunkIndex: index
+      };
     });
 
-    if (!embeddingResponse.ok) {
-      const errorText = await embeddingResponse.text();
-      console.error('Embedding API error:', errorText);
-      throw new Error(`Embedding API error: ${embeddingResponse.status} - ${errorText}`);
-    }
+    // Await all embedding promises
+    const embeddingResults = await Promise.all(embeddingPromises);
+    console.log(`Generated ${embeddingResults.length} embeddings with ${embeddingResults[0].embedding.length} dimensions each`);
 
-    const embeddingResult = await embeddingResponse.json();
-    
-    // Robust validation for embedding response
-    if (!embeddingResult || !embeddingResult.data || !Array.isArray(embeddingResult.data) || embeddingResult.data.length === 0) {
-      console.error('Invalid embedding response structure:', embeddingResult);
-      throw new Error('Invalid response from embeddings API');
-    }
+    // Store each chunk as a separate document in the database
+    const documentInserts = embeddingResults.map((result, index) => {
+      const metadata = {
+        filename: file.name,
+        filesize: file.size,
+        filetype: file.type,
+        processed_at: new Date().toISOString(),
+        extraction_method: file.type.startsWith('image/') ? 'ocr' : 
+                          file.type === 'application/pdf' ? 'pdf_disabled' : 'direct',
+        chunk_index: result.chunkIndex,
+        total_chunks: embeddingResults.length,
+        is_chunk: embeddingResults.length > 1
+      };
 
-    const embedding = embeddingResult.data[0]?.embedding;
-
-    if (!embedding || !Array.isArray(embedding)) {
-      console.error('Invalid embedding data:', embeddingResult.data[0]);
-      throw new Error('Failed to generate valid embeddings');
-    }
-
-    console.log(`Generated embedding with ${embedding.length} dimensions`);
-
-    // Store the document in the database
-    const metadata = {
-      filename: file.name,
-      filesize: file.size,
-      filetype: file.type,
-      processed_at: new Date().toISOString(),
-      extraction_method: file.type.startsWith('image/') ? 'ocr' : 
-                        file.type === 'application/pdf' ? 'vision_api' : 'direct'
-    };
-
-    console.log('Storing document in database...');
-    const { data: document, error: insertError } = await supabase
-      .from('documents')
-      .insert({
-        content: extractedText,
-        embedding: embedding,
+      return {
+        content: result.chunk,
+        embedding: result.embedding,
         metadata: metadata
-      })
-      .select()
-      .single();
+      };
+    });
+
+    console.log(`Storing ${documentInserts.length} document chunks in database...`);
+    const { data: documents, error: insertError } = await supabase
+      .from('documents')
+      .insert(documentInserts)
+      .select();
 
     if (insertError) {
       console.error('Database insert error:', insertError);
-      throw new Error(`Failed to store document: ${insertError.message}`);
+      throw new Error(`Failed to store document chunks: ${insertError.message}`);
     }
 
-    console.log(`Document stored successfully with ID: ${document.id}`);
+    console.log(`${documents.length} document chunks stored successfully`);
 
     return new Response(JSON.stringify({
       success: true,
-      documentId: document.id,
+      documentIds: documents.map(doc => doc.id),
       extractedText: extractedText,
       extractedTextLength: extractedText.length,
-      metadata: metadata
+      chunksCount: embeddingResults.length,
+      metadata: documentInserts[0]?.metadata
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
