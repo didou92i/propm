@@ -42,20 +42,24 @@ export const useSemanticSearch = () => {
       // Generate embedding for the search query
       const queryEmbedding = await generateEmbedding(query);
 
-      // Search for similar documents with enhanced parameters
-      const { data: results } = await supabase.rpc('match_documents_enhanced', {
+      // Search for similar documents using the existing function
+      const { data: results } = await supabase.rpc('match_documents', {
         query_embedding: queryEmbedding,
         match_count: options.maxResults || 10,
-        similarity_threshold: options.threshold || 0.3,
-        boost_titles: options.boostTitles || true
+        filter: options.boostTitles ? { boost_titles: true } : {}
       });
 
       if (results) {
         // Enhanced scoring with multiple factors
-        const enhancedResults = results.map((result: any) => ({
-          ...result,
-          relevanceScore: calculateRelevanceScore(result, query, options)
-        }));
+        const enhancedResults: SearchResult[] = results
+          .filter((result: any) => result.similarity >= (options.threshold || 0.3))
+          .map((result: any) => ({
+            id: result.id,
+            content: result.content,
+            metadata: result.metadata,
+            similarity: result.similarity,
+            relevanceScore: calculateRelevanceScore(result, query, options)
+          }));
 
         // Sort by relevance score
         enhancedResults.sort((a, b) => b.relevanceScore - a.relevanceScore);
@@ -140,7 +144,17 @@ export const useSemanticSearch = () => {
         filter: { exclude_id: documentId }
       });
 
-      return similar || [];
+      if (similar) {
+        return similar.map((result: any) => ({
+          id: result.id,
+          content: result.content,
+          metadata: result.metadata,
+          similarity: result.similarity,
+          relevanceScore: result.similarity
+        }));
+      }
+
+      return [];
     } catch (error) {
       console.error('Error finding similar documents:', error);
       return [];

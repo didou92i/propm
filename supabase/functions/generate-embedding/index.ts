@@ -2,7 +2,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const openAIEmbeddingsKey = Deno.env.get('OPENAI_EMBEDDINGS_API_KEY') || Deno.env.get('OPENAI_API_KEY');
+const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -16,68 +16,59 @@ serve(async (req) => {
   }
 
   try {
+    if (!openAIApiKey) {
+      throw new Error('OPENAI_API_KEY is not configured');
+    }
+
     const { text } = await req.json();
 
     if (!text || typeof text !== 'string') {
-      throw new Error('Text is required and must be a string');
+      throw new Error('Text parameter is required and must be a string');
     }
 
-    if (!openAIEmbeddingsKey) {
-      throw new Error('OpenAI API key not configured');
-    }
-
-    console.log(`Generating embedding for text: ${text.substring(0, 100)}...`);
+    console.log('Generating embedding for text length:', text.length);
 
     const response = await fetch('https://api.openai.com/v1/embeddings', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openAIEmbeddingsKey}`,
+        'Authorization': `Bearer ${openAIApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         model: 'text-embedding-3-small',
-        input: text,
+        input: text.slice(0, 8000), // Limit to 8000 characters for performance
         encoding_format: 'float'
       }),
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('OpenAI API error:', errorText);
-      throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
+      const errorData = await response.text();
+      console.error('OpenAI API error:', response.status, errorData);
+      throw new Error(`OpenAI API error: ${response.status} ${errorData}`);
     }
 
-    const result = await response.json();
-
-    if (!result || !result.data || !Array.isArray(result.data) || result.data.length === 0) {
-      console.error('Invalid embedding response structure:', result);
-      throw new Error('Invalid response from embeddings API');
+    const data = await response.json();
+    
+    if (!data.data || !data.data[0] || !data.data[0].embedding) {
+      throw new Error('Invalid response from OpenAI API');
     }
 
-    const embedding = result.data[0]?.embedding;
+    const embedding = data.data[0].embedding;
+    console.log('Generated embedding with dimensions:', embedding.length);
 
-    if (!embedding || !Array.isArray(embedding)) {
-      console.error('Invalid embedding data:', result.data[0]);
-      throw new Error('Failed to generate valid embeddings');
-    }
-
-    console.log(`Generated embedding with ${embedding.length} dimensions`);
-
-    return new Response(JSON.stringify({
-      success: true,
-      embedding: embedding,
-      dimensions: embedding.length,
-      model: 'text-embedding-3-small'
+    return new Response(JSON.stringify({ 
+      embedding,
+      model: 'text-embedding-3-small',
+      dimensions: embedding.length 
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
     console.error('Error in generate-embedding function:', error);
-    return new Response(JSON.stringify({
-      success: false,
-      error: error.message || 'An unexpected error occurred',
-      details: error.stack || 'No stack trace available'
+    return new Response(JSON.stringify({ 
+      error: error.message,
+      details: 'Failed to generate embedding'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

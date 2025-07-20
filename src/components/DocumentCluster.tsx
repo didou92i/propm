@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { FileText, Users, Sparkles, ChevronRight } from 'lucide-react';
 import { Card } from '@/components/ui/card';
@@ -55,8 +54,16 @@ export const DocumentCluster = ({ onDocumentSelect, maxClusters = 5 }: DocumentC
         return;
       }
 
+      // Parse embeddings from database format
+      const documentsWithParsedEmbeddings = documents.map(doc => ({
+        ...doc,
+        embedding: Array.isArray(doc.embedding) ? doc.embedding : 
+                  typeof doc.embedding === 'string' ? JSON.parse(doc.embedding) : 
+                  doc.embedding
+      }));
+
       // Generate clusters using k-means-like approach
-      const documentClusters = await generateClusters(documents, Math.min(maxClusters, Math.floor(documents.length / 3)));
+      const documentClusters = await generateClusters(documentsWithParsedEmbeddings, Math.min(maxClusters, Math.floor(documents.length / 3)));
       setClusters(documentClusters);
 
     } catch (error) {
@@ -90,10 +97,12 @@ export const DocumentCluster = ({ onDocumentSelect, maxClusters = 5 }: DocumentC
       for (const doc of documents) {
         if (usedDocuments.has(doc.id) || clusterDocs.length >= 8) continue;
 
-        const similarity = cosineSimilarity(seedDoc.embedding, doc.embedding);
-        if (similarity > 0.7 && clusterDocs.length < 8) {
-          clusterDocs.push(doc);
-          usedDocuments.add(doc.id);
+        if (seedDoc.embedding && doc.embedding) {
+          const similarity = cosineSimilarity(seedDoc.embedding, doc.embedding);
+          if (similarity > 0.7 && clusterDocs.length < 8) {
+            clusterDocs.push(doc);
+            usedDocuments.add(doc.id);
+          }
         }
       }
 
@@ -109,9 +118,10 @@ export const DocumentCluster = ({ onDocumentSelect, maxClusters = 5 }: DocumentC
             filename: doc.metadata?.filename || 'Sans nom',
             content: doc.content,
             metadata: doc.metadata,
-            similarity: cosineSimilarity(seedDoc.embedding, doc.embedding)
+            similarity: seedDoc.embedding && doc.embedding ? 
+                       cosineSimilarity(seedDoc.embedding, doc.embedding) : 0
           })),
-          centroid: calculateCentroid(clusterDocs.map(doc => doc.embedding)),
+          centroid: calculateCentroid(clusterDocs.map(doc => doc.embedding).filter(Boolean)),
           coherenceScore: calculateCoherenceScore(clusterDocs)
         });
       }
@@ -121,13 +131,19 @@ export const DocumentCluster = ({ onDocumentSelect, maxClusters = 5 }: DocumentC
   };
 
   const cosineSimilarity = (a: number[], b: number[]): number => {
+    if (!a || !b || a.length !== b.length) return 0;
+    
     const dotProduct = a.reduce((sum, val, i) => sum + val * b[i], 0);
     const magnitudeA = Math.sqrt(a.reduce((sum, val) => sum + val * val, 0));
     const magnitudeB = Math.sqrt(b.reduce((sum, val) => sum + val * val, 0));
+    
+    if (magnitudeA === 0 || magnitudeB === 0) return 0;
     return dotProduct / (magnitudeA * magnitudeB);
   };
 
   const calculateCentroid = (embeddings: number[][]): number[] => {
+    if (embeddings.length === 0) return [];
+    
     const dimensions = embeddings[0].length;
     const centroid = new Array(dimensions).fill(0);
     
@@ -148,8 +164,10 @@ export const DocumentCluster = ({ onDocumentSelect, maxClusters = 5 }: DocumentC
     
     for (let i = 0; i < documents.length; i++) {
       for (let j = i + 1; j < documents.length; j++) {
-        totalSimilarity += cosineSimilarity(documents[i].embedding, documents[j].embedding);
-        comparisons++;
+        if (documents[i].embedding && documents[j].embedding) {
+          totalSimilarity += cosineSimilarity(documents[i].embedding, documents[j].embedding);
+          comparisons++;
+        }
       }
     }
     
