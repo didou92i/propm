@@ -7,7 +7,7 @@ import { ParallaxBackground } from "@/components/ParallaxBackground";
 import { FloatingActionButton } from "@/components/FloatingActionButton";
 import { MorphingIcon } from "@/components/MorphingIcon";
 import { useAgentTheme } from "@/hooks/useAgentTheme";
-import { Bot, Sparkles, Plus, Settings } from "lucide-react";
+import { Bot, Sparkles, Plus, Settings, FileSearch } from "lucide-react";
 
 const Index = () => {
   const [selectedAgent, setSelectedAgent] = useState("redacpro");
@@ -43,7 +43,7 @@ const Index = () => {
                 <div>
                   <h1 className="font-semibold agent-transition">Assistant IA pour agents municipaux</h1>
                   <p className="text-sm text-muted-foreground">
-                    Propulsé par OpenAI GPT-4 • Joignez des documents avec 📎
+                    Propulsé par OpenAI GPT-4 • Recherche sémantique avancée • Joignez des documents avec 📎
                   </p>
                 </div>
               </div>
@@ -65,7 +65,7 @@ const Index = () => {
             <ChatArea selectedAgent={selectedAgent} />
           </div>
           
-          {/* Floating Action Buttons */}
+          {/* Enhanced Floating Action Buttons */}
           <FloatingActionButton
             icon={Plus}
             onClick={handleNewChat}
@@ -76,12 +76,12 @@ const Index = () => {
           />
           
           <FloatingActionButton
-            icon={Settings}
+            icon={FileSearch}
             onClick={handleQuickAction}
             position="bottom-left"
             variant="secondary"
             size="sm"
-            tooltip="Paramètres rapides"
+            tooltip="Recherche sémantique"
           />
         </div>
       </SidebarProvider>
