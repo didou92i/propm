@@ -71,8 +71,62 @@ serve(async (req) => {
       // Handle plain text files
       extractedText = await file.text();
     } else if (file.type === 'application/pdf') {
-      // Pour les PDFs, on limite temporairement le support en attendant une vraie extraction PDF
-      throw new Error('PDF processing is temporarily disabled. Please convert your PDF to text or images first.');
+      // Handle PDF files using OpenAI Vision API  
+      const arrayBuffer = await file.arrayBuffer();
+      const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+      
+      console.log('Sending PDF to OpenAI for text extraction...');
+      
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o',
+          messages: [
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'text',
+                  text: 'Extract all text content from this PDF document. Preserve the structure, headings, and formatting as much as possible. Return only the extracted text content with clear section separation.'
+                },
+                {
+                  type: 'image_url',
+                  image_url: {
+                    url: `data:${file.type};base64,${base64}`
+                  }
+                }
+              ]
+            }
+          ],
+          max_tokens: 4000
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('OpenAI API error for PDF:', errorText);
+        throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
+      }
+
+      const result = await response.json();
+      
+      // Robust validation for PDF response
+      if (!result || !result.choices || !Array.isArray(result.choices) || result.choices.length === 0) {
+        console.error('Invalid OpenAI PDF response structure:', result);
+        throw new Error('Invalid response from OpenAI API for PDF');
+      }
+
+      const firstChoice = result.choices[0];
+      if (!firstChoice || !firstChoice.message || !firstChoice.message.content) {
+        console.error('Invalid PDF choice structure:', firstChoice);
+        throw new Error('Invalid response from OpenAI API - no PDF content');
+      }
+
+      extractedText = firstChoice.message.content;
     } else if (file.type === 'application/msword' || file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
       // Handle Word documents (.doc and .docx) using OpenAI Vision API
       const arrayBuffer = await file.arrayBuffer();

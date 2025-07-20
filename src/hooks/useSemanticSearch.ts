@@ -44,7 +44,7 @@ export const useSemanticSearch = () => {
 
       // Search for similar documents using the existing function
       const { data: results } = await supabase.rpc('match_documents', {
-        query_embedding: queryEmbedding,
+        query_embedding: `[${queryEmbedding.join(',')}]`,
         match_count: options.maxResults || 10,
         filter: options.boostTitles ? { boost_titles: true } : {}
       });
