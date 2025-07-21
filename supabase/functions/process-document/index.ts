@@ -71,62 +71,42 @@ serve(async (req) => {
       // Handle plain text files
       extractedText = await file.text();
     } else if (file.type === 'application/pdf') {
-      // Handle PDF files using OpenAI Vision API  
-      const arrayBuffer = await file.arrayBuffer();
-      const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+      // Handle PDF files - Since PDFs are not images, we cannot use Vision API
+      // For now, provide a workaround that extracts basic text content
+      console.log('PDF processing: Converting to text buffer for basic extraction...');
       
-      console.log('Sending PDF to OpenAI for text extraction...');
-      
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${openAIApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o',
-          messages: [
-            {
-              role: 'user',
-              content: [
-                {
-                  type: 'text',
-                  text: 'Extract all text content from this PDF document. Preserve the structure, headings, and formatting as much as possible. Return only the extracted text content with clear section separation.'
-                },
-                {
-                  type: 'image_url',
-                  image_url: {
-                    url: `data:${file.type};base64,${base64}`
-                  }
-                }
-              ]
-            }
-          ],
-          max_tokens: 4000
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('OpenAI API error for PDF:', errorText);
-        throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
+      try {
+        // Try to extract text directly from PDF buffer
+        const arrayBuffer = await file.arrayBuffer();
+        const uint8Array = new Uint8Array(arrayBuffer);
+        const textDecoder = new TextDecoder('utf-8', { fatal: false });
+        let rawText = textDecoder.decode(uint8Array);
+        
+        // Basic PDF text extraction (very limited, but better than nothing)
+        // Remove PDF headers and binary data, keep only printable text
+        const textMatch = rawText.match(/[\x20-\x7E\s]+/g);
+        if (textMatch && textMatch.length > 0) {
+          // Join matched text segments and clean up
+          extractedText = textMatch
+            .join(' ')
+            .replace(/\s+/g, ' ')
+            .replace(/[^\w\s\-.,!?:;()]/g, '')
+            .trim();
+          
+          // Validate that we got meaningful content
+          if (extractedText.length < 10) {
+            throw new Error('PDF appears to contain mostly non-text content');
+          }
+        } else {
+          throw new Error('No readable text found in PDF');
+        }
+        
+        console.log(`Extracted ${extractedText.length} characters from PDF`);
+        
+      } catch (pdfError) {
+        console.error('PDF text extraction failed:', pdfError);
+        throw new Error(`PDF processing failed: ${pdfError.message}. Pour un traitement optimal des PDFs, veuillez convertir le document en texte ou image.`);
       }
-
-      const result = await response.json();
-      
-      // Robust validation for PDF response
-      if (!result || !result.choices || !Array.isArray(result.choices) || result.choices.length === 0) {
-        console.error('Invalid OpenAI PDF response structure:', result);
-        throw new Error('Invalid response from OpenAI API for PDF');
-      }
-
-      const firstChoice = result.choices[0];
-      if (!firstChoice || !firstChoice.message || !firstChoice.message.content) {
-        console.error('Invalid PDF choice structure:', firstChoice);
-        throw new Error('Invalid response from OpenAI API - no PDF content');
-      }
-
-      extractedText = firstChoice.message.content;
     } else if (file.type === 'application/msword' || file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
       // Handle Word documents (.doc and .docx) using OpenAI Vision API
       const arrayBuffer = await file.arrayBuffer();

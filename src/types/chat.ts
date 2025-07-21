@@ -6,6 +6,10 @@ export interface MessageAttachment {
   size: number;
   content?: string; // Pour le contenu extrait
   url?: string;
+  preview?: string;
+  extractedText?: string;
+  documentIds?: string[];
+  error?: string;
 }
 
 export interface Message {
