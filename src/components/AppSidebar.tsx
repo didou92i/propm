@@ -78,9 +78,21 @@ export function AppSidebar({ selectedAgent, onAgentSelect }: AppSidebarProps) {
                         : "hover:bg-sidebar-accent/50 hover-glow glass-subtle"
                     }`}
                   >
-                    <agent.icon className={`w-5 h-5 transition-all duration-300 ${
-                      selectedAgent === agent.id ? 'text-primary scale-110' : agent.color
-                    }`} />
+                    {agent.id === "redacpro" ? (
+                      <div className="w-5 h-5 rounded-full overflow-hidden">
+                        <img 
+                          src="/lovable-uploads/a40d9ab7-e2e3-425a-82f4-714b033f9aa8.png" 
+                          alt="RedacPro Avatar" 
+                          className={`w-5 h-5 object-cover transition-all duration-300 ${
+                            selectedAgent === agent.id ? 'scale-110' : ''
+                          }`}
+                        />
+                      </div>
+                    ) : (
+                      <agent.icon className={`w-5 h-5 transition-all duration-300 ${
+                        selectedAgent === agent.id ? 'text-primary scale-110' : agent.color
+                      }`} />
+                    )}
                     <span className="font-medium">{agent.name}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
