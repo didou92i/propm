@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Send, Bot, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,7 @@ import { ChatAttachment } from "@/components/ChatAttachment";
 import { MessageWithAttachments } from "@/components/MessageWithAttachments";
 import { useRipple } from "@/hooks/useRipple";
 import { Message, MessageAttachment } from "@/types/chat";
+import { useToast } from "@/hooks/use-toast";
 
 interface ChatAreaProps {
   selectedAgent: string;
@@ -64,6 +66,7 @@ export function ChatArea({ selectedAgent }: ChatAreaProps) {
   const [userSession] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const createRipple = useRipple('intense');
+  const { toast } = useToast();
   
   console.log("ChatArea component loaded - userSession:", userSession);
 
@@ -80,9 +83,11 @@ export function ChatArea({ selectedAgent }: ChatAreaProps) {
     setProcessingAttachment(true);
     setAttachmentError(null);
 
+    console.log(`Processing ${attachments.length} attachments...`);
+
     for (const attachment of attachments) {
       try {
-        console.log(`Processing attachment: ${attachment.file.name}`);
+        console.log(`Processing attachment: ${attachment.file.name} (${attachment.file.type}, ${attachment.file.size} bytes)`);
         
         const formData = new FormData();
         formData.append('file', attachment.file);
@@ -96,43 +101,59 @@ export function ChatArea({ selectedAgent }: ChatAreaProps) {
           throw new Error(`Erreur de traitement: ${error.message}`);
         }
 
-        if (!data.success) {
+        if (!data || !data.success) {
           console.error('Document processing failed:', data);
-          throw new Error(data.error || 'Échec du traitement du document');
+          throw new Error(data?.error || 'Échec du traitement du document');
         }
 
-        console.log(`Successfully processed: ${attachment.file.name}`);
+        console.log(`Successfully processed: ${attachment.file.name}, extracted ${data.extractedTextLength} characters`);
+        
+        // Store successful processing in documents table
+        toast({
+          title: "Document traité avec succès",
+          description: `${attachment.file.name} est maintenant prêt pour l'analyse`,
+        });
         
         processedAttachments.push({
           id: attachment.id,
           name: attachment.file.name,
           type: attachment.file.type,
           size: attachment.file.size,
-          content: data.extractedText || ''
+          content: data.extractedText || '',
+          documentIds: data.documentIds || []
         });
       } catch (error) {
         console.error('Error processing attachment:', error);
         const errorMsg = `Erreur lors du traitement de ${attachment.file.name}: ${error.message}`;
         setAttachmentError(errorMsg);
         
-        // Still add the attachment but without processed content
+        toast({
+          title: "Erreur de traitement",
+          description: errorMsg,
+          variant: "destructive"
+        });
+        
+        // Still add the attachment but mark it as failed
         processedAttachments.push({
           id: attachment.id,
           name: attachment.file.name,
           type: attachment.file.type,
           size: attachment.file.size,
-          content: `[Erreur de traitement: ${error.message}]`
+          content: `[Erreur de traitement: ${error.message}]`,
+          error: error.message
         });
       }
     }
 
     setProcessingAttachment(false);
+    console.log(`Processed ${processedAttachments.length} attachments total`);
     return processedAttachments;
   };
 
   const sendMessage = async (content: string) => {
     if (!content.trim() && attachments.length === 0) return;
 
+    console.log(`Sending message with ${attachments.length} attachments`);
     setAttachmentError(null);
 
     // Process attachments first
@@ -156,12 +177,13 @@ export function ChatArea({ selectedAgent }: ChatAreaProps) {
       let messageContent = content;
       if (processedAttachments.length > 0) {
         const attachmentContext = processedAttachments
-          .filter(att => att.content && !att.content.startsWith('[Erreur'))
+          .filter(att => att.content && !att.content.startsWith('[Erreur') && !att.error)
           .map(att => `[Document: ${att.name}]\n${att.content}`)
           .join('\n\n');
         
         if (attachmentContext) {
-          messageContent = `${attachmentContext}\n\n${content}`;
+          messageContent = `Contexte des documents joints:\n${attachmentContext}\n\nQuestion: ${content}`;
+          console.log(`Added context from ${processedAttachments.filter(att => !att.error).length} successfully processed documents`);
         }
       }
 
@@ -178,7 +200,8 @@ export function ChatArea({ selectedAgent }: ChatAreaProps) {
           ],
           selectedAgent,
           userSession,
-          hasAttachments: processedAttachments.length > 0
+          hasAttachments: processedAttachments.length > 0,
+          documentIds: processedAttachments.flatMap(att => att.documentIds || [])
         }
       });
 
@@ -187,9 +210,9 @@ export function ChatArea({ selectedAgent }: ChatAreaProps) {
         throw new Error(error.message || "Erreur lors de l'appel à l'API");
       }
 
-      if (!data.success) {
+      if (!data || !data.success) {
         console.error('Chat function failed:', data);
-        throw new Error(data.error || "Erreur inconnue");
+        throw new Error(data?.error || "Erreur inconnue");
       }
 
       console.log('Received response from assistant');
@@ -212,6 +235,12 @@ export function ChatArea({ selectedAgent }: ChatAreaProps) {
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, errorMessage]);
+      
+      toast({
+        title: "Erreur de conversation",
+        description: error.message || 'Erreur inconnue',
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }

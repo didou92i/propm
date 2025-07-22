@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -5,23 +6,35 @@ import { ChatArea } from "@/components/ChatArea";
 import { ParallaxBackground } from "@/components/ParallaxBackground";
 import { FloatingActionButton } from "@/components/FloatingActionButton";
 import { MorphingIcon } from "@/components/MorphingIcon";
+import { PlatformDiagnostics } from "@/components/PlatformDiagnostics";
 import { useAgentTheme } from "@/hooks/useAgentTheme";
-import { Bot, Sparkles, Plus, Settings, FileSearch } from "lucide-react";
+import { Bot, Sparkles, Plus, Settings, FileSearch, Activity } from "lucide-react";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+
 const Index = () => {
   const [selectedAgent, setSelectedAgent] = useState("redacpro");
   const [isNewChatMode, setIsNewChatMode] = useState(false);
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
 
   // Apply agent theme transitions
   useAgentTheme(selectedAgent);
+
   const handleNewChat = () => {
     setIsNewChatMode(true);
     // Refresh the page to start a new chat
     window.location.reload();
   };
+
   const handleQuickAction = () => {
-    console.log("Quick action triggered");
+    console.log("Quick semantic search action triggered");
   };
-  return <ParallaxBackground className="min-h-screen">
+
+  const handleDiagnostics = () => {
+    setShowDiagnostics(true);
+  };
+
+  return (
+    <ParallaxBackground className="min-h-screen">
       <SidebarProvider>
         <div className="min-h-screen flex w-full theme-transition">
           <AppSidebar selectedAgent={selectedAgent} onAgentSelect={setSelectedAgent} />
@@ -33,7 +46,6 @@ const Index = () => {
                 <SidebarTrigger className="p-2 hover-lift neomorphism-hover" />
                 <div>
                   <h1 className="font-semibold agent-transition">Assistant IA pour agents municipaux</h1>
-                  
                 </div>
               </div>
               {/* Agent indicator with morphing icon */}
@@ -49,11 +61,46 @@ const Index = () => {
           </div>
           
           {/* Enhanced Floating Action Buttons */}
-          <FloatingActionButton icon={Plus} onClick={handleNewChat} position="bottom-right" variant="primary" size="md" tooltip="Nouvelle conversation" />
+          <FloatingActionButton 
+            icon={Plus} 
+            onClick={handleNewChat} 
+            position="bottom-right" 
+            variant="primary" 
+            size="md" 
+            tooltip="Nouvelle conversation" 
+          />
           
-          <FloatingActionButton icon={FileSearch} onClick={handleQuickAction} position="bottom-left" variant="secondary" size="sm" tooltip="Recherche sémantique" />
+          <FloatingActionButton 
+            icon={FileSearch} 
+            onClick={handleQuickAction} 
+            position="bottom-left" 
+            variant="secondary" 
+            size="sm" 
+            tooltip="Recherche sémantique" 
+          />
+
+          {/* Diagnostics Dialog */}
+          <Dialog open={showDiagnostics} onOpenChange={setShowDiagnostics}>
+            <DialogTrigger asChild>
+              <div className="fixed top-6 right-6 z-50">
+                <FloatingActionButton 
+                  icon={Activity} 
+                  onClick={handleDiagnostics} 
+                  position="top-right" 
+                  variant="accent" 
+                  size="sm" 
+                  tooltip="Diagnostics système" 
+                />
+              </div>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+              <PlatformDiagnostics />
+            </DialogContent>
+          </Dialog>
         </div>
       </SidebarProvider>
-    </ParallaxBackground>;
+    </ParallaxBackground>
+  );
 };
+
 export default Index;
