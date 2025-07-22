@@ -88,6 +88,16 @@ export function AppSidebar({ selectedAgent, onAgentSelect }: AppSidebarProps) {
                           }`}
                         />
                       </div>
+                    ) : agent.id === "cdspro" ? (
+                      <div className="w-5 h-5 rounded-full overflow-hidden">
+                        <img 
+                          src="/lovable-uploads/cds-pro-avatar.png" 
+                          alt="CDS Pro Avatar" 
+                          className={`w-5 h-5 object-cover transition-all duration-300 ${
+                            selectedAgent === agent.id ? 'scale-110' : ''
+                          }`}
+                        />
+                      </div>
                     ) : (
                       <agent.icon className={`w-5 h-5 transition-all duration-300 ${
                         selectedAgent === agent.id ? 'text-primary scale-110' : agent.color

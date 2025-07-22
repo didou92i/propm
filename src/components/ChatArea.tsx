@@ -234,11 +234,21 @@ export function ChatArea({ selectedAgent }: ChatAreaProps) {
         <div className="flex-1 flex items-center justify-center p-8 animate-fade-in">
           <div className="text-center max-w-2xl">
             <div className="w-16 h-16 rounded-full gradient-agent-animated flex items-center justify-center mx-auto mb-6 float pulse-glow neomorphism overflow-hidden">
-              <img 
-                src="/lovable-uploads/7500d95b-42e9-406d-89e9-55de70aea1ae.png" 
-                alt="RedacPro Avatar" 
-                className="w-12 h-12 object-cover rounded-full"
-              />
+              {selectedAgent === 'redacpro' ? (
+                <img 
+                  src="/lovable-uploads/7500d95b-42e9-406d-89e9-55de70aea1ae.png" 
+                  alt="RedacPro Avatar" 
+                  className="w-12 h-12 object-cover rounded-full"
+                />
+              ) : selectedAgent === 'cdspro' ? (
+                <img 
+                  src="/lovable-uploads/cds-pro-avatar.png" 
+                  alt="CDS Pro Avatar" 
+                  className="w-12 h-12 object-cover rounded-full"
+                />
+              ) : (
+                <Bot className="w-12 h-12 text-primary" />
+              )}
             </div>
             <h1 className="text-2xl font-bold mb-2 animate-scale-in">
               {currentAgent?.name || "Assistant IA"}
@@ -276,11 +286,21 @@ export function ChatArea({ selectedAgent }: ChatAreaProps) {
             >
               {message.role === "assistant" && (
                 <div className="w-8 h-8 rounded-full gradient-agent-animated flex items-center justify-center flex-shrink-0 hover-lift neomorphism-hover overflow-hidden">
-                  <img 
-                    src="/lovable-uploads/7500d95b-42e9-406d-89e9-55de70aea1ae.png" 
-                    alt="RedacPro Avatar" 
-                    className="w-6 h-6 object-cover rounded-full"
-                  />
+                  {selectedAgent === 'redacpro' ? (
+                    <img 
+                      src="/lovable-uploads/7500d95b-42e9-406d-89e9-55de70aea1ae.png" 
+                      alt="RedacPro Avatar" 
+                      className="w-6 h-6 object-cover rounded-full"
+                    />
+                  ) : selectedAgent === 'cdspro' ? (
+                    <img 
+                      src="/lovable-uploads/cds-pro-avatar.png" 
+                      alt="CDS Pro Avatar" 
+                      className="w-6 h-6 object-cover rounded-full"
+                    />
+                  ) : (
+                    <Bot className="w-6 h-6 text-primary" />
+                  )}
                 </div>
               )}
               <div
