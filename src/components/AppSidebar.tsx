@@ -1,6 +1,8 @@
 
 import { useState } from "react";
-import { Bot, FileText, Calculator, MessageSquare, Search, Settings, Plus, User, Moon, Sun } from "lucide-react";
+import { Bot, FileText, Calculator, MessageSquare, Search, Settings, Plus, User, Moon, Sun, LogOut } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 import {
   Sidebar,
   SidebarContent,
@@ -36,10 +38,37 @@ interface AppSidebarProps {
 export function AppSidebar({ selectedAgent, onAgentSelect }: AppSidebarProps) {
   const createRipple = useRipple('enhanced');
   const { theme, toggleTheme } = useTheme();
+  const { user, signOut } = useAuth();
+  const { toast } = useToast();
 
   const handleAgentSelect = (agentId: string, event: React.MouseEvent<HTMLElement>) => {
     createRipple(event);
     onAgentSelect(agentId);
+  };
+
+  const handleSignOut = async (event: React.MouseEvent<HTMLElement>) => {
+    createRipple(event);
+    try {
+      const { error } = await signOut();
+      if (error) {
+        toast({
+          title: "Erreur de déconnexion",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Déconnexion réussie",
+          description: "Vous avez été déconnecté avec succès",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Une erreur inattendue s'est produite",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -141,8 +170,11 @@ export function AppSidebar({ selectedAgent, onAgentSelect }: AppSidebarProps) {
 
       <SidebarFooter className="p-4 border-t border-border/40">
         <div className="flex gap-2">
-          <SidebarMenuButton className="flex-1 items-center gap-3 p-3 rounded-lg hover:bg-sidebar-accent/50 transition-colors glass-hover neomorphism-hover ripple-container">
-            <Settings className="w-5 h-5 text-muted-foreground" />
+          <SidebarMenuButton 
+            onClick={handleSignOut}
+            className="flex-1 items-center gap-3 p-3 rounded-lg hover:bg-sidebar-accent/50 transition-colors glass-hover neomorphism-hover ripple-container"
+          >
+            <LogOut className="w-5 h-5 text-muted-foreground" />
             <span>Déconnexion</span>
           </SidebarMenuButton>
           <button

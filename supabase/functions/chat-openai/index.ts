@@ -8,7 +8,20 @@ const openAIEmbeddingsKey = Deno.env.get('OPENAI_EMBEDDINGS_API_KEY') || openAIA
 const supabaseUrl = Deno.env.get('SUPABASE_URL');
 const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-const supabase = createClient(supabaseUrl!, supabaseKey!);
+// Create both service role client for admin operations and auth client for user validation
+const supabaseAdmin = createClient(supabaseUrl!, supabaseKey!);
+
+function createUserClient(authHeader: string) {
+  return createClient(
+    supabaseUrl!,
+    Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+    {
+      global: {
+        headers: { Authorization: authHeader },
+      },
+    }
+  );
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -22,9 +35,20 @@ serve(async (req) => {
   }
 
   try {
+    // Get user from JWT token
+    const authHeader = req.headers.get('Authorization') ?? '';
+    const userSupabase = createUserClient(authHeader);
+    
+    const { data: { user }, error: authError } = await userSupabase.auth.getUser();
+    
+    if (authError || !user) {
+      console.error('Authentication error:', authError);
+      throw new Error('Authentication required');
+    }
+
     const { messages, selectedAgent, userSession, hasAttachments } = await req.json();
     
-    console.log(`Chat request - Agent: ${selectedAgent}, Session: ${userSession}, Has attachments: ${hasAttachments}`);
+    console.log(`Chat request - User: ${user.id}, Agent: ${selectedAgent}, Session: ${userSession}, Has attachments: ${hasAttachments}`);
     
     // Get the latest user message for document search
     const latestUserMessage = messages[messages.length - 1]?.content || '';
@@ -43,11 +67,12 @@ serve(async (req) => {
     const assistantId = assistantIds[selectedAgent as keyof typeof assistantIds] || assistantIds.redacpro;
 
     // Check if conversation exists for this session and agent
-    const { data: existingConversation } = await supabase
+    const { data: existingConversation } = await userSupabase
       .from('conversations')
       .select('id, thread_id')
       .eq('user_session', userSession)
       .eq('agent_type', selectedAgent)
+      .eq('user_id', user.id)
       .single();
 
     let threadId: string;
@@ -94,7 +119,7 @@ serve(async (req) => {
       }
       
       // Update conversation timestamp
-      await supabase
+      await userSupabase
         .from('conversations')
         .update({ updated_at: new Date().toISOString() })
         .eq('id', conversationId);
@@ -121,12 +146,13 @@ serve(async (req) => {
       console.log(`Created new thread: ${threadId}`);
 
       // Create new conversation record
-      const { data: newConversation } = await supabase
+      const { data: newConversation } = await userSupabase
         .from('conversations')
         .insert({
           thread_id: threadId,
           user_session: userSession,
-          agent_type: selectedAgent
+          agent_type: selectedAgent,
+          user_id: user.id
         })
         .select('id')
         .single();
@@ -164,8 +190,8 @@ serve(async (req) => {
           const queryEmbedding = embeddingResult.data[0]?.embedding;
 
           if (queryEmbedding) {
-            // Search for similar documents
-            const { data: relevantDocs } = await supabase.rpc('match_documents', {
+            // Search for similar documents using authenticated client
+            const { data: relevantDocs } = await userSupabase.rpc('match_documents', {
               query_embedding: queryEmbedding,
               match_count: 3,
               filter: {}
@@ -188,7 +214,7 @@ serve(async (req) => {
     }
 
     // Store user message in database
-    await supabase
+    await userSupabase
       .from('conversation_messages')
       .insert({
         conversation_id: conversationId,
@@ -324,7 +350,7 @@ serve(async (req) => {
     const assistantMessage = assistantMessages[0].content[0].text.value;
 
     // Store assistant message in database
-    await supabase
+    await userSupabase
       .from('conversation_messages')
       .insert({
         conversation_id: conversationId,
@@ -333,13 +359,13 @@ serve(async (req) => {
       });
 
     // Clean up old messages (keep only last 10 messages per conversation)
-    const { data: messageCount } = await supabase
+    const { data: messageCount } = await userSupabase
       .from('conversation_messages')
       .select('id', { count: 'exact' })
       .eq('conversation_id', conversationId);
 
     if (messageCount && messageCount.length > 20) { // 20 = 10 user + 10 assistant messages
-      const { data: oldMessages } = await supabase
+      const { data: oldMessages } = await userSupabase
         .from('conversation_messages')
         .select('id')
         .eq('conversation_id', conversationId)
@@ -347,7 +373,7 @@ serve(async (req) => {
         .limit(messageCount.length - 20);
 
       if (oldMessages && oldMessages.length > 0) {
-        await supabase
+        await userSupabase
           .from('conversation_messages')
           .delete()
           .in('id', oldMessages.map(m => m.id));

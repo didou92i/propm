@@ -41,11 +41,26 @@ serve(async (req) => {
   }
 
   try {
-    // Initialize Supabase client
+    // Initialize Supabase client with anon key to get user from JWT
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: { Authorization: req.headers.get('Authorization') ?? '' },
+        },
+      }
     );
+
+    // Get user from JWT token
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      console.error('Authentication error:', authError);
+      throw new Error('Authentication required');
+    }
+
+    console.log(`Processing document for user: ${user.id}`);
 
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     const openAIEmbeddingsKey = Deno.env.get('OPENAI_EMBEDDINGS_API_KEY') || openAIApiKey;
@@ -301,6 +316,7 @@ serve(async (req) => {
       return {
         content: result.chunk,
         embedding: result.embedding,
+        user_id: user.id,
         metadata: metadata
       };
     });

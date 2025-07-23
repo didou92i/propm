@@ -77,6 +77,7 @@ export type Database = {
           id: string
           thread_id: string
           updated_at: string
+          user_id: string | null
           user_session: string
         }
         Insert: {
@@ -85,6 +86,7 @@ export type Database = {
           id?: string
           thread_id: string
           updated_at?: string
+          user_id?: string | null
           user_session: string
         }
         Update: {
@@ -93,6 +95,7 @@ export type Database = {
           id?: string
           thread_id?: string
           updated_at?: string
+          user_id?: string | null
           user_session?: string
         }
         Relationships: []
@@ -103,18 +106,48 @@ export type Database = {
           embedding: string | null
           id: string
           metadata: Json | null
+          user_id: string | null
         }
         Insert: {
           content?: string | null
           embedding?: string | null
           id?: string
           metadata?: Json | null
+          user_id?: string | null
         }
         Update: {
           content?: string | null
           embedding?: string | null
           id?: string
           metadata?: Json | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
