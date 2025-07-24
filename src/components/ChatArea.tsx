@@ -9,11 +9,16 @@ import { SkeletonTyping } from "@/components/SkeletonMessage";
 import { ChatAttachment } from "@/components/ChatAttachment";
 import { MessageWithAttachments } from "@/components/MessageWithAttachments";
 import { useRipple } from "@/hooks/useRipple";
+import { useConversationHistory } from "@/hooks/useConversationHistory";
 import { Message, MessageAttachment } from "@/types/chat";
 import { useToast } from "@/hooks/use-toast";
 
 interface ChatAreaProps {
   selectedAgent: string;
+  sharedContext?: {
+    sourceAgent: string;
+    messages: Message[];
+  };
 }
 
 interface AttachedFile {
@@ -55,7 +60,7 @@ const agentInfo = {
   }
 };
 
-export function ChatArea({ selectedAgent }: ChatAreaProps) {
+export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [attachments, setAttachments] = useState<AttachedFile[]>([]);
@@ -64,9 +69,11 @@ export function ChatArea({ selectedAgent }: ChatAreaProps) {
   const [processingAttachment, setProcessingAttachment] = useState(false);
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
   const [userSession] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+  const [contextShared, setContextShared] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const createRipple = useRipple('intense');
   const { toast } = useToast();
+  const { updateConversation, getConversation } = useConversationHistory();
   
   console.log("ChatArea component loaded - userSession:", userSession);
 
@@ -74,9 +81,49 @@ export function ChatArea({ selectedAgent }: ChatAreaProps) {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  // Load conversation history when agent changes
+  useEffect(() => {
+    const savedMessages = getConversation(selectedAgent);
+    if (savedMessages.length > 0) {
+      setMessages(savedMessages);
+    } else {
+      setMessages([]);
+    }
+    setContextShared(false);
+  }, [selectedAgent, getConversation]);
+
+  // Handle shared context
+  useEffect(() => {
+    if (sharedContext && !contextShared) {
+      const contextMessage: Message = {
+        id: `context_${Date.now()}`,
+        content: `**Contexte partagé depuis ${sharedContext.sourceAgent}:**\n\n${sharedContext.messages.map(msg => 
+          `**${msg.role === 'user' ? 'Utilisateur' : 'Assistant'}:** ${msg.content}`
+        ).join('\n\n')}\n\n---\n\n*Ce contexte vous aide à comprendre la discussion précédente. Comment puis-je vous aider maintenant ?*`,
+        role: "assistant",
+        timestamp: new Date(),
+      };
+      
+      setMessages(prev => [contextMessage]);
+      setContextShared(true);
+      
+      toast({
+        title: "Contexte partagé",
+        description: `Le contexte de votre conversation avec ${sharedContext.sourceAgent} a été importé.`,
+      });
+    }
+  }, [sharedContext, contextShared, toast]);
+
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Save messages to conversation history
+  useEffect(() => {
+    if (messages.length > 0) {
+      updateConversation(selectedAgent, messages);
+    }
+  }, [messages, selectedAgent, updateConversation]);
 
   const processAttachments = async (): Promise<MessageAttachment[]> => {
     const processedAttachments: MessageAttachment[] = [];

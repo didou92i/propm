@@ -3,6 +3,10 @@ import { useState } from "react";
 import { Bot, FileText, Calculator, MessageSquare, Search, Settings, Plus, User, Moon, Sun, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { Badge } from "@/components/ui/badge";
+import { ConversationSwitcher } from "@/components/ConversationSwitcher";
+import { useConversationHistory } from "@/hooks/useConversationHistory";
+import { Message } from "@/types/chat";
 import {
   Sidebar,
   SidebarContent,
@@ -33,17 +37,25 @@ const tools = [
 interface AppSidebarProps {
   selectedAgent: string;
   onAgentSelect: (agentId: string) => void;
+  onContextShare?: (sourceAgent: string, targetAgent: string, messages: Message[]) => void;
 }
 
-export function AppSidebar({ selectedAgent, onAgentSelect }: AppSidebarProps) {
+export function AppSidebar({ selectedAgent, onAgentSelect, onContextShare }: AppSidebarProps) {
   const createRipple = useRipple('enhanced');
   const { theme, toggleTheme } = useTheme();
   const { user, signOut } = useAuth();
   const { toast } = useToast();
+  const { getConversationSummary } = useConversationHistory();
 
-  const handleAgentSelect = (agentId: string, event: React.MouseEvent<HTMLElement>) => {
-    createRipple(event);
+  const handleAgentSelect = (agentId: string, event?: React.MouseEvent<HTMLElement>) => {
+    if (event) createRipple(event);
     onAgentSelect(agentId);
+  };
+
+  const handleContextShare = (sourceAgent: string, targetAgent: string, messages: Message[]) => {
+    if (onContextShare) {
+      onContextShare(sourceAgent, targetAgent, messages);
+    }
   };
 
   const handleSignOut = async (event: React.MouseEvent<HTMLElement>) => {
@@ -92,9 +104,20 @@ export function AppSidebar({ selectedAgent, onAgentSelect }: AppSidebarProps) {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-2">
-            Agents IA
-          </SidebarGroupLabel>
+          <div className="flex items-center justify-between px-4 py-2">
+            <SidebarGroupLabel className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Agents IA
+            </SidebarGroupLabel>
+            <ConversationSwitcher
+              currentAgent={selectedAgent}
+              onAgentSwitch={(agentId) => handleAgentSelect(agentId)}
+              onContextShare={handleContextShare}
+            >
+              <button className="p-1 rounded hover:bg-sidebar-accent/50 transition-colors">
+                <MessageSquare className="w-3 h-3 text-muted-foreground" />
+              </button>
+            </ConversationSwitcher>
+          </div>
           <SidebarGroupContent>
             <SidebarMenu>
               {agents.map((agent, index) => (
@@ -132,7 +155,15 @@ export function AppSidebar({ selectedAgent, onAgentSelect }: AppSidebarProps) {
                         selectedAgent === agent.id ? 'text-primary scale-110' : agent.color
                       }`} />
                     )}
-                    <span className="font-medium">{agent.name}</span>
+                    <span className="font-medium flex-1">{agent.name}</span>
+                    {(() => {
+                      const summary = getConversationSummary(agent.id);
+                      return summary.messageCount > 0 && (
+                        <Badge variant="secondary" className="ml-auto text-xs h-5">
+                          {summary.messageCount}
+                        </Badge>
+                      );
+                    })()}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}

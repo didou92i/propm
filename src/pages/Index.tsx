@@ -15,6 +15,10 @@ const Index = () => {
   const [selectedAgent, setSelectedAgent] = useState("redacpro");
   const [isNewChatMode, setIsNewChatMode] = useState(false);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
+  const [sharedContext, setSharedContext] = useState<{
+    sourceAgent: string;
+    messages: any[];
+  } | undefined>(undefined);
 
   // Apply agent theme transitions
   useAgentTheme(selectedAgent);
@@ -33,11 +37,26 @@ const Index = () => {
     setShowDiagnostics(true);
   };
 
+  const handleContextShare = (sourceAgent: string, targetAgent: string, messages: any[]) => {
+    setSharedContext({ sourceAgent, messages });
+    setSelectedAgent(targetAgent);
+  };
+
+  const handleAgentSelect = (agentId: string) => {
+    setSelectedAgent(agentId);
+    // Clear shared context when manually switching agents
+    setSharedContext(undefined);
+  };
+
   return (
     <ParallaxBackground className="min-h-screen">
       <SidebarProvider>
         <div className="min-h-screen flex w-full theme-transition">
-          <AppSidebar selectedAgent={selectedAgent} onAgentSelect={setSelectedAgent} />
+          <AppSidebar 
+            selectedAgent={selectedAgent} 
+            onAgentSelect={handleAgentSelect}
+            onContextShare={handleContextShare}
+          />
           
           <div className="flex-1 flex flex-col">
             {/* Header */}
@@ -57,7 +76,10 @@ const Index = () => {
             </header>
 
             {/* Main Chat Area */}
-            <ChatArea selectedAgent={selectedAgent} />
+            <ChatArea 
+              selectedAgent={selectedAgent} 
+              sharedContext={sharedContext}
+            />
           </div>
           
           {/* Enhanced Floating Action Buttons */}
