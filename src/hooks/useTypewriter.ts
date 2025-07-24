@@ -9,7 +9,7 @@ interface UseTypewriterOptions {
 
 export const useTypewriter = ({ 
   text, 
-  speed = 50, 
+  speed = 20, 
   delay = 0,
   onComplete 
 }: UseTypewriterOptions) => {

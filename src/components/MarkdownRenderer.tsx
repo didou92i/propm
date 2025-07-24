@@ -22,7 +22,7 @@ export const MarkdownRenderer = ({
   
   const { displayedText, isTyping, skipAnimation } = useTypewriter({
     text: content,
-    speed: 30,
+    speed: 15,
     delay: 0,
     onComplete: onTypingComplete
   });
