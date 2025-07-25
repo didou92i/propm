@@ -1,6 +1,7 @@
 
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useHierarchicalSearch } from './useHierarchicalSearch';
 
 interface SearchResult {
   id: string;
@@ -21,6 +22,16 @@ export const useSemanticSearch = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
+  
+  // Enhanced hierarchical search capabilities
+  const {
+    hierarchicalSearch,
+    contextualSearch,
+    searchAtLevel,
+    cacheStats,
+    clearCache,
+    getCacheStatistics
+  } = useHierarchicalSearch();
 
   const generateEmbedding = async (query: string): Promise<number[]> => {
     const { data, error } = await supabase.functions.invoke('generate-embedding', {
@@ -166,12 +177,21 @@ export const useSemanticSearch = () => {
   }, []);
 
   return {
+    // Original semantic search
     semanticSearch,
     getSuggestions,
     findSimilarDocuments,
     clearSearch,
     searchResults,
     searchHistory,
-    isSearching
+    isSearching,
+    
+    // Enhanced hierarchical search
+    hierarchicalSearch,
+    contextualSearch,
+    searchAtLevel,
+    cacheStats,
+    clearCache,
+    getCacheStatistics
   };
 };
