@@ -225,6 +225,19 @@ export type Database = {
           similarity: number
         }[]
       }
+      match_documents_hierarchical: {
+        Args: {
+          query_embedding: string
+          match_count?: number
+          level_filter?: string
+        }
+        Returns: {
+          id: string
+          content: string
+          metadata: Json
+          similarity: number
+        }[]
+      }
       rechercher_code_natinf: {
         Args: { code_recherche: number } | { code_recherche: string }
         Returns: Json
