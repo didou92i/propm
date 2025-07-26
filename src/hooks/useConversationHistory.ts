@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Message } from '@/types/chat';
 
 interface ConversationHistory {
@@ -37,51 +37,64 @@ export function useConversationHistory() {
     }
   }, []);
 
-  // Save to localStorage whenever history changes
+  // Save to localStorage whenever history changes (with optimization)
   useEffect(() => {
-    localStorage.setItem('conversationHistory', JSON.stringify(conversationHistory));
+    const current = JSON.stringify(conversationHistory);
+    const stored = localStorage.getItem('conversationHistory');
+    if (current !== stored) {
+      localStorage.setItem('conversationHistory', current);
+    }
   }, [conversationHistory]);
 
-  const updateConversation = (agentId: string, messages: Message[]) => {
+  const updateConversation = useCallback((agentId: string, messages: Message[]) => {
     setConversationHistory(prev => {
       const lastMessage = messages[messages.length - 1];
+      const newConversation = {
+        messages,
+        messageCount: messages.length,
+        lastMessage: lastMessage?.content.slice(0, 100) + (lastMessage?.content.length > 100 ? '...' : ''),
+        lastActivity: new Date()
+      };
+      
+      // Only update if something actually changed
+      const existing = prev[agentId];
+      if (existing && existing.messageCount === messages.length && 
+          JSON.stringify(existing.messages) === JSON.stringify(messages)) {
+        return prev;
+      }
+      
       return {
         ...prev,
-        [agentId]: {
-          messages,
-          messageCount: messages.length,
-          lastMessage: lastMessage?.content.slice(0, 100) + (lastMessage?.content.length > 100 ? '...' : ''),
-          lastActivity: new Date()
-        }
+        [agentId]: newConversation
       };
     });
-  };
+  }, []);
 
-  const getConversation = (agentId: string) => {
+  const getConversation = useCallback((agentId: string) => {
     return conversationHistory[agentId]?.messages || [];
-  };
+  }, [conversationHistory]);
 
-  const getConversationSummary = (agentId: string) => {
+  const getConversationSummary = useCallback((agentId: string) => {
     return conversationHistory[agentId] || {
       messages: [],
       messageCount: 0,
       lastActivity: new Date()
     };
-  };
+  }, [conversationHistory]);
 
-  const clearConversation = (agentId: string) => {
+  const clearConversation = useCallback((agentId: string) => {
     setConversationHistory(prev => {
       const updated = { ...prev };
       delete updated[agentId];
       return updated;
     });
-  };
+  }, []);
 
-  const getAllAgentsWithHistory = () => {
+  const getAllAgentsWithHistory = useCallback(() => {
     return Object.keys(conversationHistory).filter(
       agentId => conversationHistory[agentId].messageCount > 0
     );
-  };
+  }, [conversationHistory]);
 
   return {
     conversationHistory,

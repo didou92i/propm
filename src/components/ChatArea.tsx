@@ -120,10 +120,10 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
 
   // Save messages to conversation history
   useEffect(() => {
-    if (messages.length > 0) {
+    if (messages.length > 0 && !contextShared) {
       updateConversation(selectedAgent, messages);
     }
-  }, [messages, selectedAgent, updateConversation]);
+  }, [messages, selectedAgent, updateConversation, contextShared]);
 
   const processAttachments = async (): Promise<MessageAttachment[]> => {
     const processedAttachments: MessageAttachment[] = [];
