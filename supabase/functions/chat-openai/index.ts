@@ -35,27 +35,58 @@ serve(async (req) => {
   }
 
   try {
-    // Get user from JWT token
-    const authHeader = req.headers.get('Authorization') ?? '';
-    const userSupabase = createUserClient(authHeader);
+    console.log('=== CHAT REQUEST START ===');
     
+    // Get user from JWT token
+    console.log('Step 1: Authenticating user...');
+    const authHeader = req.headers.get('Authorization') ?? '';
+    if (!authHeader) {
+      console.error('ERROR: No authorization header provided');
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'No authorization header provided' 
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
+    const userSupabase = createUserClient(authHeader);
     const { data: { user }, error: authError } = await userSupabase.auth.getUser();
     
     if (authError || !user) {
-      console.error('Authentication error:', authError);
-      throw new Error('Authentication required');
+      console.error('ERROR: Authentication failed:', authError?.message || 'No user found');
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'Authentication failed',
+        details: authError?.message || 'No user found'
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
+
+    console.log('✓ User authenticated successfully:', user.id);
 
     const { messages, selectedAgent, userSession, hasAttachments } = await req.json();
     
-    console.log(`Chat request - User: ${user.id}, Agent: ${selectedAgent}, Session: ${userSession}, Has attachments: ${hasAttachments}`);
+    console.log(`Step 2: Request data - User: ${user.id}, Agent: ${selectedAgent}, Session: ${userSession}, Has attachments: ${hasAttachments}`);
     
     // Get the latest user message for document search
     const latestUserMessage = messages[messages.length - 1]?.content || '';
 
     if (!openAIApiKey) {
-      throw new Error('OpenAI API key not configured');
+      console.error('ERROR: OpenAI API key not configured');
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'OpenAI API key not configured' 
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
+
+    console.log('Step 3: OpenAI API key verified');
 
     // Assistant IDs mapping
     const assistantIds = {
@@ -65,15 +96,29 @@ serve(async (req) => {
     };
 
     const assistantId = assistantIds[selectedAgent as keyof typeof assistantIds] || assistantIds.redacpro;
+    console.log('Step 4: Using assistant:', assistantId);
 
     // Check if conversation exists for this session and agent
-    const { data: existingConversation } = await userSupabase
+    console.log('Step 5: Checking for existing conversation...');
+    const { data: existingConversation, error: convError } = await userSupabase
       .from('conversations')
       .select('id, thread_id')
       .eq('user_session', userSession)
       .eq('agent_type', selectedAgent)
       .eq('user_id', user.id)
       .single();
+
+    if (convError && convError.code !== 'PGRST116') {
+      console.error('ERROR: Conversation lookup failed:', convError.message);
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'Database error during conversation lookup',
+        details: convError.message
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     let threadId: string;
     let conversationId: string;
@@ -138,7 +183,15 @@ serve(async (req) => {
 
       if (!threadResponse.ok) {
         const errorData = await threadResponse.json();
-        throw new Error(`Thread creation error: ${errorData.error?.message || 'Unknown error'}`);
+        console.error('ERROR: Thread creation failed:', errorData);
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: 'Thread creation failed',
+          details: errorData.error?.message || 'Unknown OpenAI error'
+        }), {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
 
       const threadData = await threadResponse.json();
@@ -251,7 +304,15 @@ serve(async (req) => {
 
     if (!messageResponse.ok) {
       const errorData = await messageResponse.json();
-      throw new Error(`Message creation error: ${errorData.error?.message || 'Unknown error'}`);
+      console.error('ERROR: Message creation failed:', errorData);
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'Message creation failed',
+        details: errorData.error?.message || 'Unknown OpenAI error'
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     // Create a run with retry logic
@@ -322,7 +383,15 @@ serve(async (req) => {
     }
 
     if (runStatus !== 'completed') {
-      throw new Error(`Run did not complete. Status: ${runStatus}`);
+      console.error(`ERROR: Run did not complete. Final status: ${runStatus}, Attempts: ${attempts_poll}/${maxAttempts}`);
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'OpenAI run did not complete',
+        details: `Status: ${runStatus}, polling attempts: ${attempts_poll}/${maxAttempts}`
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     // Get messages from the thread
@@ -389,13 +458,14 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.error('Error in chat-openai function:', error);
+    console.error('CRITICAL ERROR in chat-openai function:', error);
+    console.error('Stack trace:', error.stack);
     return new Response(JSON.stringify({ 
       success: false, 
       error: error.message || 'An unexpected error occurred',
       details: error.stack || 'No stack trace available'
     }), {
-      status: 500,
+      status: 200,  // Changed from 500 to 200 to avoid non-2xx errors
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

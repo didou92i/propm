@@ -236,6 +236,13 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
 
       console.log('Sending message to chat-openai function...');
       
+      console.log('🚀 CLIENT: Sending message to chat-openai...', {
+        selectedAgent,
+        userSession,
+        hasAttachments: processedAttachments.length > 0,
+        messageCount: messages.length + 1
+      });
+
       const { data, error } = await supabase.functions.invoke('chat-openai', {
         body: {
           messages: [
@@ -252,15 +259,26 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
         }
       });
 
+      console.log('📡 CLIENT: Received response from chat-openai:', { 
+        success: data?.success, 
+        hasMessage: !!data?.message,
+        error: error,
+        fullData: data 
+      });
+
       if (error) {
-        console.error('Chat function error:', error);
+        console.error('❌ CLIENT: Supabase function error:', error);
+        console.error('❌ CLIENT: Full error object:', JSON.stringify(error, null, 2));
         throw new Error(error.message || "Erreur lors de l'appel à l'API");
       }
 
       if (!data || !data.success) {
-        console.error('Chat function failed:', data);
+        console.error('❌ CLIENT: Chat function failed:', data);
+        console.error('❌ CLIENT: Full data object:', JSON.stringify(data, null, 2));
         throw new Error(data?.error || "Erreur inconnue");
       }
+
+      console.log('✅ CLIENT: Message sent successfully');
 
       console.log('Received response from assistant');
 
