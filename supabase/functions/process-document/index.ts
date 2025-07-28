@@ -86,99 +86,67 @@ serve(async (req) => {
       // Handle plain text files
       extractedText = await file.text();
     } else if (file.type === 'application/pdf') {
-      // Handle PDF files - Since PDFs are not images, we cannot use Vision API
-      // For now, provide a workaround that extracts basic text content
-      console.log('PDF processing: Converting to text buffer for basic extraction...');
+      // Handle PDF files using OCR via OpenAI Vision API
+      console.log('PDF processing: Converting PDF to image format for OCR...');
       
       try {
-        // Try to extract text directly from PDF buffer
         const arrayBuffer = await file.arrayBuffer();
-        const uint8Array = new Uint8Array(arrayBuffer);
-        const textDecoder = new TextDecoder('utf-8', { fatal: false });
-        let rawText = textDecoder.decode(uint8Array);
+        const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
         
-        // Basic PDF text extraction (very limited, but better than nothing)
-        // Remove PDF headers and binary data, keep only printable text
-        const textMatch = rawText.match(/[\x20-\x7E\s]+/g);
-        if (textMatch && textMatch.length > 0) {
-          // Join matched text segments and clean up
-          extractedText = textMatch
-            .join(' ')
-            .replace(/\s+/g, ' ')
-            .replace(/[^\w\s\-.,!?:;()]/g, '')
-            .trim();
-          
-          // Validate that we got meaningful content
-          if (extractedText.length < 10) {
-            throw new Error('PDF appears to contain mostly non-text content');
-          }
-        } else {
-          throw new Error('No readable text found in PDF');
+        console.log('Sending PDF to OpenAI Vision API for OCR...');
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openAIApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o',
+            messages: [
+              {
+                role: 'user',
+                content: [
+                  {
+                    type: 'text',
+                    text: 'Extract all text content from this PDF document. Preserve the structure, formatting, and hierarchy as much as possible. Return only the extracted text content without any commentary.'
+                  },
+                  {
+                    type: 'image_url',
+                    image_url: {
+                      url: `data:application/pdf;base64,${base64}`
+                    }
+                  }
+                ]
+              }
+            ],
+            max_tokens: 4000
+          }),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('OpenAI API error for PDF:', errorText);
+          throw new Error(`PDF OCR failed: ${response.status} - ${errorText}`);
         }
+
+        const result = await response.json();
         
-        console.log(`Extracted ${extractedText.length} characters from PDF`);
+        if (!result?.choices?.[0]?.message?.content) {
+          console.error('Invalid OpenAI PDF response:', result);
+          throw new Error('Failed to extract text from PDF using OCR');
+        }
+
+        extractedText = result.choices[0].message.content;
+        console.log(`Successfully extracted ${extractedText.length} characters from PDF via OCR`);
         
       } catch (pdfError) {
-        console.error('PDF text extraction failed:', pdfError);
-        throw new Error(`PDF processing failed: ${pdfError.message}. Pour un traitement optimal des PDFs, veuillez convertir le document en texte ou image.`);
+        console.error('PDF OCR extraction failed:', pdfError);
+        throw new Error(`PDF processing failed: ${pdfError.message}. Veuillez vérifier que le PDF contient du texte lisible.`);
       }
     } else if (file.type === 'application/msword' || file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-      // Handle Word documents (.doc and .docx) using OpenAI Vision API
-      const arrayBuffer = await file.arrayBuffer();
-      const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-      
-      console.log('Sending Word document to OpenAI for text extraction...');
-      
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${openAIApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o',
-          messages: [
-            {
-              role: 'user',
-              content: [
-                {
-                  type: 'text',
-                  text: 'Extract all text content from this Word document. Preserve the structure and formatting as much as possible. Return only the extracted text content.'
-                },
-                {
-                  type: 'image_url',
-                  image_url: {
-                    url: `data:${file.type};base64,${base64}`
-                  }
-                }
-              ]
-            }
-          ],
-          max_tokens: 4000
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('OpenAI API error for Word document:', errorText);
-        throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
-      }
-
-      const result = await response.json();
-      
-      // Robust validation for Word document response
-      if (!result || !result.choices || !Array.isArray(result.choices) || result.choices.length === 0) {
-        console.error('Invalid OpenAI Word response structure:', result);
-        throw new Error('Invalid response from OpenAI API for Word document');
-      }
-
-      const firstChoice = result.choices[0];
-      if (!firstChoice || !firstChoice.message || !firstChoice.message.content) {
-        console.error('Invalid Word choice structure:', firstChoice);
-        throw new Error('Invalid response from OpenAI API - no Word content');
-      }
-
-      extractedText = firstChoice.message.content;
+      // Handle Word documents - Vision API doesn't support Word documents, only images
+      console.log('Word document processing: Format not directly supported by Vision API');
+      throw new Error(`Format Word (.doc/.docx) non supporté actuellement. Veuillez convertir votre document en PDF ou en image pour un traitement optimal, ou copier le texte dans un fichier .txt.`);
       
     } else if (file.type.startsWith('image/')) {
       // Handle image files with OCR
@@ -306,8 +274,8 @@ serve(async (req) => {
         filetype: file.type,
         processed_at: new Date().toISOString(),
         extraction_method: file.type.startsWith('image/') ? 'ocr' : 
-                          file.type === 'application/pdf' ? 'pdf_disabled' : 
-                          (file.type === 'application/msword' || file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') ? 'word_vision' : 'direct',
+                          file.type === 'application/pdf' ? 'pdf_ocr' : 
+                          file.type === 'text/plain' ? 'direct' : 'unsupported',
         chunk_index: result.chunkIndex,
         total_chunks: embeddingResults.length,
         is_chunk: embeddingResults.length > 1
