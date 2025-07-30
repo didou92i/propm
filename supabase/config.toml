@@ -1,4 +1,40 @@
 project_id = "yulhsufpnjkiozkrgyoq"
 
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[auth]
+enabled = true
+port = 54324
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["https://yulhsufpnjkiozkrgyoq.lovableproject.com"]
+jwt_expiry = 3600
+enable_signup = true
+enable_confirmations = false
+
+[edge_functions]
+enabled = true
+port = 54323
+
+[functions.chat-openai]
+verify_jwt = true
+
+[functions.generate-embedding]
+verify_jwt = true
+
+[functions.match-documents-hierarchical]
+verify_jwt = true
+
 [functions.process-document]
 verify_jwt = true
+
+[functions.cleanup-data]
+verify_jwt = false
+
+[db]
+enabled = true
+port = 54322

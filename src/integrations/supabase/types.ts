@@ -164,6 +164,14 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      cleanup_old_data: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      get_system_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       halfvec_avg: {
         Args: { "": number[] }
         Returns: unknown

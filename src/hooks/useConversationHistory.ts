@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Message } from '@/types/chat';
+import { usePerformanceOptimization, PERFORMANCE_CONFIG } from './usePerformanceOptimization';
 
 interface ConversationHistory {
   [agentId: string]: {
@@ -12,6 +13,9 @@ interface ConversationHistory {
 
 export function useConversationHistory() {
   const [conversationHistory, setConversationHistory] = useState<ConversationHistory>({});
+  const { optimizeMessages, debounce } = usePerformanceOptimization(
+    process.env.NODE_ENV === 'production' ? PERFORMANCE_CONFIG.PRODUCTION : PERFORMANCE_CONFIG.DEVELOPMENT
+  );
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -46,20 +50,23 @@ export function useConversationHistory() {
     }
   }, [conversationHistory]);
 
-  const updateConversation = useCallback((agentId: string, messages: Message[]) => {
+  const updateConversation = useCallback(debounce((agentId: string, messages: Message[]) => {
     setConversationHistory(prev => {
-      const lastMessage = messages[messages.length - 1];
+      // Optimize messages for performance
+      const optimizedMessages = optimizeMessages(messages);
+      const lastMessage = optimizedMessages[optimizedMessages.length - 1];
+      
       const newConversation = {
-        messages,
-        messageCount: messages.length,
+        messages: optimizedMessages,
+        messageCount: optimizedMessages.length,
         lastMessage: lastMessage?.content.slice(0, 100) + (lastMessage?.content.length > 100 ? '...' : ''),
         lastActivity: new Date()
       };
       
       // Only update if something actually changed
       const existing = prev[agentId];
-      if (existing && existing.messageCount === messages.length && 
-          JSON.stringify(existing.messages) === JSON.stringify(messages)) {
+      if (existing && existing.messageCount === optimizedMessages.length && 
+          JSON.stringify(existing.messages) === JSON.stringify(optimizedMessages)) {
         return prev;
       }
       
@@ -68,7 +75,7 @@ export function useConversationHistory() {
         [agentId]: newConversation
       };
     });
-  }, []);
+  }, 300), [optimizeMessages, debounce]);
 
   const getConversation = useCallback((agentId: string) => {
     return conversationHistory[agentId]?.messages || [];
