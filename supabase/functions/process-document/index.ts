@@ -144,9 +144,45 @@ serve(async (req) => {
         throw new Error(`PDF processing failed: ${pdfError.message}. Veuillez vérifier que le PDF contient du texte lisible.`);
       }
     } else if (file.type === 'application/msword' || file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-      // Handle Word documents - Vision API doesn't support Word documents, only images
-      console.log('Word document processing: Format not directly supported by Vision API');
-      throw new Error(`Format Word (.doc/.docx) non supporté actuellement. Veuillez convertir votre document en PDF ou en image pour un traitement optimal, ou copier le texte dans un fichier .txt.`);
+      // Handle Word documents using a text extraction approach
+      console.log('Word document processing: Attempting basic text extraction...');
+      
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const uint8Array = new Uint8Array(arrayBuffer);
+        
+        // For .docx files (which are ZIP archives), try to extract text
+        if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+          // Simple text extraction from docx by looking for readable content
+          const textDecoder = new TextDecoder('utf-8', { fatal: false });
+          let rawText = textDecoder.decode(uint8Array);
+          
+          // Extract readable text patterns from the DOCX content
+          const textMatches = rawText.match(/[\w\s\-.,!?:;()'"àáâäéèêëîíôöûùúüÿñç]{10,}/gi);
+          
+          if (textMatches && textMatches.length > 0) {
+            extractedText = textMatches
+              .join(' ')
+              .replace(/\s+/g, ' ')
+              .trim();
+            
+            if (extractedText.length < 10) {
+              throw new Error('Contenu textuel insuffisant trouvé dans le document Word');
+            }
+          } else {
+            throw new Error('Aucun texte lisible trouvé dans le document Word');
+          }
+        } else {
+          // For .doc files, the structure is more complex
+          throw new Error('Les fichiers .doc (ancien format) ne sont pas supportés. Veuillez convertir en .docx ou PDF.');
+        }
+        
+        console.log(`Successfully extracted ${extractedText.length} characters from Word document`);
+        
+      } catch (wordError) {
+        console.error('Word document extraction failed:', wordError);
+        throw new Error(`Échec du traitement Word: ${wordError.message}. Veuillez essayer de convertir le document en PDF ou copier le texte dans un fichier .txt.`);
+      }
       
     } else if (file.type.startsWith('image/')) {
       // Handle image files with OCR
@@ -275,7 +311,8 @@ serve(async (req) => {
         processed_at: new Date().toISOString(),
         extraction_method: file.type.startsWith('image/') ? 'ocr' : 
                           file.type === 'application/pdf' ? 'pdf_ocr' : 
-                          file.type === 'text/plain' ? 'direct' : 'unsupported',
+                          file.type === 'text/plain' ? 'direct' : 
+                          file.type.includes('wordprocessingml') ? 'word_text_extraction' : 'unsupported',
         chunk_index: result.chunkIndex,
         total_chunks: embeddingResults.length,
         is_chunk: embeddingResults.length > 1
