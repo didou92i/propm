@@ -2,6 +2,7 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useHierarchicalSearch } from './useHierarchicalSearch';
+import { useLlamaSearch } from './useLlamaSearch';
 
 interface SearchResult {
   id: string;
@@ -32,6 +33,18 @@ export const useSemanticSearch = () => {
     clearCache,
     getCacheStatistics
   } = useHierarchicalSearch();
+
+  // LlamaIndex enhanced search capabilities
+  const {
+    search: llamaSearch,
+    policeSearch,
+    contextualSearch: llamaContextualSearch,
+    hierarchicalSearch: llamaHierarchicalSearch,
+    autoMergingSearch,
+    isSearching: isLlamaSearching,
+    searchResults: llamaResults,
+    addDocument: addToLlamaIndex
+  } = useLlamaSearch({ autoInitialize: true });
 
   const generateEmbedding = async (query: string): Promise<number[]> => {
     const { data, error } = await supabase.functions.invoke('generate-embedding', {
@@ -184,7 +197,7 @@ export const useSemanticSearch = () => {
     clearSearch,
     searchResults,
     searchHistory,
-    isSearching,
+    isSearching: isSearching || isLlamaSearching,
     
     // Enhanced hierarchical search
     hierarchicalSearch,
@@ -192,6 +205,15 @@ export const useSemanticSearch = () => {
     searchAtLevel,
     cacheStats,
     clearCache,
-    getCacheStatistics
+    getCacheStatistics,
+
+    // LlamaIndex enhanced search
+    llamaSearch,
+    policeSearch,
+    llamaContextualSearch,
+    llamaHierarchicalSearch,
+    autoMergingSearch,
+    llamaResults,
+    addToLlamaIndex
   };
 };
