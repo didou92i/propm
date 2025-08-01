@@ -415,9 +415,12 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
                   isAssistant={message.role === "assistant"}
                   enableTypewriter={message.role === "assistant" && message.id === typingMessageId}
                   onTypingComplete={() => {
-                    if (message.id === typingMessageId) {
-                      setTypingMessageId(null);
-                    }
+                    // Use setTimeout to avoid setState during render
+                    setTimeout(() => {
+                      if (message.id === typingMessageId) {
+                        setTypingMessageId(null);
+                      }
+                    }, 0);
                   }}
                 />
               </div>
