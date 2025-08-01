@@ -32,7 +32,18 @@ class LlamaIndexService {
   private readonly CACHE_DURATION = 3600000; // 1 hour
 
   constructor() {
-    // Initialize settings if needed
+    // Configure LlamaIndex Settings
+    this.configureSettings();
+  }
+
+  /**
+   * Configure LlamaIndex settings with API keys
+   */
+  private configureSettings(): void {
+    // Note: In a client-side environment, we can't access environment variables
+    // The actual LLM calls will be handled by the Supabase edge functions
+    // LlamaIndex will use the documents we fetch from Supabase
+    console.log('Configuring LlamaIndex settings...');
   }
 
   /**
