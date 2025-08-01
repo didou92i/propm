@@ -166,7 +166,7 @@ class LlamaIndexService {
 
       return nodes.map(node => ({
         id: node.node.id_,
-        content: node.node.text || '',
+        content: (node.node as any).text || '',
         metadata: node.node.metadata,
         score: node.score || 0,
         relevanceScore: this.calculateRelevanceScore(node, query),
@@ -199,7 +199,7 @@ class LlamaIndexService {
 
       // Simulate hierarchical scoring based on content length
       return nodes.map(node => {
-        const contentLength = (node.node.text || '').length;
+        const contentLength = ((node.node as any).text || '').length;
         let level: 'title' | 'paragraph' | 'document' = 'paragraph';
         let weight = 0.5;
 
@@ -213,7 +213,7 @@ class LlamaIndexService {
 
         return {
           id: node.node.id_,
-          content: node.node.text || '',
+          content: (node.node as any).text || '',
           metadata: node.node.metadata,
           score: (node.score || 0) * weight,
           relevanceScore: this.calculateRelevanceScore(node, query) * weight,
@@ -363,7 +363,7 @@ class LlamaIndexService {
   private calculateRelevanceScore(node: any, query: string): number {
     let score = node.score || 0;
     
-    const content = node.node.getContent().toLowerCase();
+    const content = ((node.node as any).text || '').toLowerCase();
     const metadata = node.node.metadata;
     const queryTerms = query.toLowerCase().split(' ');
 
@@ -389,7 +389,7 @@ class LlamaIndexService {
   }
 
   private determineNodeLevel(node: any): 'title' | 'paragraph' | 'document' {
-    const content = node.getContent();
+    const content = (node as any).text || '';
     
     if (content.length < 200) return 'title';
     if (content.length < 1000) return 'paragraph';
@@ -414,7 +414,7 @@ class LlamaIndexService {
     groupedNodes.forEach((docNodes, docId) => {
       if (docNodes.length > 1) {
         // Combine content and average scores
-        const combinedContent = docNodes.map(n => n.node.getContent()).join('\n\n');
+        const combinedContent = docNodes.map(n => (n.node as any).text || '').join('\n\n');
         const avgScore = docNodes.reduce((sum, n) => sum + (n.score || 0), 0) / docNodes.length;
         
         mergedResults.push({
@@ -428,7 +428,7 @@ class LlamaIndexService {
         const node = docNodes[0];
         mergedResults.push({
           id: node.node.id_,
-          content: node.node.getContent(),
+          content: (node.node as any).text || '',
           metadata: node.node.metadata,
           score: node.score || 0,
           relevanceScore: node.score || 0
