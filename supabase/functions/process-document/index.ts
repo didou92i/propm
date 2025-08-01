@@ -86,18 +86,63 @@ serve(async (req) => {
       // Handle plain text files
       extractedText = await file.text();
     } else if (file.type === 'application/pdf') {
-      // Handle PDF files using text extraction first, then OCR if needed
-      console.log('PDF processing: Attempting text extraction...');
+      // Handle PDF files using GPT-4.1 vision capabilities
+      console.log('PDF processing: Converting to base64 for GPT-4.1 analysis...');
       
-      try {
-        // For now, we'll inform users to convert PDFs to images or text
-        // as direct PDF text extraction requires complex libraries
-        throw new Error('PDF processing temporarily unavailable. Please convert your PDF to a text file (.txt) or image format (.jpg, .png) for processing.');
-        
-      } catch (pdfError) {
-        console.error('PDF processing failed:', pdfError);
-        throw new Error(`PDF processing failed: ${pdfError.message}. Veuillez convertir votre PDF en fichier texte (.txt) ou en image (.jpg, .png) pour le traitement.`);
+      const arrayBuffer = await file.arrayBuffer();
+      const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+      
+      console.log('Sending PDF to GPT-4.1 for text extraction...');
+      
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4.1-2025-04-14',
+          messages: [
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'text',
+                  text: 'Analysez ce document PDF et extrayez tout le contenu textuel. Conservez la structure et la mise en forme autant que possible. Retournez uniquement le texte extrait.'
+                },
+                {
+                  type: 'image_url',
+                  image_url: {
+                    url: `data:application/pdf;base64,${base64}`
+                  }
+                }
+              ]
+            }
+          ],
+          max_tokens: 4000
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('OpenAI API error for PDF:', errorText);
+        throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
       }
+
+      const result = await response.json();
+      
+      if (!result || !result.choices || !Array.isArray(result.choices) || result.choices.length === 0) {
+        console.error('Invalid OpenAI PDF response structure:', result);
+        throw new Error('Invalid response from OpenAI API for PDF analysis');
+      }
+
+      const firstChoice = result.choices[0];
+      if (!firstChoice || !firstChoice.message || !firstChoice.message.content) {
+        console.error('Invalid PDF choice structure:', firstChoice);
+        throw new Error('Invalid response from OpenAI API - no PDF content');
+      }
+
+      extractedText = firstChoice.message.content;
     } else if (file.type === 'application/msword' || file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
       // Handle Word documents using a text extraction approach
       console.log('Word document processing: Attempting basic text extraction...');
@@ -153,14 +198,14 @@ serve(async (req) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4o',
+          model: 'gpt-4.1-2025-04-14',
           messages: [
             {
               role: 'user',
               content: [
                 {
                   type: 'text',
-                  text: 'Extract all text content from this image using OCR. Return only the extracted text content, preserving the structure when possible.'
+                  text: 'Analysez cette image et extrayez tout le contenu textuel avec OCR. Conservez la structure et la mise en forme. Retournez uniquement le texte extrait de manière précise et complète.'
                 },
                 {
                   type: 'image_url',
