@@ -7,14 +7,18 @@ import { ParallaxBackground } from "@/components/ParallaxBackground";
 import { FloatingActionButton } from "@/components/FloatingActionButton";
 import { MorphingIcon } from "@/components/MorphingIcon";
 import { PlatformDiagnostics } from "@/components/PlatformDiagnostics";
+import { SemanticSearchDialog } from "@/components/SemanticSearchDialog";
+import { MonitoringDashboard } from "@/components/MonitoringDashboard";
 import { useAgentTheme } from "@/hooks/useAgentTheme";
-import { Bot, Sparkles, Plus, Settings, FileSearch, Activity } from "lucide-react";
+import { Bot, Sparkles, Plus, Settings, FileSearch, Activity, BarChart3 } from "lucide-react";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 
 const Index = () => {
   const [selectedAgent, setSelectedAgent] = useState("redacpro");
   const [isNewChatMode, setIsNewChatMode] = useState(false);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
+  const [showSemanticSearch, setShowSemanticSearch] = useState(false);
+  const [showMonitoring, setShowMonitoring] = useState(false);
   const [sharedContext, setSharedContext] = useState<{
     sourceAgent: string;
     messages: any[];
@@ -29,8 +33,12 @@ const Index = () => {
     window.location.reload();
   };
 
-  const handleQuickAction = () => {
-    console.log("Quick semantic search action triggered");
+  const handleSemanticSearch = () => {
+    setShowSemanticSearch(true);
+  };
+
+  const handleMonitoring = () => {
+    setShowMonitoring(true);
   };
 
   const handleDiagnostics = () => {
@@ -94,14 +102,25 @@ const Index = () => {
           
           <FloatingActionButton 
             icon={FileSearch} 
-            onClick={handleQuickAction} 
+            onClick={handleSemanticSearch} 
             position="bottom-left" 
             variant="secondary" 
             size="sm" 
             tooltip="Recherche sémantique" 
           />
 
-          {/* Diagnostics Dialog */}
+          <div className="fixed bottom-6 left-20 z-40">
+            <FloatingActionButton 
+              icon={BarChart3} 
+              onClick={handleMonitoring} 
+              position="bottom-left" 
+              variant="accent" 
+              size="sm" 
+              tooltip="Monitoring & Analytics" 
+            />
+          </div>
+
+          {/* Dialogs */}
           <Dialog open={showDiagnostics} onOpenChange={setShowDiagnostics}>
             <DialogTrigger asChild>
               <div className="fixed top-6 right-6 z-50">
@@ -117,6 +136,17 @@ const Index = () => {
             </DialogTrigger>
             <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
               <PlatformDiagnostics />
+            </DialogContent>
+          </Dialog>
+
+          <SemanticSearchDialog 
+            open={showSemanticSearch} 
+            onOpenChange={setShowSemanticSearch} 
+          />
+
+          <Dialog open={showMonitoring} onOpenChange={setShowMonitoring}>
+            <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+              <MonitoringDashboard />
             </DialogContent>
           </Dialog>
         </div>

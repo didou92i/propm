@@ -1,13 +1,17 @@
 
 import { useState, useRef, useEffect } from "react";
-import { Send, Bot, User } from "lucide-react";
+import { Send, Bot, User, Download, FileText, MoreVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 import { SkeletonTyping } from "@/components/SkeletonMessage";
 import { ChatAttachment } from "@/components/ChatAttachment";
 import { MessageWithAttachments } from "@/components/MessageWithAttachments";
+import { ConversationExport } from "@/components/ConversationExport";
+import { DocumentTemplates } from "@/components/DocumentTemplates";
 import { useRipple } from "@/hooks/useRipple";
 import { useConversationHistory } from "@/hooks/useConversationHistory";
 import { Message, MessageAttachment } from "@/types/chat";
@@ -70,6 +74,7 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
   const [userSession] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const [contextShared, setContextShared] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const createRipple = useRipple('intense');
   const { toast } = useToast();
@@ -320,6 +325,15 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
     createRipple(e);
   };
 
+  const handleUseTemplate = (content: string) => {
+    setInput(content);
+    setShowTemplates(false);
+    toast({
+      title: "Modèle appliqué",
+      description: "Le modèle a été inséré dans la zone de saisie"
+    });
+  };
+
   const currentAgent = agentInfo[selectedAgent as keyof typeof agentInfo];
 
   return (
@@ -463,26 +477,62 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
           onAttachmentsChange={setAttachments}
           disabled={isLoading || processingAttachment}
         />
-        <form onSubmit={handleSubmit} className="flex gap-4 mt-2">
+        {/* Barre d'outils */}
+        <div className="flex items-center gap-2 mb-2">
+          <Dialog open={showTemplates} onOpenChange={setShowTemplates}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm" className="flex items-center gap-2">
+                <FileText className="w-4 h-4" />
+                Modèles
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto glass">
+              <DocumentTemplates 
+                selectedAgent={selectedAgent}
+                onUseTemplate={handleUseTemplate}
+              />
+            </DialogContent>
+          </Dialog>
+          
+          {messages.length > 0 && (
+            <ConversationExport 
+              messages={messages}
+              agentName={currentAgent?.name || selectedAgent}
+            >
+              <Button variant="outline" size="sm" className="flex items-center gap-2">
+                <Download className="w-4 h-4" />
+                Exporter
+              </Button>
+            </ConversationExport>
+          )}
+        </div>
+        
+        <form onSubmit={handleSubmit} className="flex gap-4">
           <Textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder={attachments.length > 0 ? "Posez votre question sur les documents..." : "Écrivez un message..."}
-            className="flex-1 min-h-[60px] max-h-32 resize-none bg-card border-border/40 focus:border-primary transition-colors"
+            className="resize-none glass neomorphism-subtle focus:neomorphism hover-glow"
+            rows={3}
+            disabled={isLoading || processingAttachment}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
-                handleSubmit(e);
+                sendMessage(input);
               }
             }}
           />
-          <Button
-            type="submit"
+          <Button 
+            type="submit" 
             disabled={(!input.trim() && attachments.length === 0) || isLoading || processingAttachment}
-            className="gradient-agent-animated hover-lift ripple-container px-6 border-0 text-white neomorphism-subtle"
+            className="self-end gradient-agent-animated text-white hover-lift neomorphism-hover ripple-container transform-3d glass-hover shadow-glow"
             onClick={handleSendClick}
           >
-            <Send className="w-4 h-4" />
+            {isLoading ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+            ) : (
+              <Send className="w-4 h-4" />
+            )}
           </Button>
         </form>
         <p className="text-xs text-muted-foreground mt-2 text-center">
