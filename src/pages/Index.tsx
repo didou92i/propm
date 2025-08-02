@@ -61,8 +61,7 @@ const Index = () => {
               <div className="flex items-center gap-4">
                 <SidebarTrigger className="p-2 hover-lift neomorphism-hover" />
                 <div>
-                  <h1 className="agent-transition text-gray-200 text-lg font-bold">Bienvenu sur Propm.fr
-                </h1>
+                  <h1 className="agent-transition text-gray-200 text-lg font-bold">Bienvenue sur Propm.fr</h1>
                 </div>
               </div>
               {/* Agent indicator with morphing icon */}
