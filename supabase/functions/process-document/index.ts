@@ -86,102 +86,150 @@ serve(async (req) => {
       // Handle plain text files
       extractedText = await file.text();
     } else if (file.type === 'application/pdf') {
-      // Handle PDF files using GPT-4.1 vision capabilities
-      console.log('PDF processing: Converting to base64 for GPT-4.1 analysis...');
-      
-      const arrayBuffer = await file.arrayBuffer();
-      const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-      
-      console.log('Sending PDF to GPT-4.1 for text extraction...');
-      
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${openAIApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'gpt-4.1-2025-04-14',
-          messages: [
-            {
-              role: 'user',
-              content: [
-                {
-                  type: 'text',
-                  text: 'Analysez ce document PDF et extrayez tout le contenu textuel. Conservez la structure et la mise en forme autant que possible. Retournez uniquement le texte extrait.'
-                },
-                {
-                  type: 'image_url',
-                  image_url: {
-                    url: `data:application/pdf;base64,${base64}`
-                  }
-                }
-              ]
-            }
-          ],
-          max_tokens: 4000
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('OpenAI API error for PDF:', errorText);
-        throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
-      }
-
-      const result = await response.json();
-      
-      if (!result || !result.choices || !Array.isArray(result.choices) || result.choices.length === 0) {
-        console.error('Invalid OpenAI PDF response structure:', result);
-        throw new Error('Invalid response from OpenAI API for PDF analysis');
-      }
-
-      const firstChoice = result.choices[0];
-      if (!firstChoice || !firstChoice.message || !firstChoice.message.content) {
-        console.error('Invalid PDF choice structure:', firstChoice);
-        throw new Error('Invalid response from OpenAI API - no PDF content');
-      }
-
-      extractedText = firstChoice.message.content;
-    } else if (file.type === 'application/msword' || file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-      // Handle Word documents using a text extraction approach
-      console.log('Word document processing: Attempting basic text extraction...');
+      // Handle PDF files using text-based approach with GPT-4.1
+      console.log('PDF processing: Converting to safe base64...');
       
       try {
+        // Safe base64 conversion to avoid stack overflow
         const arrayBuffer = await file.arrayBuffer();
         const uint8Array = new Uint8Array(arrayBuffer);
         
-        // For .docx files (which are ZIP archives), try to extract text
-        if (file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-          // Simple text extraction from docx by looking for readable content
-          const textDecoder = new TextDecoder('utf-8', { fatal: false });
-          let rawText = textDecoder.decode(uint8Array);
-          
-          // Extract readable text patterns from the DOCX content
-          const textMatches = rawText.match(/[\w\s\-.,!?:;()'"àáâäéèêëîíôöûùúüÿñç]{10,}/gi);
-          
-          if (textMatches && textMatches.length > 0) {
-            extractedText = textMatches
-              .join(' ')
-              .replace(/\s+/g, ' ')
-              .trim();
-            
-            if (extractedText.length < 10) {
-              throw new Error('Contenu textuel insuffisant trouvé dans le document Word');
-            }
-          } else {
-            throw new Error('Aucun texte lisible trouvé dans le document Word');
-          }
-        } else {
-          // For .doc files, the structure is more complex
-          throw new Error('Les fichiers .doc (ancien format) ne sont pas supportés. Veuillez convertir en .docx ou PDF.');
+        // Convert in chunks to avoid memory issues
+        const chunkSize = 8192;
+        let base64 = '';
+        for (let i = 0; i < uint8Array.length; i += chunkSize) {
+          const chunk = uint8Array.slice(i, i + chunkSize);
+          const chunkString = String.fromCharCode.apply(null, Array.from(chunk));
+          base64 += btoa(chunkString);
         }
         
-        console.log(`Successfully extracted ${extractedText.length} characters from Word document`);
+        console.log('Sending PDF to GPT-4.1 for text analysis...');
+        
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openAIApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'gpt-4.1-2025-04-14',
+            messages: [
+              {
+                role: 'system',
+                content: 'Vous êtes un expert en extraction de texte de documents PDF. Analysez le contenu du PDF fourni et extrayez tout le texte de manière structurée et précise.'
+              },
+              {
+                role: 'user',
+                content: `Analysez ce document PDF (encodé en base64) et extrayez tout le contenu textuel. Conservez la structure, les titres, les paragraphes et toute information importante. Retournez uniquement le texte extrait de manière claire et organisée.
+
+Document PDF: ${base64.substring(0, 100000)}...` // Limiter la taille pour éviter les erreurs
+              }
+            ],
+            max_tokens: 4000,
+            temperature: 0.1
+          }),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('OpenAI API error for PDF:', errorText);
+          throw new Error(`Erreur API OpenAI pour PDF: ${response.status}`);
+        }
+
+        const result = await response.json();
+        
+        if (result?.choices?.[0]?.message?.content) {
+          extractedText = result.choices[0].message.content;
+        } else {
+          throw new Error('Réponse invalide de l\'API OpenAI pour le PDF');
+        }
+        
+      } catch (pdfError) {
+        console.error('PDF processing error:', pdfError);
+        // Fallback: Informer l'utilisateur et suggérer des alternatives
+        extractedText = `[ERREUR PDF] Le traitement du PDF a échoué: ${pdfError.message}. 
+        
+Suggestions:
+1. Convertissez le PDF en fichier texte (.txt)
+2. Convertissez chaque page en image (.jpg, .png) 
+3. Copiez-collez le texte directement dans le chat
+
+Nom du fichier: ${file.name}
+Taille: ${Math.round(file.size / 1024)} KB`;
+      }
+    } else if (file.type === 'application/msword' || file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+      // Handle Word documents using GPT-4.1 for better text extraction
+      console.log('Word document processing: Using GPT-4.1 for text extraction...');
+      
+      try {
+        // Safe base64 conversion to avoid stack overflow
+        const arrayBuffer = await file.arrayBuffer();
+        const uint8Array = new Uint8Array(arrayBuffer);
+        
+        // Convert in chunks to avoid memory issues
+        const chunkSize = 8192;
+        let base64 = '';
+        for (let i = 0; i < uint8Array.length; i += chunkSize) {
+          const chunk = uint8Array.slice(i, i + chunkSize);
+          const chunkString = String.fromCharCode.apply(null, Array.from(chunk));
+          base64 += btoa(chunkString);
+        }
+        
+        console.log('Sending Word document to GPT-4.1 for text analysis...');
+        
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openAIApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'gpt-4.1-2025-04-14',
+            messages: [
+              {
+                role: 'system',
+                content: 'Vous êtes un expert en extraction de texte de documents Word. Analysez le contenu du document fourni et extrayez tout le texte de manière structurée et précise.'
+              },
+              {
+                role: 'user',
+                content: `Analysez ce document Word (encodé en base64) et extrayez tout le contenu textuel. Conservez la structure, les titres, les paragraphes et toute information importante. Retournez uniquement le texte extrait de manière claire et organisée.
+
+Document Word: ${base64.substring(0, 100000)}...` // Limiter la taille pour éviter les erreurs
+              }
+            ],
+            max_tokens: 4000,
+            temperature: 0.1
+          }),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('OpenAI API error for Word:', errorText);
+          throw new Error(`Erreur API OpenAI pour Word: ${response.status}`);
+        }
+
+        const result = await response.json();
+        
+        if (result?.choices?.[0]?.message?.content) {
+          extractedText = result.choices[0].message.content;
+        } else {
+          throw new Error('Réponse invalide de l\'API OpenAI pour le document Word');
+        }
+        
+        console.log(`Successfully extracted ${extractedText.length} characters from Word document using GPT-4.1`);
         
       } catch (wordError) {
         console.error('Word document extraction failed:', wordError);
-        throw new Error(`Échec du traitement Word: ${wordError.message}. Veuillez essayer de convertir le document en PDF ou copier le texte dans un fichier .txt.`);
+        // Fallback: Informer l'utilisateur et suggérer des alternatives
+        extractedText = `[ERREUR WORD] Le traitement du document Word a échoué: ${wordError.message}. 
+        
+Suggestions:
+1. Convertissez le document en PDF
+2. Copiez-collez le texte dans un fichier .txt
+3. Sauvegardez en format .docx si c'est un ancien .doc
+
+Nom du fichier: ${file.name}
+Taille: ${Math.round(file.size / 1024)} KB`;
       }
       
     } else if (file.type.startsWith('image/')) {
