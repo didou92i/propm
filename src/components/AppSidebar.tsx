@@ -150,6 +150,16 @@ export function AppSidebar({ selectedAgent, onAgentSelect, onContextShare }: App
                           }`}
                         />
                       </div>
+                    ) : agent.id === "arrete" ? (
+                      <div className="w-5 h-5 rounded-full overflow-hidden">
+                        <img 
+                          src="/lovable-uploads/47594ea7-a3ab-47c8-b4f5-6081c3b7f039.png" 
+                          alt="ArreteForritorial Avatar" 
+                          className={`w-5 h-5 object-cover transition-all duration-300 ${
+                            selectedAgent === agent.id ? 'scale-110' : ''
+                          }`}
+                        />
+                      </div>
                     ) : (
                       <agent.icon className={`w-5 h-5 transition-all duration-300 ${
                         selectedAgent === agent.id ? 'text-primary scale-110' : agent.color

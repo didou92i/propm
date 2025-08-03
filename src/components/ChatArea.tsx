@@ -354,8 +354,14 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
                   alt="CDS Pro Avatar" 
                   className="w-16 h-16 object-cover rounded-full"
                 />
+              ) : selectedAgent === 'arrete' ? (
+                <img 
+                  src="/lovable-uploads/47594ea7-a3ab-47c8-b4f5-6081c3b7f039.png"
+                  alt="ArreteForritorial Avatar" 
+                  className="w-16 h-16 object-cover rounded-full"
+                />
               ) : (
-                <Bot className="w-12 h-12 text-primary" />
+                <Bot className="w-16 h-16 text-primary" />
               )}
             </div>
             <h1 className="text-2xl font-bold mb-2 animate-scale-in">
@@ -404,6 +410,12 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
                     <img 
                       src="/lovable-uploads/321ab54b-a748-42b7-b5e3-22717904fe90.png" 
                       alt="CDS Pro Avatar" 
+                      className="w-6 h-6 object-cover rounded-full"
+                    />
+                  ) : selectedAgent === 'arrete' ? (
+                    <img 
+                      src="/lovable-uploads/47594ea7-a3ab-47c8-b4f5-6081c3b7f039.png" 
+                      alt="ArreteForritorial Avatar" 
                       className="w-6 h-6 object-cover rounded-full"
                     />
                   ) : (
