@@ -1,158 +1,243 @@
-import React, { useState } from 'react';
-import { useAuth } from '@/hooks/useAuth';
-import { Button } from '@/components/ui/button';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
-import { Download, Trash2, Edit, Shield, Mail, Eye } from 'lucide-react';
+import { Download, Trash2, Eye, Edit, Shield, CheckCircle, AlertCircle, Clock, Send, Mail } from 'lucide-react';
+
+interface GDPRRequest {
+  id: string;
+  request_type: string;
+  status: string;
+  description?: string;
+  reason?: string;
+  created_at: string;
+  updated_at: string;
+}
 
 export function GDPRRightsManager() {
   const { user } = useAuth();
-  const [loading, setLoading] = useState(false);
-  const [requestType, setRequestType] = useState<string>('');
-  const [requestReason, setRequestReason] = useState('');
-  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const [selectedRight, setSelectedRight] = useState('');
+  const [description, setDescription] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [requests, setRequests] = useState<GDPRRequest[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  const handleDataExport = async () => {
+  const rights = [
+    { value: 'access', label: 'Droit d\'accès', description: 'Demander une copie de vos données personnelles' },
+    { value: 'rectification', label: 'Droit de rectification', description: 'Corriger des données incorrectes' },
+    { value: 'erasure', label: 'Droit à l\'effacement', description: 'Supprimer vos données personnelles' },
+    { value: 'portability', label: 'Droit à la portabilité', description: 'Récupérer vos données dans un format standard' },
+    { value: 'restriction', label: 'Droit de limitation', description: 'Limiter le traitement de vos données' },
+    { value: 'objection', label: 'Droit d\'opposition', description: 'S\'opposer au traitement de vos données' }
+  ];
+
+  useEffect(() => {
+    if (user) {
+      loadGDPRRequests();
+    }
+  }, [user]);
+
+  const loadGDPRRequests = async () => {
     if (!user) return;
     
-    setLoading(true);
     try {
-      // Export user data from all tables
-      const { data: profile } = await supabase
-        .from('profiles')
+      const { data, error } = await supabase
+        .from('gdpr_requests')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .order('created_at', { ascending: false });
 
-      const { data: conversations } = await supabase
-        .from('conversations')
-        .select('*')
-        .eq('user_id', user.id);
-
-      const { data: documents } = await supabase
-        .from('documents')
-        .select('*')
-        .eq('user_id', user.id);
-
-      const exportData = {
-        export_date: new Date().toISOString(),
-        user_id: user.id,
-        email: user.email,
-        profile,
-        conversations,
-        documents,
-        metadata: {
-          total_conversations: conversations?.length || 0,
-          total_documents: documents?.length || 0,
-          account_created: user.created_at,
-        }
-      };
-
-      // Create and download JSON file
-      const blob = new Blob([JSON.stringify(exportData, null, 2)], {
-        type: 'application/json'
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `export-donnees-${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-
-      toast({
-        title: "Export terminé",
-        description: "Vos données ont été exportées avec succès.",
-      });
-
-      // Log the export request for audit
-      console.log('Data export requested by user:', {
-        userId: user.id,
-        timestamp: new Date().toISOString(),
-        dataTypes: ['profile', 'conversations', 'documents']
-      });
-
+      if (error) throw error;
+      // Map the database fields to our interface
+      const mappedData = (data || []).map((item: any) => ({
+        ...item,
+        description: item.description || item.reason || ''
+      }));
+      setRequests(mappedData);
     } catch (error) {
-      console.error('Export error:', error);
+      console.error('Error loading GDPR requests:', error);
       toast({
-        title: "Erreur d'export",
-        description: "Une erreur est survenue lors de l'export de vos données.",
+        title: "Erreur",
+        description: "Impossible de charger vos demandes RGPD.",
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  const handleDataDeletion = async () => {
+  const handleSubmit = async () => {
+    if (!selectedRight || !description.trim() || !user) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez sélectionner un droit et fournir une description.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const { error } = await supabase
+        .from('gdpr_requests')
+        .insert({
+          user_id: user.id,
+          request_type: selectedRight,
+          description: description.trim()
+        });
+
+      if (error) throw error;
+
+      // Log the action for audit
+      console.log('GDPR request created:', {
+        user_id: user.id,
+        action: 'gdpr_request_created',
+        resource_type: 'gdpr_request',
+        timestamp: new Date().toISOString(),
+        data: { request_type: selectedRight, description }
+      });
+
+      toast({
+        title: "Demande enregistrée",
+        description: "Votre demande RGPD a été enregistrée. Nous vous répondrons dans les 30 jours maximum.",
+      });
+      
+      setSelectedRight('');
+      setDescription('');
+      loadGDPRRequests(); // Refresh the list
+    } catch (error) {
+      console.error('Error submitting GDPR request:', error);
+      toast({
+        title: "Erreur",
+        description: "Une erreur s'est produite lors de l'enregistrement de votre demande.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const exportUserData = async () => {
     if (!user) return;
 
-    setLoading(true);
     try {
-      // Delete user data in correct order (respecting foreign keys)
-      await supabase.from('conversation_messages').delete().in(
-        'conversation_id',
-        (await supabase.from('conversations').select('id').eq('user_id', user.id)).data?.map(c => c.id) || []
-      );
-      
-      await supabase.from('conversations').delete().eq('user_id', user.id);
-      await supabase.from('documents').delete().eq('user_id', user.id);
-      await supabase.from('profiles').delete().eq('user_id', user.id);
+      // Get user data from various tables
+      const [profileData, conversationsData, documentsData, gdprData] = await Promise.all([
+        supabase.from('profiles').select('*').eq('user_id', user.id),
+        supabase.from('conversations').select('*').eq('user_id', user.id),
+        supabase.from('documents').select('*').eq('user_id', user.id),
+        supabase.from('gdpr_requests').select('*').eq('user_id', user.id)
+      ]);
 
-      // Log deletion request for audit
-      console.log('Account deletion requested by user:', {
-        userId: user.id,
-        timestamp: new Date().toISOString(),
-        action: 'full_account_deletion'
+      const userData = {
+        profile: profileData.data?.[0] || {},
+        conversations: conversationsData.data || [],
+        documents: documentsData.data || [],
+        gdpr_requests: gdprData.data || [],
+        auth: {
+          email: user.email,
+          created_at: user.created_at
+        },
+        exportedAt: new Date().toISOString(),
+        format: 'JSON',
+        version: '1.0',
+        notes: 'Export conforme au RGPD - Article 20 (Droit à la portabilité)'
+      };
+
+      // Log the export action
+      console.log('Data export requested:', {
+        user_id: user.id,
+        action: 'data_export',
+        resource_type: 'user_data',
+        timestamp: new Date().toISOString()
       });
+
+      const blob = new Blob([JSON.stringify(userData, null, 2)], { type: 'application/json' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `mes-donnees-rgpd-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
 
       toast({
-        title: "Compte supprimé",
-        description: "Votre compte et toutes vos données ont été supprimés.",
+        title: "Export réussi",
+        description: "Vos données ont été exportées avec succès.",
       });
-
-      // Sign out the user
-      await supabase.auth.signOut();
-
     } catch (error) {
-      console.error('Deletion error:', error);
+      console.error('Error exporting user data:', error);
       toast({
-        title: "Erreur de suppression",
-        description: "Une erreur est survenue lors de la suppression de votre compte.",
+        title: "Erreur",
+        description: "Impossible d'exporter vos données.",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
-      setShowConfirmDelete(false);
     }
   };
 
-  const handleRightsRequest = async () => {
-    if (!user || !requestType || !requestReason) return;
+  const deleteAccount = async () => {
+    if (!user) return;
 
-    // Log the rights request for processing
-    console.log('GDPR rights request:', {
-      userId: user.id,
-      email: user.email,
-      requestType,
-      reason: requestReason,
-      timestamp: new Date().toISOString(),
-    });
+    try {
+      // Create a deletion request instead of immediately deleting
+      const { error } = await supabase
+        .from('gdpr_requests')
+        .insert({
+          user_id: user.id,
+          request_type: 'erasure',
+          description: 'Demande de suppression complète du compte utilisateur (Article 17 RGPD)'
+        });
 
-    toast({
-      title: "Demande enregistrée",
-      description: "Votre demande a été enregistrée et sera traitée dans les meilleurs délais.",
-    });
+      if (error) throw error;
 
-    setRequestType('');
-    setRequestReason('');
+      // Log the deletion request
+      console.log('Account deletion requested:', {
+        user_id: user.id,
+        action: 'account_deletion_requested',
+        resource_type: 'user_account',
+        timestamp: new Date().toISOString()
+      });
+
+      toast({
+        title: "Demande de suppression enregistrée",
+        description: "Votre demande de suppression de compte a été enregistrée. Nous procéderons à la suppression dans les 30 jours conformément au RGPD.",
+      });
+
+      setShowDeleteConfirm(false);
+      loadGDPRRequests(); // Refresh the list
+    } catch (error) {
+      console.error('Error requesting account deletion:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'enregistrer votre demande de suppression.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return <Badge variant="secondary"><Clock className="h-3 w-3 mr-1" />En attente</Badge>;
+      case 'processing':
+        return <Badge variant="outline"><Send className="h-3 w-3 mr-1" />En cours</Badge>;
+      case 'completed':
+        return <Badge variant="default"><CheckCircle className="h-3 w-3 mr-1" />Terminé</Badge>;
+      case 'rejected':
+        return <Badge variant="destructive"><AlertCircle className="h-3 w-3 mr-1" />Rejeté</Badge>;
+      default:
+        return <Badge variant="secondary">{status}</Badge>;
+    }
   };
 
   if (!user) {
@@ -168,31 +253,77 @@ export function GDPRRightsManager() {
 
   return (
     <div className="space-y-6">
+      {/* Rights Request Section */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5" />
-            Gestion de vos données personnelles (RGPD)
+            Exercer vos droits RGPD
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Conformément au Règlement Général sur la Protection des Données (RGPD), 
-            vous disposez de droits sur vos données personnelles.
-          </p>
+          <div>
+            <label className="text-sm font-medium mb-2 block">
+              Sélectionnez le droit que vous souhaitez exercer :
+            </label>
+            <Select value={selectedRight} onValueChange={setSelectedRight}>
+              <SelectTrigger>
+                <SelectValue placeholder="Choisir un droit..." />
+              </SelectTrigger>
+              <SelectContent>
+                {rights.map((right) => (
+                  <SelectItem key={right.value} value={right.value}>
+                    <div>
+                      <div className="font-medium">{right.label}</div>
+                      <div className="text-xs text-muted-foreground">{right.description}</div>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
+          <div>
+            <label className="text-sm font-medium mb-2 block">
+              Description de votre demande :
+            </label>
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Décrivez précisément votre demande..."
+              rows={4}
+            />
+          </div>
+
+          <Button 
+            onClick={handleSubmit} 
+            disabled={isSubmitting || !user}
+            className="w-full"
+          >
+            {isSubmitting ? 'Envoi en cours...' : 'Soumettre la demande'}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Quick Actions */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Actions rapides</CardTitle>
+        </CardHeader>
+        <CardContent>
           <div className="grid gap-4 md:grid-cols-2">
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Download className="h-4 w-4 text-blue-500" />
-                  <h3 className="font-medium">Droit d'accès et de portabilité</h3>
+                  <h3 className="font-medium">Exporter mes données</h3>
                 </div>
                 <p className="text-sm text-muted-foreground mb-3">
-                  Téléchargez toutes vos données dans un format structuré.
+                  Téléchargez toutes vos données dans un format structuré (Article 20 RGPD).
                 </p>
-                <Button onClick={handleDataExport} disabled={loading} size="sm">
-                  Exporter mes données
+                <Button onClick={exportUserData} size="sm" variant="outline">
+                  <Download className="h-4 w-4 mr-2" />
+                  Télécharger
                 </Button>
               </CardContent>
             </Card>
@@ -201,40 +332,35 @@ export function GDPRRightsManager() {
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Trash2 className="h-4 w-4 text-red-500" />
-                  <h3 className="font-medium">Droit à l'effacement</h3>
+                  <h3 className="font-medium">Supprimer mon compte</h3>
                 </div>
                 <p className="text-sm text-muted-foreground mb-3">
-                  Supprimez définitivement votre compte et toutes vos données.
+                  Demander la suppression définitive de votre compte (Article 17 RGPD).
                 </p>
-                <Dialog open={showConfirmDelete} onOpenChange={setShowConfirmDelete}>
+                <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
                   <DialogTrigger asChild>
-                    <Button variant="destructive" size="sm">
-                      Supprimer mon compte
+                    <Button size="sm" variant="destructive">
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Supprimer
                     </Button>
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
-                      <DialogTitle>Confirmer la suppression</DialogTitle>
+                      <DialogTitle>Confirmer la suppression du compte</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4">
                       <Alert>
-                        <Trash2 className="h-4 w-4" />
+                        <AlertCircle className="h-4 w-4" />
                         <AlertDescription>
-                          Cette action est irréversible. Toutes vos données seront définitivement supprimées.
+                          Cette action créera une demande de suppression qui sera traitée dans les 30 jours conformément au RGPD. 
+                          Vos données seront définitivement supprimées après validation.
                         </AlertDescription>
                       </Alert>
                       <div className="flex gap-3">
-                        <Button 
-                          variant="destructive" 
-                          onClick={handleDataDeletion}
-                          disabled={loading}
-                        >
-                          Confirmer la suppression
+                        <Button variant="destructive" onClick={deleteAccount}>
+                          Confirmer la demande de suppression
                         </Button>
-                        <Button 
-                          variant="outline" 
-                          onClick={() => setShowConfirmDelete(false)}
-                        >
+                        <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>
                           Annuler
                         </Button>
                       </div>
@@ -243,99 +369,54 @@ export function GDPRRightsManager() {
                 </Dialog>
               </CardContent>
             </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <Edit className="h-4 w-4 text-green-500" />
-                  <h3 className="font-medium">Droit de rectification</h3>
-                </div>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Demandez la correction de vos données personnelles.
-                </p>
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => setRequestType('rectification')}
-                    >
-                      Demander une correction
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Demande de rectification</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div>
-                        <Label>Détaillez votre demande</Label>
-                        <Textarea
-                          placeholder="Décrivez les données à corriger et les corrections souhaitées..."
-                          value={requestReason}
-                          onChange={(e) => setRequestReason(e.target.value)}
-                        />
-                      </div>
-                      <Button onClick={handleRightsRequest} disabled={!requestReason}>
-                        Envoyer la demande
-                      </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <Eye className="h-4 w-4 text-purple-500" />
-                  <h3 className="font-medium">Droit d'opposition</h3>
-                </div>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Vous opposez au traitement de vos données pour motifs légitimes.
-                </p>
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => setRequestType('opposition')}
-                    >
-                      Exercer mon droit d'opposition
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Droit d'opposition</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div>
-                        <Label>Motifs de votre opposition</Label>
-                        <Textarea
-                          placeholder="Expliquez les raisons de votre opposition au traitement..."
-                          value={requestReason}
-                          onChange={(e) => setRequestReason(e.target.value)}
-                        />
-                      </div>
-                      <Button onClick={handleRightsRequest} disabled={!requestReason}>
-                        Envoyer la demande
-                      </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              </CardContent>
-            </Card>
           </div>
-
-          <Alert>
-            <Mail className="h-4 w-4" />
-            <AlertDescription>
-              Pour toute question relative à vos données personnelles, contactez notre DPO : 
-              <strong> dpo@votre-entreprise.fr</strong>
-            </AlertDescription>
-          </Alert>
         </CardContent>
       </Card>
+
+      {/* Previous Requests Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Vos demandes RGPD</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="text-center py-4">Chargement...</div>
+          ) : requests.length > 0 ? (
+            <div className="space-y-3">
+              {requests.map((request) => (
+                <div key={request.id} className="border rounded-lg p-4">
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <h4 className="font-medium">
+                        {rights.find(r => r.value === request.request_type)?.label || request.request_type}
+                      </h4>
+                      <p className="text-sm text-muted-foreground">{request.description || request.reason || ''}</p>
+                    </div>
+                    {getStatusBadge(request.status)}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Créée le {new Date(request.created_at).toLocaleDateString('fr-FR')} • 
+                    Modifiée le {new Date(request.updated_at).toLocaleDateString('fr-FR')}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-4 text-muted-foreground">
+              Aucune demande RGPD enregistrée
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Contact DPO */}
+      <Alert>
+        <Mail className="h-4 w-4" />
+        <AlertDescription>
+          Pour toute question relative à vos données personnelles ou aux délais de traitement, contactez notre DPO : 
+          <strong> dpo@votre-entreprise.fr</strong>
+        </AlertDescription>
+      </Alert>
     </div>
   );
 }

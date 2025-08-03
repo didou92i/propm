@@ -9,6 +9,7 @@ import { PlatformDiagnostics } from "@/components/PlatformDiagnostics";
 import { SemanticSearchDialog } from "@/components/SemanticSearchDialog";
 import { MonitoringDashboard } from "@/components/MonitoringDashboard";
 import { useAgentTheme } from "@/hooks/useAgentTheme";
+import { LegalFooter } from "@/components/LegalFooter";
 import { Bot, Sparkles, Plus, Settings, FileSearch, Activity, BarChart3 } from "lucide-react";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 const Index = () => {
@@ -74,6 +75,9 @@ const Index = () => {
 
             {/* Main Chat Area */}
             <ChatArea selectedAgent={selectedAgent} sharedContext={sharedContext} />
+            
+            {/* Legal Footer */}
+            <LegalFooter />
           </div>
           
           {/* Enhanced Floating Action Buttons */}

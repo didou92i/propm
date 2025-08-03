@@ -1,6 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { CookiePreferences } from '@/components/CookiePreferences';
 import { Shield, FileText, Building, Cookie } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -52,15 +53,7 @@ export function LegalFooter() {
             
             <Separator orientation="vertical" className="h-4" />
             
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => navigate('/cookies')}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <Cookie className="h-3 w-3 mr-1" />
-              Cookies
-            </Button>
+            <CookiePreferences />
             
             <Separator orientation="vertical" className="h-4" />
             
