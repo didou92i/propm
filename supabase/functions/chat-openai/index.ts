@@ -320,6 +320,29 @@ serve(async (req) => {
         const statusData = await statusResponse.json();
         runStatus = statusData.status;
         console.log(`Run status: ${runStatus}`);
+        
+        // Handle requires_action status - submit empty tool outputs to continue
+        if (runStatus === 'requires_action') {
+          console.log('Run requires action, submitting empty tool outputs to continue...');
+          const submitResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs/${runId}/submit_tool_outputs`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${openAIApiKey}`,
+              'Content-Type': 'application/json',
+              'OpenAI-Beta': 'assistants=v2'
+            },
+            body: JSON.stringify({
+              tool_outputs: []
+            })
+          });
+          
+          if (submitResponse.ok) {
+            console.log('Successfully submitted empty tool outputs');
+          } else {
+            const errorData = await submitResponse.json();
+            console.warn('Failed to submit tool outputs:', errorData);
+          }
+        }
       }
       
       attempts_poll++;
