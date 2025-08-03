@@ -344,7 +344,7 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
             <div className="w-16 h-16 rounded-full gradient-agent-animated flex items-center justify-center mx-auto mb-6 float pulse-glow neomorphism overflow-hidden">
               {selectedAgent === 'redacpro' ? (
                 <img 
-                  src="/lovable-uploads/7500d95b-42e9-406d-89e9-55de70aea1ae.png" 
+                  src="/redacpro-avatar.png" 
                   alt="RedacPro Avatar" 
                   className="w-12 h-12 object-cover rounded-full"
                 />
@@ -396,7 +396,7 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
                 <div className="w-8 h-8 rounded-full gradient-agent-animated flex items-center justify-center flex-shrink-0 hover-lift neomorphism-hover overflow-hidden">
                   {selectedAgent === 'redacpro' ? (
                     <img 
-                      src="/lovable-uploads/7500d95b-42e9-406d-89e9-55de70aea1ae.png" 
+                      src="/redacpro-avatar.png" 
                       alt="RedacPro Avatar" 
                       className="w-6 h-6 object-cover rounded-full"
                     />
