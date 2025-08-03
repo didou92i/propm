@@ -30,12 +30,12 @@ export default function Legal() {
                   <div className="flex items-start gap-3">
                     <Building className="h-5 w-5 mt-1 text-muted-foreground" />
                     <div>
-                      <p><strong>Raison sociale :</strong> [Nom de votre entreprise]</p>
-                      <p><strong>Forme juridique :</strong> [SARL/SAS/etc.]</p>
-                      <p><strong>Capital social :</strong> [Montant] euros</p>
-                      <p><strong>SIRET :</strong> [Numéro SIRET]</p>
-                      <p><strong>RCS :</strong> [Ville] [Numéro RCS]</p>
-                      <p><strong>TVA Intracommunautaire :</strong> [Numéro TVA]</p>
+                      <p><strong>Raison sociale :</strong> RedacPro</p>
+                      <p><strong>Forme juridique :</strong> SAS</p>
+                      <p><strong>Capital social :</strong> 10 000 euros</p>
+                      <p><strong>SIRET :</strong> [À compléter]</p>
+                      <p><strong>RCS :</strong> [À compléter]</p>
+                      <p><strong>TVA Intracommunautaire :</strong> [À compléter]</p>
                     </div>
                   </div>
                   
@@ -43,23 +43,22 @@ export default function Legal() {
                     <MapPin className="h-5 w-5 mt-1 text-muted-foreground" />
                     <div>
                       <p><strong>Adresse du siège social :</strong></p>
-                      <p>[Votre adresse complète]</p>
-                      <p>[Code postal] [Ville]</p>
                       <p>France</p>
+                      <p>(Adresse complète à compléter)</p>
                     </div>
                   </div>
                   
                   <div className="flex items-start gap-3">
                     <Phone className="h-5 w-5 mt-1 text-muted-foreground" />
                     <div>
-                      <p><strong>Téléphone :</strong> +33 1 23 45 67 89</p>
+                      <p><strong>Téléphone :</strong> +33 (0)1 XX XX XX XX</p>
                     </div>
                   </div>
                   
                   <div className="flex items-start gap-3">
                     <Mail className="h-5 w-5 mt-1 text-muted-foreground" />
                     <div>
-                      <p><strong>Email :</strong> contact@votre-entreprise.fr</p>
+                      <p><strong>Email :</strong> contact@redacpro.fr</p>
                     </div>
                   </div>
                 </div>
@@ -68,9 +67,9 @@ export default function Legal() {
               <section>
                 <h2 className="text-xl font-semibold mb-4">Directeur de la publication</h2>
                 <div className="bg-muted p-4 rounded-lg">
-                  <p><strong>Nom :</strong> [Nom du directeur]</p>
-                  <p><strong>Qualité :</strong> [Gérant/Président/etc.]</p>
-                  <p><strong>Email :</strong> direction@votre-entreprise.fr</p>
+                  <p><strong>Nom :</strong> [Directeur RedacPro]</p>
+                  <p><strong>Qualité :</strong> Président</p>
+                  <p><strong>Email :</strong> direction@redacpro.fr</p>
                 </div>
               </section>
 
@@ -87,8 +86,8 @@ export default function Legal() {
               <section>
                 <h2 className="text-xl font-semibold mb-4">Délégué à la Protection des Données (DPO)</h2>
                 <div className="bg-blue-50 p-4 rounded-lg">
-                  <p><strong>Nom :</strong> [Nom du DPO ou organisme]</p>
-                  <p><strong>Email :</strong> dpo@votre-entreprise.fr</p>
+                  <p><strong>Nom :</strong> DPO RedacPro</p>
+                  <p><strong>Email :</strong> dpo@redacpro.fr</p>
                   <p><strong>Mission :</strong> Veille au respect du RGPD et traite les demandes relatives aux données personnelles</p>
                 </div>
               </section>
@@ -98,7 +97,7 @@ export default function Legal() {
                 <div className="space-y-3">
                   <p>
                     Le site et son contenu (textes, images, design, logo, etc.) sont protégés par le droit d'auteur 
-                    et appartiennent à [Nom de votre entreprise] ou à leurs auteurs respectifs.
+                    et appartiennent à RedacPro ou à leurs auteurs respectifs.
                   </p>
                   <p>
                     Toute reproduction, représentation, modification, publication, adaptation de tout ou partie 
@@ -150,7 +149,7 @@ export default function Legal() {
                 <p>
                   Les présentes mentions légales sont soumises au droit français. 
                   Tout litige relatif à l'utilisation du site sera de la compétence exclusive 
-                  des tribunaux de [Ville], nonobstant pluralité de défendeurs ou appel en garantie.
+                  des tribunaux de Paris, nonobstant pluralité de défendeurs ou appel en garantie.
                 </p>
               </section>
 
@@ -158,8 +157,8 @@ export default function Legal() {
                 <h2 className="text-xl font-semibold mb-4">Contact</h2>
                 <div className="bg-muted p-4 rounded-lg">
                   <p>Pour toute question concernant ces mentions légales :</p>
-                  <p><strong>Email :</strong> legal@votre-entreprise.fr</p>
-                  <p><strong>Courrier :</strong> [Adresse postale complète]</p>
+                  <p><strong>Email :</strong> contact@redacpro.fr</p>
+                  <p><strong>Courrier :</strong> RedacPro - France</p>
                 </div>
               </section>
 

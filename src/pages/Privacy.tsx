@@ -30,10 +30,10 @@ export default function Privacy() {
               <section className="mb-8">
                 <h2 className="text-xl font-semibold mb-4">1. Responsable du traitement</h2>
                 <div className="bg-muted p-4 rounded-lg">
-                  <p><strong>Raison sociale :</strong> [Votre Entreprise]</p>
-                  <p><strong>Adresse :</strong> [Votre Adresse]</p>
-                  <p><strong>Email :</strong> contact@votre-entreprise.fr</p>
-                  <p><strong>DPO :</strong> dpo@votre-entreprise.fr</p>
+                  <p><strong>Raison sociale :</strong> RedacPro</p>
+                  <p><strong>Adresse :</strong> France</p>
+                  <p><strong>Email :</strong> contact@redacpro.fr</p>
+                  <p><strong>DPO :</strong> dpo@redacpro.fr</p>
                 </div>
               </section>
 
@@ -145,7 +145,7 @@ export default function Privacy() {
                   </ul>
                   <p className="mt-3">
                     Pour exercer ces droits, utilisez l'interface dédiée dans votre compte ou contactez : 
-                    <strong> dpo@votre-entreprise.fr</strong>
+                    <strong> dpo@redacpro.fr</strong>
                   </p>
                 </div>
               </section>
@@ -186,7 +186,7 @@ export default function Privacy() {
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
                     <Mail className="h-4 w-4" />
-                    <span>DPO : dpo@votre-entreprise.fr</span>
+                    <span>DPO : dpo@redacpro.fr</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Phone className="h-4 w-4" />

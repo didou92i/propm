@@ -414,7 +414,7 @@ export function GDPRRightsManager() {
         <Mail className="h-4 w-4" />
         <AlertDescription>
           Pour toute question relative à vos données personnelles ou aux délais de traitement, contactez notre DPO : 
-          <strong> dpo@votre-entreprise.fr</strong>
+          <strong> dpo@redacpro.fr</strong>
         </AlertDescription>
       </Alert>
     </div>
