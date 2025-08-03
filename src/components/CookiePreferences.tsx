@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Cookie, Settings } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface CookiePreferences {
@@ -53,15 +52,13 @@ export function CookiePreferences() {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="text-xs">
-          <Cookie className="h-3 w-3 mr-1" />
+        <button className="hover:text-foreground transition-colors underline-offset-4 hover:underline">
           Cookies
-        </Button>
+        </button>
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Settings className="h-5 w-5" />
+          <DialogTitle>
             Préférences de cookies
           </DialogTitle>
         </DialogHeader>

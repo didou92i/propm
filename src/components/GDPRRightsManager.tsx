@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
-import { Download, Trash2, Eye, Edit, Shield, CheckCircle, AlertCircle, Clock, Send, Mail } from 'lucide-react';
+import { Download, Trash2, CheckCircle, AlertCircle, Clock, Send } from 'lucide-react';
 
 interface GDPRRequest {
   id: string;
@@ -228,13 +228,13 @@ export function GDPRRightsManager() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
-        return <Badge variant="secondary"><Clock className="h-3 w-3 mr-1" />En attente</Badge>;
+        return <Badge variant="secondary">En attente</Badge>;
       case 'processing':
-        return <Badge variant="outline"><Send className="h-3 w-3 mr-1" />En cours</Badge>;
+        return <Badge variant="outline">En cours</Badge>;
       case 'completed':
-        return <Badge variant="default"><CheckCircle className="h-3 w-3 mr-1" />Terminé</Badge>;
+        return <Badge variant="default">Terminé</Badge>;
       case 'rejected':
-        return <Badge variant="destructive"><AlertCircle className="h-3 w-3 mr-1" />Rejeté</Badge>;
+        return <Badge variant="destructive">Rejeté</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
@@ -243,7 +243,6 @@ export function GDPRRightsManager() {
   if (!user) {
     return (
       <Alert>
-        <Shield className="h-4 w-4" />
         <AlertDescription>
           Vous devez être connecté pour gérer vos données personnelles.
         </AlertDescription>
@@ -256,8 +255,7 @@ export function GDPRRightsManager() {
       {/* Rights Request Section */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5" />
+          <CardTitle>
             Exercer vos droits RGPD
           </CardTitle>
         </CardHeader>
@@ -312,63 +310,50 @@ export function GDPRRightsManager() {
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <Download className="h-4 w-4 text-blue-500" />
-                  <h3 className="font-medium">Exporter mes données</h3>
-                </div>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Téléchargez toutes vos données dans un format structuré (Article 20 RGPD).
-                </p>
-                <Button onClick={exportUserData} size="sm" variant="outline">
-                  <Download className="h-4 w-4 mr-2" />
-                  Télécharger
-                </Button>
-              </CardContent>
-            </Card>
+            <div className="border rounded-lg p-4">
+              <h3 className="font-medium mb-2">Exporter mes données</h3>
+              <p className="text-sm text-muted-foreground mb-3">
+                Téléchargez toutes vos données dans un format structuré (Article 20 RGPD).
+              </p>
+              <Button onClick={exportUserData} size="sm" variant="outline">
+                Télécharger
+              </Button>
+            </div>
 
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <Trash2 className="h-4 w-4 text-red-500" />
-                  <h3 className="font-medium">Supprimer mon compte</h3>
-                </div>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Demander la suppression définitive de votre compte (Article 17 RGPD).
-                </p>
-                <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-                  <DialogTrigger asChild>
-                    <Button size="sm" variant="destructive">
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Supprimer
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Confirmer la suppression du compte</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <Alert>
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertDescription>
-                          Cette action créera une demande de suppression qui sera traitée dans les 30 jours conformément au RGPD. 
-                          Vos données seront définitivement supprimées après validation.
-                        </AlertDescription>
-                      </Alert>
-                      <div className="flex gap-3">
-                        <Button variant="destructive" onClick={deleteAccount}>
-                          Confirmer la demande de suppression
-                        </Button>
-                        <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>
-                          Annuler
-                        </Button>
-                      </div>
+            <div className="border rounded-lg p-4">
+              <h3 className="font-medium mb-2">Supprimer mon compte</h3>
+              <p className="text-sm text-muted-foreground mb-3">
+                Demander la suppression définitive de votre compte (Article 17 RGPD).
+              </p>
+              <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+                <DialogTrigger asChild>
+                  <Button size="sm" variant="destructive">
+                    Supprimer
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Confirmer la suppression du compte</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <Alert>
+                      <AlertDescription>
+                        Cette action créera une demande de suppression qui sera traitée dans les 30 jours conformément au RGPD. 
+                        Vos données seront définitivement supprimées après validation.
+                      </AlertDescription>
+                    </Alert>
+                    <div className="flex gap-3">
+                      <Button variant="destructive" onClick={deleteAccount}>
+                        Confirmer la demande de suppression
+                      </Button>
+                      <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>
+                        Annuler
+                      </Button>
                     </div>
-                  </DialogContent>
-                </Dialog>
-              </CardContent>
-            </Card>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -411,7 +396,6 @@ export function GDPRRightsManager() {
 
       {/* Contact DPO */}
       <Alert>
-        <Mail className="h-4 w-4" />
         <AlertDescription>
           Pour toute question relative à vos données personnelles ou aux délais de traitement, contactez notre DPO : 
           <strong> dpo@redacpro.fr</strong>

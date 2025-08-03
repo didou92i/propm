@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { Settings, Shield, Cookie } from 'lucide-react';
 
 interface CookiePreferences {
   essential: boolean;
@@ -85,33 +84,30 @@ export function CookieConsent() {
 
   return (
     <>
-      <div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-background/95 backdrop-blur border-t shadow-lg">
-        <Card className="max-w-4xl mx-auto">
-          <CardContent className="p-6">
-            <div className="flex items-start gap-4">
-              <Cookie className="h-6 w-6 text-primary mt-1 flex-shrink-0" />
-              <div className="flex-1">
-                <h3 className="text-lg font-semibold mb-2">
-                  Respect de votre vie privée
-                </h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Nous utilisons des cookies pour améliorer votre expérience, analyser l'usage du site et personnaliser le contenu. 
-                  Vous pouvez choisir les types de cookies que vous acceptez.
-                </p>
-                <div className="flex flex-wrap gap-3">
-                  <Button onClick={acceptAll} className="bg-primary text-primary-foreground">
-                    Accepter tout
-                  </Button>
-                  <Button onClick={acceptEssential} variant="outline">
-                    Cookies essentiels uniquement
-                  </Button>
-                  <Sheet open={showPreferences} onOpenChange={setShowPreferences}>
-                    <SheetTrigger asChild>
-                      <Button variant="outline">
-                        <Settings className="h-4 w-4 mr-2" />
-                        Personnaliser
-                      </Button>
-                    </SheetTrigger>
+      <div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-background/95 backdrop-blur border-t">
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-card rounded-lg border p-6">
+            <div>
+              <h3 className="text-base font-medium mb-2">
+                Respect de votre vie privée
+              </h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Nous utilisons des cookies pour améliorer votre expérience, analyser l'usage du site et personnaliser le contenu. 
+                Vous pouvez choisir les types de cookies que vous acceptez.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <Button onClick={acceptAll} size="sm">
+                  Accepter tout
+                </Button>
+                <Button onClick={acceptEssential} variant="outline" size="sm">
+                  Essentiels uniquement
+                </Button>
+                <Sheet open={showPreferences} onOpenChange={setShowPreferences}>
+                  <SheetTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      Personnaliser
+                    </Button>
+                  </SheetTrigger>
                     <SheetContent side="right" className="w-full sm:max-w-md">
                       <SheetHeader>
                         <SheetTitle>Préférences de cookies</SheetTitle>
@@ -189,11 +185,10 @@ export function CookieConsent() {
                       </div>
                     </SheetContent>
                   </Sheet>
-                </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </>
   );

@@ -1,8 +1,5 @@
 import React from 'react';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
 import { CookiePreferences } from '@/components/CookiePreferences';
-import { Shield, FileText, Building, Cookie } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export function LegalFooter() {
@@ -10,62 +7,50 @@ export function LegalFooter() {
 
   return (
     <footer className="border-t bg-background/50 backdrop-blur">
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto px-6 py-4">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-            <span>© 2024 Votre Entreprise. Tous droits réservés.</span>
+          <div className="text-xs text-muted-foreground">
+            <span>© 2024 RedacPro. Tous droits réservés.</span>
           </div>
           
-          <div className="flex flex-wrap items-center gap-2">
-            <Button 
-              variant="ghost" 
-              size="sm" 
+          <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+            <button 
               onClick={() => navigate('/legal')}
-              className="text-muted-foreground hover:text-foreground"
+              className="hover:text-foreground transition-colors underline-offset-4 hover:underline"
             >
-              <Building className="h-3 w-3 mr-1" />
               Mentions légales
-            </Button>
+            </button>
             
-            <Separator orientation="vertical" className="h-4" />
+            <span className="text-muted-foreground/40">•</span>
             
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <button 
               onClick={() => navigate('/privacy')}
-              className="text-muted-foreground hover:text-foreground"
+              className="hover:text-foreground transition-colors underline-offset-4 hover:underline"
             >
-              <Shield className="h-3 w-3 mr-1" />
               Confidentialité
-            </Button>
+            </button>
             
-            <Separator orientation="vertical" className="h-4" />
+            <span className="text-muted-foreground/40">•</span>
             
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <button 
               onClick={() => navigate('/terms')}
-              className="text-muted-foreground hover:text-foreground"
+              className="hover:text-foreground transition-colors underline-offset-4 hover:underline"
             >
-              <FileText className="h-3 w-3 mr-1" />
               CGU
-            </Button>
+            </button>
             
-            <Separator orientation="vertical" className="h-4" />
+            <span className="text-muted-foreground/40">•</span>
             
             <CookiePreferences />
             
-            <Separator orientation="vertical" className="h-4" />
+            <span className="text-muted-foreground/40">•</span>
             
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <button 
               onClick={() => navigate('/my-data')}
-              className="text-muted-foreground hover:text-foreground"
+              className="hover:text-foreground transition-colors underline-offset-4 hover:underline"
             >
-              <Shield className="h-3 w-3 mr-1" />
               Mes données
-            </Button>
+            </button>
           </div>
         </div>
       </div>
