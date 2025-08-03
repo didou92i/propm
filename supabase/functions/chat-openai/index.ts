@@ -219,53 +219,6 @@ serve(async (req) => {
       throw new Error('No user message found');
     }
 
-    // Enhanced document search for messages with attachments
-    let documentContext = '';
-    if (!hasAttachments) {
-      // Only search existing documents if no attachments are provided
-      try {
-        console.log('Searching for relevant documents...');
-        // Generate embedding for the user message
-        const embeddingResponse = await fetch('https://api.openai.com/v1/embeddings', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${openAIEmbeddingsKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: 'text-embedding-3-small',
-            input: latestUserMessage,
-          }),
-        });
-
-        if (embeddingResponse.ok) {
-          const embeddingResult = await embeddingResponse.json();
-          const queryEmbedding = embeddingResult.data[0]?.embedding;
-
-          if (queryEmbedding) {
-            // Search for similar documents using authenticated client
-            const { data: relevantDocs } = await userSupabase.rpc('match_documents', {
-              query_embedding: queryEmbedding,
-              match_count: 3,
-              filter: {}
-            });
-
-            if (relevantDocs && relevantDocs.length > 0) {
-              console.log(`Found ${relevantDocs.length} relevant documents`);
-              documentContext = '\n\n--- CONTEXTE DOCUMENTAIRE ---\n' +
-                relevantDocs.map((doc: any, index: number) => 
-                  `Document ${index + 1} (similarité: ${(doc.similarity * 100).toFixed(1)}%):\n${doc.content.substring(0, 1000)}...`
-                ).join('\n\n') +
-                '\n--- FIN DU CONTEXTE DOCUMENTAIRE ---\n\n';
-            }
-          }
-        }
-      } catch (docError) {
-        console.error('Document search error:', docError);
-        // Continue without document context if search fails
-      }
-    }
-
     // Store user message in database
     await userSupabase
       .from('conversation_messages')
@@ -275,18 +228,8 @@ serve(async (req) => {
         content: latestMessage.content
       });
 
-    // Add message to OpenAI thread with document context
-    let messageContent = latestMessage.content;
-    
-    // Add system context for attachments
-    if (hasAttachments) {
-      console.log('Processing message with attachments');
-      const attachmentPrefix = "L'utilisateur a joint des documents à sa question. Le contenu de ces documents est inclus dans le message ci-dessous. Utilisez ces informations pour répondre de manière pertinente et précise en vous basant sur le contenu des documents fournis.\n\n";
-      messageContent = attachmentPrefix + messageContent;
-    } else if (documentContext) {
-      console.log('Adding document context from database');
-      messageContent = documentContext + messageContent;
-    }
+    // Use original message content without any modifications
+    const messageContent = latestMessage.content;
 
     console.log('Adding message to thread...');
     const messageResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
