@@ -16,6 +16,9 @@ import { ConversationExport } from "@/components/ConversationExport";
 import { VirtualizedMessageList, VirtualizedMessageListRef } from "@/components/VirtualizedMessageList";
 import { useRipple } from "@/hooks/useRipple";
 import { useConversationHistory } from "@/hooks/useConversationHistory";
+import { useStreamingChat } from "@/hooks/useStreamingChat";
+import { usePerformanceOptimization } from "@/hooks/usePerformanceOptimization";
+import { StreamingProgress } from "@/components/StreamingProgress";
 import { Message, MessageAttachment } from "@/types/chat";
 import { useToast } from "@/hooks/use-toast";
 import { logger } from "@/utils/logger";
@@ -82,6 +85,8 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
   const createRipple = useRipple('intense');
   const { toast } = useToast();
   const { updateConversation, getConversation } = useConversationHistory();
+  const { streamingState, sendStreamingMessage, cancelStream } = useStreamingChat();
+  const { optimizeMessages } = usePerformanceOptimization();
   
   
 
@@ -208,7 +213,6 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
   const sendMessage = async (content: string) => {
     if (!content.trim() && attachments.length === 0) return;
 
-    
     setAttachmentError(null);
 
     // Process attachments first
@@ -227,6 +231,21 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
     setAttachments([]);
     setIsLoading(true);
 
+    // Prepare optimized message history
+    const optimizedMessages = optimizeMessages([...messages, userMessage]);
+
+    // Create temporary assistant message for streaming
+    const assistantMessageId = (Date.now() + 1).toString();
+    let assistantMessage: Message = {
+      id: assistantMessageId,
+      content: '',
+      role: "assistant",
+      timestamp: new Date(),
+    };
+
+    setMessages(prev => [...prev, assistantMessage]);
+    setTypingMessageId(assistantMessageId);
+
     try {
       // Prepare the message with attachment context
       let messageContent = content;
@@ -238,62 +257,69 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
         
         if (attachmentContext) {
           messageContent = `Contexte des documents joints:\n${attachmentContext}\n\nQuestion: ${content}`;
+        }
+      }
+
+      await sendStreamingMessage(
+        optimizedMessages,
+        selectedAgent,
+        userSession,
+        // onMessageUpdate
+        (content: string, isComplete: boolean) => {
+          setMessages(prev => prev.map(msg => 
+            msg.id === assistantMessageId 
+              ? { ...msg, content }
+              : msg
+          ));
+        },
+        // onComplete
+        (finalContent: string, threadId?: string) => {
+          setMessages(prev => prev.map(msg => 
+            msg.id === assistantMessageId 
+              ? { ...msg, content: finalContent }
+              : msg
+          ));
+          setTypingMessageId(null);
+          setIsLoading(false);
           
+          // Update user session with threadId if provided
+          if (threadId) {
+            // Could save threadId to localStorage or state for future use
+          }
+        },
+        // onError
+        (error: string) => {
+          setMessages(prev => prev.map(msg => 
+            msg.id === assistantMessageId 
+              ? { ...msg, content: `Désolé, une erreur s'est produite: ${error}. Veuillez réessayer.` }
+              : msg
+          ));
+          setTypingMessageId(null);
+          setIsLoading(false);
+          
+          toast({
+            title: "Erreur de conversation",
+            description: error,
+            variant: "destructive"
+          });
         }
-      }
+      );
 
-      const { data, error } = await supabase.functions.invoke('chat-openai', {
-        body: {
-          messages: [
-            ...messages.map(msg => ({
-              role: msg.role,
-              content: msg.content
-            })),
-            { role: "user", content: messageContent }
-          ],
-          selectedAgent,
-          userSession,
-          hasAttachments: processedAttachments.length > 0,
-          documentIds: processedAttachments.flatMap(att => att.documentIds || [])
-        }
-      });
-
-      if (error) {
-        logger.error('Supabase function error', error, 'ChatArea');
-        throw new Error(error.message || "Erreur lors de l'appel à l'API");
-      }
-
-      if (!data || !data.success) {
-        logger.error('Chat function failed', data, 'ChatArea');
-        throw new Error(data?.error || "Erreur inconnue");
-      }
-
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: data.message,
-        role: "assistant",
-        timestamp: new Date(),
-      };
-
-      setMessages(prev => [...prev, assistantMessage]);
-      setTypingMessageId(assistantMessage.id);
     } catch (error) {
       logger.error("Erreur", error, 'ChatArea');
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: `Désolé, une erreur s'est produite: ${error.message || 'Erreur inconnue'}. Veuillez réessayer.`,
-        role: "assistant",
-        timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, errorMessage]);
+      setMessages(prev => prev.map(msg => 
+        msg.id === assistantMessageId 
+          ? { ...msg, content: `Désolé, une erreur s'est produite: ${error.message || 'Erreur inconnue'}. Veuillez réessayer.` }
+          : msg
+      ));
+      setTypingMessageId(null);
+      setIsLoading(false);
       
       toast({
         title: "Erreur de conversation",
         description: error.message || 'Erreur inconnue',
         variant: "destructive"
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -446,6 +472,14 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
       )}
 
       <div className="p-6 border-t border-border/40">
+        {/* Indicateur de progression du streaming */}
+        <StreamingProgress
+          isVisible={streamingState.isStreaming}
+          status={streamingState.status}
+          progress={streamingState.progress}
+          onCancel={cancelStream}
+        />
+        
         {attachmentError && (
           <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
             <p className="text-sm text-destructive">{attachmentError}</p>

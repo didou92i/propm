@@ -299,14 +299,16 @@ serve(async (req) => {
     const runId = runData.id;
     console.log(`Created run: ${runId}`);
 
-    // Poll for completion
+    // Adaptive polling for better performance
     let runStatus = 'queued';
     let attempts_poll = 0;
-    const maxAttempts = 60; // 30 seconds timeout
+    const maxAttempts = 120; // 2 minutes timeout with faster polling
 
-    console.log('Polling for run completion...');
+    console.log('Polling for run completion with adaptive intervals...');
     while (runStatus !== 'completed' && runStatus !== 'failed' && attempts_poll < maxAttempts) {
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Adaptive polling: start fast, then slow down
+      const pollInterval = attempts_poll < 10 ? 200 : attempts_poll < 30 ? 300 : 500;
+      await new Promise(resolve => setTimeout(resolve, pollInterval));
       
       const statusResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs/${runId}`, {
         method: 'GET',
