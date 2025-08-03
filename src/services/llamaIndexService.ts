@@ -40,10 +40,13 @@ class LlamaIndexService {
    * Configure LlamaIndex settings with API keys
    */
   private configureSettings(): void {
-    // Note: In a client-side environment, we can't access environment variables
-    // The actual LLM calls will be handled by the Supabase edge functions
-    // LlamaIndex will use the documents we fetch from Supabase
-    console.log('Configuring LlamaIndex settings...');
+    try {
+      // For now, use LlamaIndex default settings for client-side
+      // The embedding generation will happen via Supabase functions
+      // LlamaIndex configured with default settings
+    } catch (error) {
+      console.warn('LlamaIndex configuration warning:', error);
+    }
   }
 
   /**
@@ -53,7 +56,7 @@ class LlamaIndexService {
     if (this.isInitialized) return;
 
     try {
-      console.log('Initializing LlamaIndex service...');
+      // Initializing LlamaIndex service
       
       // Fetch documents from Supabase
       const { data: documents, error } = await supabase
@@ -63,10 +66,14 @@ class LlamaIndexService {
       if (error) throw error;
 
       if (!documents || documents.length === 0) {
-        console.log('No documents found, creating empty index');
-        // Create empty index
-        const emptyDoc = new Document({ text: "Empty index", id_: "empty" });
+        // No documents found, creating empty index
+        // Create minimal index with empty document
+        const emptyDoc = new Document({ 
+          text: "This is an empty index. Please add documents to start searching.", 
+          id_: "empty-placeholder" 
+        });
         this.index = await VectorStoreIndex.fromDocuments([emptyDoc]);
+        this.queryEngine = this.index.asQueryEngine({ similarityTopK: 1 });
         this.isInitialized = true;
         return;
       }
@@ -85,7 +92,7 @@ class LlamaIndexService {
       }));
 
       // Create index
-      console.log(`Creating index from ${llamaDocuments.length} documents...`);
+      // Creating index from documents
       this.index = await VectorStoreIndex.fromDocuments(llamaDocuments);
 
       // Create query engine
@@ -94,11 +101,25 @@ class LlamaIndexService {
       });
 
       this.isInitialized = true;
-      console.log('LlamaIndex service initialized successfully');
+      // LlamaIndex service initialized successfully
 
     } catch (error) {
       console.error('Error initializing LlamaIndex:', error);
-      throw error;
+      
+      // Fallback: create a minimal working index to prevent app crashes
+      try {
+        const fallbackDoc = new Document({ 
+          text: "Fallback index - LlamaIndex initialization failed", 
+          id_: "fallback" 
+        });
+        this.index = await VectorStoreIndex.fromDocuments([fallbackDoc]);
+        this.queryEngine = this.index.asQueryEngine({ similarityTopK: 1 });
+        this.isInitialized = true;
+        // Created fallback index
+      } catch (fallbackError) {
+        console.error('Fallback index creation failed:', fallbackError);
+        // Complete failure - service will return empty results
+      }
     }
   }
 
