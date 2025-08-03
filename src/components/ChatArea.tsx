@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 import { SkeletonTyping } from "@/components/SkeletonMessage";
+import { EditableMessage } from "@/components/EditableMessage";
 import { ChatAttachment } from "@/components/ChatAttachment";
 import { MessageWithAttachments } from "@/components/MessageWithAttachments";
 import { ConversationExport } from "@/components/ConversationExport";
@@ -305,6 +306,15 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
     createRipple(e);
   };
 
+  // Fonction pour modifier le contenu d'un message
+  const handleMessageEdit = (messageId: string, newContent: string) => {
+    setMessages(prev => prev.map(message => 
+      message.id === messageId 
+        ? { ...message, content: newContent }
+        : message
+    ));
+  };
+
 
   const currentAgent = agentInfo[selectedAgent as keyof typeof agentInfo];
 
@@ -408,8 +418,9 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
                     className="mb-3"
                   />
                 )}
-                <MarkdownRenderer
+                <EditableMessage
                   content={message.content}
+                  onContentChange={(newContent) => handleMessageEdit(message.id, newContent)}
                   isAssistant={message.role === "assistant"}
                   enableTypewriter={message.role === "assistant" && message.id === typingMessageId}
                   onTypingComplete={() => {
