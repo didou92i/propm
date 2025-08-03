@@ -4,6 +4,7 @@ import {
   Settings
 } from 'llamaindex';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/utils/logger';
 
 export interface LlamaSearchResult {
   id: string;
@@ -45,7 +46,7 @@ class LlamaIndexService {
       // The embedding generation will happen via Supabase functions
       // LlamaIndex configured with default settings
     } catch (error) {
-      console.warn('LlamaIndex configuration warning:', error);
+      logger.warn('LlamaIndex configuration warning', error, 'LlamaIndexService');
     }
   }
 
@@ -104,7 +105,7 @@ class LlamaIndexService {
       // LlamaIndex service initialized successfully
 
     } catch (error) {
-      console.error('Error initializing LlamaIndex:', error);
+      logger.error('Error initializing LlamaIndex', error, 'LlamaIndexService');
       
       // Fallback: create a minimal working index to prevent app crashes
       try {
@@ -117,7 +118,7 @@ class LlamaIndexService {
         this.isInitialized = true;
         // Created fallback index
       } catch (fallbackError) {
-        console.error('Fallback index creation failed:', fallbackError);
+        logger.error('Fallback index creation failed', fallbackError, 'LlamaIndexService');
         // Complete failure - service will return empty results
       }
     }
@@ -175,7 +176,7 @@ class LlamaIndexService {
       return filteredResults;
 
     } catch (error) {
-      console.error('LlamaIndex search error:', error);
+      logger.error('LlamaIndex search error', error, 'LlamaIndexService');
       return [];
     }
   }
@@ -207,7 +208,7 @@ class LlamaIndexService {
         sourceDocument: node.node.metadata.documentId
       }));
     } catch (error) {
-      console.error('Default search error:', error);
+      logger.error('Default search error', error, 'LlamaIndexService');
       return [];
     }
   }
@@ -255,7 +256,7 @@ class LlamaIndexService {
         };
       }).sort((a, b) => b.score - a.score);
     } catch (error) {
-      console.error('Hierarchical search error:', error);
+      logger.error('Hierarchical search error', error, 'LlamaIndexService');
       return [];
     }
   }
@@ -291,7 +292,7 @@ class LlamaIndexService {
         sourceDocument: result.metadata.documentId
       }));
     } catch (error) {
-      console.error('Auto-merging search error:', error);
+      logger.error('Auto-merging search error', error, 'LlamaIndexService');
       return [];
     }
   }
@@ -384,7 +385,7 @@ class LlamaIndexService {
       await this.index.insert(document);
       this.clearCache(); // Clear cache when new documents are added
     } catch (error) {
-      console.error('Error adding document to index:', error);
+      logger.error('Error adding document to index', error, 'LlamaIndexService');
       throw error;
     }
   }

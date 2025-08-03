@@ -16,6 +16,7 @@ import { useRipple } from "@/hooks/useRipple";
 import { useConversationHistory } from "@/hooks/useConversationHistory";
 import { Message, MessageAttachment } from "@/types/chat";
 import { useToast } from "@/hooks/use-toast";
+import { logger } from "@/utils/logger";
 
 interface ChatAreaProps {
   selectedAgent: string;
@@ -80,7 +81,7 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
   const { toast } = useToast();
   const { updateConversation, getConversation } = useConversationHistory();
   
-  console.log("ChatArea component loaded - userSession:", userSession);
+  
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -135,11 +136,11 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
     setProcessingAttachment(true);
     setAttachmentError(null);
 
-    console.log(`Processing ${attachments.length} attachments...`);
+    
 
     for (const attachment of attachments) {
       try {
-        console.log(`Processing attachment: ${attachment.file.name} (${attachment.file.type}, ${attachment.file.size} bytes)`);
+        
         
         const formData = new FormData();
         formData.append('file', attachment.file);
@@ -149,16 +150,16 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
         });
 
         if (error) {
-          console.error('Supabase function error:', error);
+          logger.error('Supabase function error', error, 'ChatArea');
           throw new Error(`Erreur de traitement: ${error.message}`);
         }
 
         if (!data || !data.success) {
-          console.error('Document processing failed:', data);
+          logger.error('Document processing failed', data, 'ChatArea');
           throw new Error(data?.error || 'Échec du traitement du document');
         }
 
-        console.log(`Successfully processed: ${attachment.file.name}, extracted ${data.extractedTextLength} characters`);
+        
         
         // Store successful processing in documents table
         toast({
@@ -175,7 +176,7 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
           documentIds: data.documentIds || []
         });
       } catch (error) {
-        console.error('Error processing attachment:', error);
+        logger.error('Error processing attachment', error, 'ChatArea');
         const errorMsg = `Erreur lors du traitement de ${attachment.file.name}: ${error.message}`;
         setAttachmentError(errorMsg);
         
@@ -198,14 +199,14 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
     }
 
     setProcessingAttachment(false);
-    console.log(`Processed ${processedAttachments.length} attachments total`);
+    
     return processedAttachments;
   };
 
   const sendMessage = async (content: string) => {
     if (!content.trim() && attachments.length === 0) return;
 
-    console.log(`Sending message with ${attachments.length} attachments`);
+    
     setAttachmentError(null);
 
     // Process attachments first
@@ -235,18 +236,9 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
         
         if (attachmentContext) {
           messageContent = `Contexte des documents joints:\n${attachmentContext}\n\nQuestion: ${content}`;
-          console.log(`Added context from ${processedAttachments.filter(att => !att.error).length} successfully processed documents`);
+          
         }
       }
-
-      console.log('Sending message to chat-openai function...');
-      
-      console.log('🚀 CLIENT: Sending message to chat-openai...', {
-        selectedAgent,
-        userSession,
-        hasAttachments: processedAttachments.length > 0,
-        messageCount: messages.length + 1
-      });
 
       const { data, error } = await supabase.functions.invoke('chat-openai', {
         body: {
@@ -264,28 +256,15 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
         }
       });
 
-      console.log('📡 CLIENT: Received response from chat-openai:', { 
-        success: data?.success, 
-        hasMessage: !!data?.message,
-        error: error,
-        fullData: data 
-      });
-
       if (error) {
-        console.error('❌ CLIENT: Supabase function error:', error);
-        console.error('❌ CLIENT: Full error object:', JSON.stringify(error, null, 2));
+        logger.error('Supabase function error', error, 'ChatArea');
         throw new Error(error.message || "Erreur lors de l'appel à l'API");
       }
 
       if (!data || !data.success) {
-        console.error('❌ CLIENT: Chat function failed:', data);
-        console.error('❌ CLIENT: Full data object:', JSON.stringify(data, null, 2));
+        logger.error('Chat function failed', data, 'ChatArea');
         throw new Error(data?.error || "Erreur inconnue");
       }
-
-      console.log('✅ CLIENT: Message sent successfully');
-
-      console.log('Received response from assistant');
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -297,7 +276,7 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
       setMessages(prev => [...prev, assistantMessage]);
       setTypingMessageId(assistantMessage.id);
     } catch (error) {
-      console.error("Erreur:", error);
+      logger.error("Erreur", error, 'ChatArea');
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         content: `Désolé, une erreur s'est produite: ${error.message || 'Erreur inconnue'}. Veuillez réessayer.`,

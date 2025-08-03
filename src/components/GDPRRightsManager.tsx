@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
+import { logger } from '@/utils/logger';
 import { Download, Trash2, CheckCircle, AlertCircle, Clock, Send } from 'lucide-react';
 
 interface GDPRRequest {
@@ -63,7 +64,7 @@ export function GDPRRightsManager() {
       }));
       setRequests(mappedData);
     } catch (error) {
-      console.error('Error loading GDPR requests:', error);
+      logger.error('Error loading GDPR requests', error, 'GDPRRightsManager');
       toast({
         title: "Erreur",
         description: "Impossible de charger vos demandes RGPD.",
@@ -98,13 +99,12 @@ export function GDPRRightsManager() {
       if (error) throw error;
 
       // Log the action for audit
-      console.log('GDPR request created:', {
+      logger.audit('GDPR request created', {
         user_id: user.id,
         action: 'gdpr_request_created',
         resource_type: 'gdpr_request',
-        timestamp: new Date().toISOString(),
         data: { request_type: selectedRight, description }
-      });
+      }, 'GDPRRightsManager');
 
       toast({
         title: "Demande enregistrée",
@@ -115,7 +115,7 @@ export function GDPRRightsManager() {
       setDescription('');
       loadGDPRRequests(); // Refresh the list
     } catch (error) {
-      console.error('Error submitting GDPR request:', error);
+      logger.error('Error submitting GDPR request', error, 'GDPRRightsManager');
       toast({
         title: "Erreur",
         description: "Une erreur s'est produite lors de l'enregistrement de votre demande.",
@@ -154,12 +154,11 @@ export function GDPRRightsManager() {
       };
 
       // Log the export action
-      console.log('Data export requested:', {
+      logger.audit('Data export requested', {
         user_id: user.id,
         action: 'data_export',
-        resource_type: 'user_data',
-        timestamp: new Date().toISOString()
-      });
+        resource_type: 'user_data'
+      }, 'GDPRRightsManager');
 
       const blob = new Blob([JSON.stringify(userData, null, 2)], { type: 'application/json' });
       const url = window.URL.createObjectURL(blob);
@@ -176,7 +175,7 @@ export function GDPRRightsManager() {
         description: "Vos données ont été exportées avec succès.",
       });
     } catch (error) {
-      console.error('Error exporting user data:', error);
+      logger.error('Error exporting user data', error, 'GDPRRightsManager');
       toast({
         title: "Erreur",
         description: "Impossible d'exporter vos données.",
@@ -201,12 +200,11 @@ export function GDPRRightsManager() {
       if (error) throw error;
 
       // Log the deletion request
-      console.log('Account deletion requested:', {
+      logger.audit('Account deletion requested', {
         user_id: user.id,
         action: 'account_deletion_requested',
-        resource_type: 'user_account',
-        timestamp: new Date().toISOString()
-      });
+        resource_type: 'user_account'
+      }, 'GDPRRightsManager');
 
       toast({
         title: "Demande de suppression enregistrée",
@@ -216,7 +214,7 @@ export function GDPRRightsManager() {
       setShowDeleteConfirm(false);
       loadGDPRRequests(); // Refresh the list
     } catch (error) {
-      console.error('Error requesting account deletion:', error);
+      logger.error('Error requesting account deletion', error, 'GDPRRightsManager');
       toast({
         title: "Erreur",
         description: "Impossible d'enregistrer votre demande de suppression.",

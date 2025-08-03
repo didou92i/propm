@@ -1,5 +1,6 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { Message } from '@/types/chat';
+import { logger } from '@/utils/logger';
 
 interface PerformanceConfig {
   maxMessagesInMemory: number;
@@ -45,7 +46,7 @@ export function usePerformanceOptimization(config: PerformanceConfig = {
 
       if (hasChanges) {
         localStorage.setItem('conversationHistory', JSON.stringify(parsed));
-        console.log('Cleaned up old conversation data from localStorage');
+        
       }
 
       // Clean up other potential large localStorage items
@@ -69,7 +70,7 @@ export function usePerformanceOptimization(config: PerformanceConfig = {
         });
       }
     } catch (error) {
-      console.warn('Failed to cleanup localStorage:', error);
+      logger.warn('Failed to cleanup localStorage', error, 'usePerformanceOptimization');
     }
   }, [config.localStorageCleanupThreshold]);
 
@@ -83,11 +84,7 @@ export function usePerformanceOptimization(config: PerformanceConfig = {
     // Clear any cached DOM references
     if ((performance as any).memory) {
       const memInfo = (performance as any).memory;
-      console.log('Memory usage:', {
-        used: Math.round(memInfo.usedJSHeapSize / 1024 / 1024) + ' MB',
-        total: Math.round(memInfo.totalJSHeapSize / 1024 / 1024) + ' MB',
-        limit: Math.round(memInfo.jsHeapSizeLimit / 1024 / 1024) + ' MB'
-      });
+      // Memory info available for debugging if needed
     }
   }, []);
 
@@ -108,7 +105,7 @@ export function usePerformanceOptimization(config: PerformanceConfig = {
     const start = performance.now();
     fn();
     const end = performance.now();
-    console.log(`${label}: ${end - start}ms`);
+    // Performance measurement completed
   }, []);
 
   // Setup automatic cleanup

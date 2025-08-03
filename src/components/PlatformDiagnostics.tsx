@@ -131,7 +131,7 @@ export const PlatformDiagnostics = () => {
     setIsRunning(true);
     setDiagnostics([]);
     
-    console.log('🔍 Starting platform diagnostics...');
+    
     
     await testSupabaseConnection();
     await testDocumentProcessing();
@@ -156,7 +156,7 @@ export const PlatformDiagnostics = () => {
       });
     }
     
-    console.log('✅ Platform diagnostics completed');
+    
   };
 
   const getStatusIcon = (status: DiagnosticResult['status']) => {

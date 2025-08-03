@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { llamaIndexService, LlamaSearchResult, LlamaSearchOptions } from '@/services/llamaIndexService';
+import { logger } from '@/utils/logger';
 
 interface UseLlamaSearchOptions {
   autoInitialize?: boolean;
@@ -39,7 +40,7 @@ export const useLlamaSearch = (options: UseLlamaSearchOptions = {}) => {
       await llamaIndexService.initialize();
       setIndexStats(llamaIndexService.getIndexStats());
     } catch (error) {
-      console.error('Failed to initialize LlamaIndex:', error);
+      logger.error('Failed to initialize LlamaIndex', error, 'useLlamaSearch');
       setError(error instanceof Error ? error.message : 'Failed to initialize search index');
     } finally {
       setIsInitializing(false);
@@ -72,7 +73,7 @@ export const useLlamaSearch = (options: UseLlamaSearchOptions = {}) => {
 
       return results;
     } catch (error) {
-      console.error('LlamaIndex search error:', error);
+      logger.error('LlamaIndex search error', error, 'useLlamaSearch');
       setError(error instanceof Error ? error.message : 'Search failed');
       return [];
     } finally {
@@ -100,7 +101,7 @@ export const useLlamaSearch = (options: UseLlamaSearchOptions = {}) => {
 
       return results;
     } catch (error) {
-      console.error('Police search error:', error);
+      logger.error('Police search error', error, 'useLlamaSearch');
       setError(error instanceof Error ? error.message : 'Police search failed');
       return [];
     } finally {
@@ -130,7 +131,7 @@ export const useLlamaSearch = (options: UseLlamaSearchOptions = {}) => {
 
       return results;
     } catch (error) {
-      console.error('Contextual search error:', error);
+      logger.error('Contextual search error', error, 'useLlamaSearch');
       setError(error instanceof Error ? error.message : 'Contextual search failed');
       return [];
     } finally {
@@ -179,7 +180,7 @@ export const useLlamaSearch = (options: UseLlamaSearchOptions = {}) => {
       await llamaIndexService.addDocument(content, metadata);
       setIndexStats(llamaIndexService.getIndexStats());
     } catch (error) {
-      console.error('Failed to add document:', error);
+      logger.error('Failed to add document', error, 'useLlamaSearch');
       setError(error instanceof Error ? error.message : 'Failed to add document');
       throw error;
     }
@@ -197,7 +198,7 @@ export const useLlamaSearch = (options: UseLlamaSearchOptions = {}) => {
       setIndexStats(llamaIndexService.getIndexStats());
       setSearchResults([]); // Clear current results
     } catch (error) {
-      console.error('Failed to rebuild index:', error);
+      logger.error('Failed to rebuild index', error, 'useLlamaSearch');
       setError(error instanceof Error ? error.message : 'Failed to rebuild index');
     } finally {
       setIsInitializing(false);
