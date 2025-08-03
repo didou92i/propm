@@ -133,7 +133,7 @@ export function AppSidebar({ selectedAgent, onAgentSelect, onContextShare }: App
                     {agent.id === "redacpro" ? (
                       <div className="w-5 h-5 rounded-full overflow-hidden">
                         <img 
-                          src="/redacpro-avatar.png" 
+                          src="/lovable-uploads/190796cd-907b-454f-aea2-f482b263655d.png"
                           alt="RedacPro Avatar" 
                           className={`w-5 h-5 object-cover transition-all duration-300 ${
                             selectedAgent === agent.id ? 'scale-110' : ''

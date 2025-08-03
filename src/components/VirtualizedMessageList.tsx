@@ -30,7 +30,7 @@ const MessageItem: React.FC<MessageItemProps> = ({ index, style, data }) => {
         <div className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
           {message.role === 'assistant' && (
             <Avatar className="w-8 h-8 flex-shrink-0">
-              <AvatarImage src="/redacpro-avatar.png" alt="RedacPro AI" />
+              <AvatarImage src="/lovable-uploads/190796cd-907b-454f-aea2-f482b263655d.png" alt="RedacPro AI" />
               <AvatarFallback>RP</AvatarFallback>
             </Avatar>
           )}
