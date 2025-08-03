@@ -1,6 +1,6 @@
 
 import { useState, useRef, useEffect } from "react";
-import { Send, Bot, User, Download, FileText, MoreVertical } from "lucide-react";
+import { Send, Bot, User, Download, MoreVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -11,7 +11,6 @@ import { SkeletonTyping } from "@/components/SkeletonMessage";
 import { ChatAttachment } from "@/components/ChatAttachment";
 import { MessageWithAttachments } from "@/components/MessageWithAttachments";
 import { ConversationExport } from "@/components/ConversationExport";
-import { DocumentTemplates } from "@/components/DocumentTemplates";
 import { VirtualizedMessageList, VirtualizedMessageListRef } from "@/components/VirtualizedMessageList";
 import { useRipple } from "@/hooks/useRipple";
 import { useConversationHistory } from "@/hooks/useConversationHistory";
@@ -76,7 +75,7 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
   const [userSession] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const [contextShared, setContextShared] = useState(false);
-  const [showTemplates, setShowTemplates] = useState(false);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const createRipple = useRipple('intense');
   const { toast } = useToast();
@@ -305,14 +304,6 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
     createRipple(e);
   };
 
-  const handleUseTemplate = (content: string) => {
-    setInput(content);
-    setShowTemplates(false);
-    toast({
-      title: "Modèle appliqué",
-      description: "Le modèle a été inséré dans la zone de saisie"
-    });
-  };
 
   const currentAgent = agentInfo[selectedAgent as keyof typeof agentInfo];
 
@@ -471,20 +462,6 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
         />
         {/* Barre d'outils */}
         <div className="flex items-center gap-2 mb-2">
-          <Dialog open={showTemplates} onOpenChange={setShowTemplates}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm" className="flex items-center gap-2">
-                <FileText className="w-4 h-4" />
-                Modèles
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto glass">
-              <DocumentTemplates 
-                selectedAgent={selectedAgent}
-                onUseTemplate={handleUseTemplate}
-              />
-            </DialogContent>
-          </Dialog>
           
           {messages.length > 0 && (
             <ConversationExport 
