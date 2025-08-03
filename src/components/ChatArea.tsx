@@ -53,7 +53,7 @@ const agentInfo = {
     ]
   },
   arrete: {
-    name: "ArreteForritorial", 
+    name: "ArreteTerritorial",
     description: "Spécialiste des arrêtés municipaux",
     suggestions: [
       "Rédiger un arrêté municipal",
@@ -357,7 +357,7 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
               ) : selectedAgent === 'arrete' ? (
                 <img 
                   src="/lovable-uploads/47594ea7-a3ab-47c8-b4f5-6081c3b7f039.png"
-                  alt="ArreteForritorial Avatar" 
+                  alt="ArreteTerritorial Avatar"
                   className="w-16 h-16 object-cover rounded-full"
                 />
               ) : (
@@ -415,7 +415,7 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
                   ) : selectedAgent === 'arrete' ? (
                     <img 
                       src="/lovable-uploads/47594ea7-a3ab-47c8-b4f5-6081c3b7f039.png" 
-                      alt="ArreteForritorial Avatar" 
+                      alt="ArreteTerritorial Avatar" 
                       className="w-6 h-6 object-cover rounded-full"
                     />
                   ) : (

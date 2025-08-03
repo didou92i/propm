@@ -25,7 +25,7 @@ import { useTheme } from "@/hooks/useTheme";
 const agents = [
   { id: "redacpro", name: "RedacPro", icon: Bot, color: "text-blue-400" },
   { id: "cdspro", name: "CDS Pro", icon: FileText, color: "text-purple-400" },
-  { id: "arrete", name: "ArreteForritorial", icon: MessageSquare, color: "text-green-400" },
+  { id: "arrete", name: "ArreteTerritorial", icon: MessageSquare, color: "text-green-400" },
 ];
 
 const tools = [
@@ -154,7 +154,7 @@ export function AppSidebar({ selectedAgent, onAgentSelect, onContextShare }: App
                       <div className="w-5 h-5 rounded-full overflow-hidden">
                         <img 
                           src="/lovable-uploads/47594ea7-a3ab-47c8-b4f5-6081c3b7f039.png" 
-                          alt="ArreteForritorial Avatar" 
+                          alt="ArreteTerritorial Avatar" 
                           className={`w-5 h-5 object-cover transition-all duration-300 ${
                             selectedAgent === agent.id ? 'scale-110' : ''
                           }`}

@@ -297,7 +297,7 @@ export function DocumentTemplates({ selectedAgent, onUseTemplate }: DocumentTemp
                   <SelectContent>
                     <SelectItem value="redacpro">RedacPro</SelectItem>
                     <SelectItem value="cdspro">CDS Pro</SelectItem>
-                    <SelectItem value="arrete">ArreteForritorial</SelectItem>
+                    <SelectItem value="arrete">ArreteTerritorial</SelectItem>
                     <SelectItem value="all">Tous les agents</SelectItem>
                   </SelectContent>
                 </Select>
