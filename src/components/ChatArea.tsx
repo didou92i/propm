@@ -23,8 +23,6 @@ interface ChatAreaProps {
     sourceAgent: string;
     messages: Message[];
   };
-  onFirstMessage?: () => void;
-  hasMessages?: boolean;
 }
 
 interface AttachedFile {
@@ -66,7 +64,7 @@ const agentInfo = {
   }
 };
 
-export function ChatArea({ selectedAgent, sharedContext, onFirstMessage, hasMessages = false }: ChatAreaProps) {
+export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [attachments, setAttachments] = useState<AttachedFile[]>([]);
@@ -206,11 +204,6 @@ export function ChatArea({ selectedAgent, sharedContext, onFirstMessage, hasMess
 
   const sendMessage = async (content: string) => {
     if (!content.trim() && attachments.length === 0) return;
-
-    // Call onFirstMessage if this is the first message
-    if (messages.length === 0 && onFirstMessage) {
-      onFirstMessage();
-    }
 
     console.log(`Sending message with ${attachments.length} attachments`);
     setAttachmentError(null);
