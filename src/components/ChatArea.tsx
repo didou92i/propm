@@ -1,4 +1,5 @@
 
+// ChatArea component for handling chat interactions
 import { useState, useRef, useEffect } from "react";
 import { Send, Bot, User, Download, MoreVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
