@@ -12,6 +12,7 @@ import { ChatAttachment } from "@/components/ChatAttachment";
 import { MessageWithAttachments } from "@/components/MessageWithAttachments";
 import { ConversationExport } from "@/components/ConversationExport";
 import { DocumentTemplates } from "@/components/DocumentTemplates";
+import { VirtualizedMessageList, VirtualizedMessageListRef } from "@/components/VirtualizedMessageList";
 import { useRipple } from "@/hooks/useRipple";
 import { useConversationHistory } from "@/hooks/useConversationHistory";
 import { Message, MessageAttachment } from "@/types/chat";

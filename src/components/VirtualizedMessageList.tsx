@@ -1,107 +1,137 @@
-import React, { useMemo } from 'react';
+import React, { useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { FixedSizeList as List } from 'react-window';
-import { Message } from '@/types/chat';
-import { SkeletonMessage } from './SkeletonMessage';
+import { Message, MessageAttachment } from '@/types/chat';
+import { MessageWithAttachments } from './MessageWithAttachments';
+import { SkeletonTyping } from './SkeletonMessage';
 import { MarkdownRenderer } from './MarkdownRenderer';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Bot, User } from 'lucide-react';
 
 interface VirtualizedMessageListProps {
   messages: Message[];
-  isLoading?: boolean;
+  isLoading: boolean;
   height: number;
+  selectedAgent: string;
+  typingMessageId: string | null;
+  onTypingComplete: (messageId: string) => void;
 }
 
-interface MessageItemProps {
-  index: number;
-  style: React.CSSProperties;
-  data: {
-    messages: Message[];
-    isLoading: boolean;
-  };
+export interface VirtualizedMessageListRef {
+  scrollToBottom: () => void;
 }
 
-const MessageItem: React.FC<MessageItemProps> = ({ index, style, data }) => {
-  const { messages, isLoading } = data;
-  const message = messages[index];
+const ITEM_HEIGHT = 200; // Estimated height per message
 
-  return (
-    <div style={style} className="px-4 py-2">
-      {message ? (
-        <div className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-          {message.role === 'assistant' && (
-            <Avatar className="w-8 h-8 flex-shrink-0">
-              <AvatarImage src="/lovable-uploads/190796cd-907b-454f-aea2-f482b263655d.png" alt="RedacPro AI" />
-              <AvatarFallback>RP</AvatarFallback>
-            </Avatar>
-          )}
-          <div className={`max-w-[80%] ${message.role === 'user' ? 'order-first' : ''}`}>
-            <div className={`rounded-2xl px-4 py-3 ${
-              message.role === 'user' 
-                ? 'bg-primary text-primary-foreground' 
-                : 'bg-muted'
-            }`}>
-              {message.role === 'assistant' ? (
-                <MarkdownRenderer content={message.content} />
-              ) : (
-                <p className="text-sm">{message.content}</p>
-              )}
-            </div>
-          </div>
-          {message.role === 'user' && (
-            <Avatar className="w-8 h-8 flex-shrink-0">
-              <AvatarFallback>U</AvatarFallback>
-            </Avatar>
-          )}
-        </div>
-      ) : (
-        isLoading && <SkeletonMessage />
-      )}
-    </div>
-  );
-};
+const VirtualizedMessageList = forwardRef<VirtualizedMessageListRef, VirtualizedMessageListProps>(
+  ({ messages, isLoading, height, selectedAgent, typingMessageId, onTypingComplete }, ref) => {
+    const listRef = useRef<List>(null);
 
-export const VirtualizedMessageList: React.FC<VirtualizedMessageListProps> = ({
-  messages,
-  isLoading,
-  height
-}) => {
-  const itemData = useMemo(() => ({
-    messages,
-    isLoading: isLoading || false
-  }), [messages, isLoading]);
-
-  const itemCount = useMemo(() => {
-    return messages.length + (isLoading ? 1 : 0);
-  }, [messages.length, isLoading]);
-
-  // Estimate item height based on content
-  const getItemHeight = useMemo(() => {
-    return (index: number) => {
-      if (index >= messages.length) return 120; // Loading skeleton height
-      
-      const message = messages[index];
-      const baseHeight = 60; // Base height for avatar and padding
-      const contentHeight = Math.max(40, message.content.length * 0.5); // Estimate based on content length
-      const attachmentHeight = message.attachments ? message.attachments.length * 60 : 0;
-      
-      return Math.min(baseHeight + contentHeight + attachmentHeight, 500); // Cap at 500px
+    const scrollToBottom = () => {
+      if (listRef.current && messages.length > 0) {
+        listRef.current.scrollToItem(messages.length - 1, 'end');
+      }
     };
-  }, [messages]);
 
-  if (messages.length === 0 && !isLoading) {
-    return null;
+    useImperativeHandle(ref, () => ({
+      scrollToBottom
+    }));
+
+    useEffect(() => {
+      scrollToBottom();
+    }, [messages.length]);
+
+    const MessageItem = ({ index, style }: { index: number; style: React.CSSProperties }) => {
+      const message = messages[index];
+
+      return (
+        <div style={style} className="px-6 py-3">
+          <div
+            className={`flex gap-4 ${message.role === "user" ? "justify-end message-enter" : "justify-start message-enter-assistant"}`}
+          >
+            {message.role === "assistant" && (
+              <div className="w-8 h-8 rounded-full gradient-agent-animated flex items-center justify-center flex-shrink-0 hover-lift neomorphism-hover overflow-hidden">
+                {selectedAgent === 'redacpro' ? (
+                  <img 
+                    src="/lovable-uploads/190796cd-907b-454f-aea2-f482b263655d.png"
+                    alt="RedacPro Avatar" 
+                    className="w-6 h-6 object-cover rounded-full"
+                  />
+                ) : selectedAgent === 'cdspro' ? (
+                  <img 
+                    src="/lovable-uploads/321ab54b-a748-42b7-b5e3-22717904fe90.png" 
+                    alt="CDS Pro Avatar" 
+                    className="w-6 h-6 object-cover rounded-full"
+                  />
+                ) : selectedAgent === 'arrete' ? (
+                  <img 
+                    src="/lovable-uploads/47594ea7-a3ab-47c8-b4f5-6081c3b7f039.png" 
+                    alt="ArreteTerritorial Avatar" 
+                    className="w-6 h-6 object-cover rounded-full"
+                  />
+                ) : (
+                  <Bot className="w-6 h-6 text-primary" />
+                )}
+              </div>
+            )}
+            <div
+              className={`max-w-3xl p-4 rounded-2xl hover-lift transform-3d ${
+                message.role === "user"
+                  ? "gradient-agent-animated text-white neomorphism-inset"
+                  : "glass neomorphism hover-glow glass-hover"
+              }`}
+            >
+              {message.attachments && (
+                <MessageWithAttachments 
+                  attachments={message.attachments} 
+                  className="mb-3"
+                />
+              )}
+              <MarkdownRenderer
+                content={message.content}
+                isAssistant={message.role === "assistant"}
+                enableTypewriter={message.role === "assistant" && message.id === typingMessageId}
+                onTypingComplete={() => onTypingComplete(message.id)}
+              />
+            </div>
+            {message.role === "user" && (
+              <div className="w-8 h-8 rounded-full neomorphism flex items-center justify-center flex-shrink-0 hover-lift neomorphism-hover">
+                <User className="w-4 h-4" />
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    };
+
+    const itemCount = messages.length + (isLoading ? 1 : 0);
+
+    const ItemRenderer = ({ index, style }: { index: number; style: React.CSSProperties }) => {
+      if (index === messages.length && isLoading) {
+        return (
+          <div style={style} className="px-6 py-3">
+            <SkeletonTyping />
+          </div>
+        );
+      }
+      return <MessageItem index={index} style={style} />;
+    };
+
+    return (
+      <div className="flex-1">
+        <List
+          ref={listRef}
+          height={height}
+          width="100%"
+          itemCount={itemCount}
+          itemSize={ITEM_HEIGHT}
+          className="scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent"
+        >
+          {ItemRenderer}
+        </List>
+      </div>
+    );
   }
+);
 
-  return (
-    <List
-      height={height}
-      width="100%"
-      itemCount={itemCount}
-      itemSize={120} // Average item height
-      itemData={itemData}
-      overscanCount={5} // Render 5 extra items for smoother scrolling
-    >
-      {MessageItem}
-    </List>
-  );
-};
+VirtualizedMessageList.displayName = 'VirtualizedMessageList';
+
+export { VirtualizedMessageList, type VirtualizedMessageListRef };
