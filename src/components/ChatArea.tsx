@@ -350,9 +350,9 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
                 />
               ) : selectedAgent === 'cdspro' ? (
                 <img 
-                  src="/lovable-uploads/cds-pro-avatar.png" 
+                  src="/lovable-uploads/321ab54b-a748-42b7-b5e3-22717904fe90.png"
                   alt="CDS Pro Avatar" 
-                  className="w-12 h-12 object-cover rounded-full"
+                  className="w-16 h-16 object-cover rounded-full"
                 />
               ) : (
                 <Bot className="w-12 h-12 text-primary" />
@@ -402,7 +402,7 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
                     />
                   ) : selectedAgent === 'cdspro' ? (
                     <img 
-                      src="/lovable-uploads/cds-pro-avatar.png" 
+                      src="/lovable-uploads/321ab54b-a748-42b7-b5e3-22717904fe90.png" 
                       alt="CDS Pro Avatar" 
                       className="w-6 h-6 object-cover rounded-full"
                     />
