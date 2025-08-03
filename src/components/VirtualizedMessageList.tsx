@@ -15,7 +15,7 @@ interface VirtualizedMessageListProps {
   onTypingComplete: (messageId: string) => void;
 }
 
-export interface VirtualizedMessageListRef {
+interface VirtualizedMessageListRef {
   scrollToBottom: () => void;
 }
 
