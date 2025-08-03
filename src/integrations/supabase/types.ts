@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_logs: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          ip_address: unknown | null
+          new_values: Json | null
+          old_values: Json | null
+          record_id: string | null
+          table_name: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          new_values?: Json | null
+          old_values?: Json | null
+          record_id?: string | null
+          table_name?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          new_values?: Json | null
+          old_values?: Json | null
+          record_id?: string | null
+          table_name?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       code_natinf: {
         Row: {
           "Définie par": string | null
@@ -35,6 +74,36 @@ export type Database = {
           "Numero natinf"?: number | null
           "Qualification de linfraction"?: string | null
           "Réprimée par"?: string | null
+        }
+        Relationships: []
+      }
+      consent_logs: {
+        Row: {
+          consent_type: string
+          created_at: string
+          id: string
+          ip_address: unknown | null
+          preferences: Json
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          consent_type: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          preferences: Json
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          consent_type?: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          preferences?: Json
+          user_agent?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -120,6 +189,42 @@ export type Database = {
           embedding?: string | null
           id?: string
           metadata?: Json | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      gdpr_requests: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          id: string
+          reason: string | null
+          request_type: string
+          response_data: Json | null
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          reason?: string | null
+          request_type: string
+          response_data?: Json | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          reason?: string | null
+          request_type?: string
+          response_data?: Json | null
+          status?: string
+          updated_at?: string
           user_id?: string | null
         }
         Relationships: []
@@ -222,6 +327,16 @@ export type Database = {
       }
       l2_normalize: {
         Args: { "": string } | { "": unknown } | { "": unknown }
+        Returns: string
+      }
+      log_audit_action: {
+        Args: {
+          p_action: string
+          p_table_name?: string
+          p_record_id?: string
+          p_old_values?: Json
+          p_new_values?: Json
+        }
         Returns: string
       }
       match_documents: {
