@@ -346,7 +346,7 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
                 <img 
                   src="/lovable-uploads/190796cd-907b-454f-aea2-f482b263655d.png"
                   alt="RedacPro Avatar" 
-                  className="w-12 h-12 object-cover rounded-full"
+                  className="w-16 h-16 object-cover rounded-full"
                 />
               ) : selectedAgent === 'cdspro' ? (
                 <img 
