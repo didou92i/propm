@@ -456,54 +456,75 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
           </div>
         )}
         
-        <ChatAttachment
-          attachments={attachments}
-          onAttachmentsChange={setAttachments}
-          disabled={isLoading || processingAttachment}
-        />
-        {/* Barre d'outils */}
-        <div className="flex items-center gap-2 mb-2">
-          
-          {messages.length > 0 && (
-            <ConversationExport 
-              messages={messages}
-              agentName={currentAgent?.name || selectedAgent}
-            >
-              <Button variant="outline" size="sm" className="flex items-center gap-2">
-                <Download className="w-4 h-4" />
-                Exporter
-              </Button>
-            </ConversationExport>
-          )}
-        </div>
+        {/* Affichage des pièces jointes au-dessus de la zone de saisie */}
+        {attachments.length > 0 && (
+          <div className="mb-4 p-3 rounded-lg border border-border/20 bg-background/50 backdrop-blur-sm">
+            <ChatAttachment
+              attachments={attachments}
+              onAttachmentsChange={setAttachments}
+              disabled={isLoading || processingAttachment}
+            />
+          </div>
+        )}
         
-        <form onSubmit={handleSubmit} className="flex gap-4">
-          <Textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder={attachments.length > 0 ? "Posez votre question sur les documents..." : "Écrivez un message..."}
-            className="resize-none glass neomorphism-subtle focus:neomorphism hover-glow"
-            rows={3}
-            disabled={isLoading || processingAttachment}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage(input);
-              }
-            }}
-          />
-          <Button 
-            type="submit" 
-            disabled={(!input.trim() && attachments.length === 0) || isLoading || processingAttachment}
-            className="self-end gradient-agent-animated text-white hover-lift neomorphism-hover ripple-container transform-3d glass-hover shadow-glow"
-            onClick={handleSendClick}
-          >
-            {isLoading ? (
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-            ) : (
-              <Send className="w-4 h-4" />
-            )}
-          </Button>
+        {/* Zone de saisie unifiée avec actions intégrées */}
+        <form onSubmit={handleSubmit} className="relative">
+          <div className="flex items-end gap-3 p-3 rounded-xl glass neomorphism-subtle border border-border/20 backdrop-blur-sm hover:border-border/40 transition-all duration-300">
+            {/* Actions à gauche : Attachment et Export */}
+            <div className="flex items-center gap-2 pb-1">
+              <ChatAttachment
+                attachments={[]}
+                onAttachmentsChange={setAttachments}
+                disabled={isLoading || processingAttachment}
+              />
+              {messages.length > 0 && (
+                <ConversationExport 
+                  messages={messages}
+                  agentName={currentAgent?.name || selectedAgent}
+                >
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-8 w-8 p-0 hover:bg-accent/50 transition-all duration-200 hover:scale-105 group"
+                    title="Exporter la conversation"
+                  >
+                    <Download className="w-4 h-4 group-hover:text-primary transition-colors" />
+                  </Button>
+                </ConversationExport>
+              )}
+            </div>
+            
+            {/* Zone de texte principale */}
+            <div className="flex-1">
+              <Textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder={attachments.length > 0 ? "Posez votre question sur les documents..." : "Écrivez un message..."}
+                className="min-h-[60px] resize-none border-0 bg-transparent p-0 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60"
+                disabled={isLoading || processingAttachment}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage(input);
+                  }
+                }}
+              />
+            </div>
+            
+            {/* Bouton d'envoi */}
+            <Button 
+              type="submit" 
+              disabled={(!input.trim() && attachments.length === 0) || isLoading || processingAttachment}
+              className="h-10 w-10 p-0 rounded-lg gradient-agent-animated text-white hover-lift neomorphism-hover ripple-container transform-3d glass-hover shadow-glow transition-all duration-200 hover:scale-105"
+              onClick={handleSendClick}
+            >
+              {isLoading ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              ) : (
+                <Send className="w-4 h-4" />
+              )}
+            </Button>
+          </div>
         </form>
         <p className="text-xs text-muted-foreground mt-2 text-center">
           {attachments.length > 0 
