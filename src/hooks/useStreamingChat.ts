@@ -18,7 +18,7 @@ export function useStreamingChat() {
     progress: 0
   });
   
-  const eventSourceRef = useRef<EventSource | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const sendStreamingMessage = useCallback(async (
     messages: Message[],
@@ -36,99 +36,81 @@ export function useStreamingChat() {
         progress: 0
       });
 
-      // Get the session token
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error('Non authentifié');
+      // Cancel any existing request
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
       }
+      abortControllerRef.current = new AbortController();
 
-      // Close any existing connection
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
-      }
-
-      // Create the request body
-      const requestBody = JSON.stringify({
-        messages,
-        selectedAgent,
-        userSession
-      });
-
-      // Use fetch to POST the data first, then create EventSource for the stream
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-openai-stream`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: requestBody
-      });
-
-      if (!response.ok) {
-        throw new Error(`Erreur HTTP: ${response.status}`);
-      }
-
-      // Create EventSource for the streaming response
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let currentContent = '';
-
-      if (!reader) {
-        throw new Error('Stream not available');
-      }
-
-      while (true) {
-        const { done, value } = await reader.read();
+      // Try streaming function first, fallback to regular function
+      try {
+        setStreamingState(prev => ({ ...prev, status: 'Initialisation streaming...', progress: 10 }));
         
-        if (done) break;
-        
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const data = JSON.parse(line.slice(6));
-              
-              switch (data.type) {
-                case 'status':
-                  setStreamingState(prev => ({
-                    ...prev,
-                    status: data.message,
-                    progress: data.progress || prev.progress
-                  }));
-                  break;
-                  
-                case 'content':
-                  currentContent += data.chunk;
-                  setStreamingState(prev => ({
-                    ...prev,
-                    currentContent: currentContent,
-                    status: 'Génération...',
-                    progress: 95
-                  }));
-                  onMessageUpdate(currentContent, false);
-                  break;
-                  
-                case 'complete':
-                  setStreamingState(prev => ({
-                    ...prev,
-                    isStreaming: false,
-                    status: 'Terminé',
-                    progress: 100
-                  }));
-                  onComplete(data.content, data.threadId);
-                  break;
-                  
-                case 'error':
-                  throw new Error(data.message);
-              }
-            } catch (parseError) {
-              console.warn('Failed to parse SSE data:', parseError);
-            }
+        const { data, error } = await supabase.functions.invoke('chat-openai-stream', {
+          body: {
+            messages,
+            selectedAgent,
+            userSession
+          },
+          headers: {
+            'Content-Type': 'application/json'
           }
+        });
+
+        if (error) {
+          throw new Error(`Erreur streaming: ${error.message}`);
+        }
+
+        // Handle streaming response if available
+        if (data && typeof data === 'object') {
+          setStreamingState(prev => ({ ...prev, status: 'Traitement...', progress: 50 }));
+          
+          if (data.content) {
+            setStreamingState(prev => ({
+              ...prev,
+              currentContent: data.content,
+              status: 'Terminé',
+              progress: 100,
+              isStreaming: false
+            }));
+            onMessageUpdate(data.content, true);
+            onComplete(data.content, data.threadId);
+          }
+        }
+      } catch (streamError) {
+        logger.warn('Streaming function failed, falling back to regular function', streamError, 'useStreamingChat');
+        
+        // Fallback to regular chat function with progress simulation
+        setStreamingState(prev => ({ ...prev, status: 'Mode standard...', progress: 20 }));
+        
+        const { data, error } = await supabase.functions.invoke('chat-openai', {
+          body: {
+            messages,
+            selectedAgent,
+            userSession
+          }
+        });
+
+        if (error) {
+          throw new Error(`Erreur fallback: ${error.message}`);
+        }
+
+        // Simulate progress for better UX
+        setStreamingState(prev => ({ ...prev, status: 'Traitement...', progress: 80 }));
+        
+        // Brief delay to show progress
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        if (data && data.content) {
+          setStreamingState(prev => ({
+            ...prev,
+            currentContent: data.content,
+            status: 'Terminé',
+            progress: 100,
+            isStreaming: false
+          }));
+          onMessageUpdate(data.content, true);
+          onComplete(data.content, data.threadId);
         }
       }
 
@@ -137,21 +119,23 @@ export function useStreamingChat() {
       setStreamingState(prev => ({
         ...prev,
         isStreaming: false,
-        status: 'Erreur'
+        status: 'Erreur',
+        progress: 0
       }));
       onError(error instanceof Error ? error.message : 'Erreur inconnue');
     }
   }, []);
 
   const cancelStream = useCallback(() => {
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close();
-      eventSourceRef.current = null;
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
     }
     setStreamingState(prev => ({
       ...prev,
       isStreaming: false,
-      status: 'Annulé'
+      status: 'Annulé',
+      progress: 0
     }));
   }, []);
 
