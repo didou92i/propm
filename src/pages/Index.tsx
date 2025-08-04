@@ -74,10 +74,8 @@ const Index = () => {
 
             {/* Main Chat Area */}
             <ChatArea selectedAgent={selectedAgent} sharedContext={sharedContext} />
-          </div>
-          
-          {/* Fixed Legal Footer */}
-          <div className="fixed bottom-0 left-0 right-0 z-30">
+            
+            {/* Legal Footer */}
             <LegalFooter />
           </div>
           
