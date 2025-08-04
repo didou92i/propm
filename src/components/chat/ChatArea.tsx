@@ -2,6 +2,7 @@
 // ChatArea component for handling chat interactions
 import { useState, useRef, useEffect } from "react";
 import { Send, Bot, User, Download, MoreVertical } from "lucide-react";
+import { getAgentById, AGENTS } from "@/config/agents";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -349,29 +350,20 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
       {messages.length === 0 ? (
         <div className="flex-1 flex items-center justify-center p-8 animate-fade-in">
           <div className="text-center max-w-2xl">
-            <div className="w-16 h-16 rounded-full gradient-agent-animated flex items-center justify-center mx-auto mb-6 float pulse-glow neomorphism overflow-hidden">
-              {selectedAgent === 'redacpro' ? (
-                <img 
-                  src="/lovable-uploads/190796cd-907b-454f-aea2-f482b263655d.png"
-                  alt="RedacPro Avatar" 
-                  className="w-16 h-16 object-cover rounded-full"
-                />
-              ) : selectedAgent === 'cdspro' ? (
-                <img 
-                  src="/lovable-uploads/321ab54b-a748-42b7-b5e3-22717904fe90.png"
-                  alt="CDS Pro Avatar" 
-                  className="w-16 h-16 object-cover rounded-full"
-                />
-              ) : selectedAgent === 'arrete' ? (
-                <img 
-                  src="/lovable-uploads/47594ea7-a3ab-47c8-b4f5-6081c3b7f039.png"
-                  alt="ArreteTerritorial Avatar"
-                  className="w-16 h-16 object-cover rounded-full"
-                />
-              ) : (
-                <Bot className="w-16 h-16 text-primary" />
-              )}
-            </div>
+             <div className="w-16 h-16 rounded-full gradient-agent-animated flex items-center justify-center mx-auto mb-6 float pulse-glow neomorphism overflow-hidden">
+               {(() => {
+                 const agent = AGENTS.find(a => a.id === selectedAgent);
+                 return agent?.avatar ? (
+                   <img 
+                     src={agent.avatar}
+                     alt={`${agent.name} Avatar`} 
+                     className="w-16 h-16 object-cover rounded-full"
+                   />
+                 ) : (
+                   <Bot className="w-16 h-16 text-primary" />
+                 );
+               })()}
+             </div>
             <h1 className="text-2xl font-bold mb-2 animate-scale-in">
               {currentAgent?.name || "Assistant IA"}
             </h1>
@@ -408,27 +400,18 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
             >
               {message.role === "assistant" && (
                 <div className="w-8 h-8 rounded-full gradient-agent-animated flex items-center justify-center flex-shrink-0 hover-lift neomorphism-hover overflow-hidden">
-                  {selectedAgent === 'redacpro' ? (
-                    <img 
-                      src="/lovable-uploads/190796cd-907b-454f-aea2-f482b263655d.png"
-                      alt="RedacPro Avatar" 
-                      className="w-6 h-6 object-cover rounded-full"
-                    />
-                  ) : selectedAgent === 'cdspro' ? (
-                    <img 
-                      src="/lovable-uploads/321ab54b-a748-42b7-b5e3-22717904fe90.png" 
-                      alt="CDS Pro Avatar" 
-                      className="w-6 h-6 object-cover rounded-full"
-                    />
-                  ) : selectedAgent === 'arrete' ? (
-                    <img 
-                      src="/lovable-uploads/47594ea7-a3ab-47c8-b4f5-6081c3b7f039.png" 
-                      alt="ArreteTerritorial Avatar" 
-                      className="w-6 h-6 object-cover rounded-full"
-                    />
-                  ) : (
-                    <Bot className="w-6 h-6 text-primary" />
-                  )}
+                  {(() => {
+                    const agent = AGENTS.find(a => a.id === selectedAgent);
+                    return agent?.avatar ? (
+                      <img 
+                        src={agent.avatar}
+                        alt={`${agent.name} Avatar`} 
+                        className="w-6 h-6 object-cover rounded-full"
+                      />
+                    ) : (
+                      <Bot className="w-6 h-6 text-primary" />
+                    );
+                  })()}
                 </div>
               )}
               <div
