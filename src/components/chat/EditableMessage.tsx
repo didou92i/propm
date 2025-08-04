@@ -12,6 +12,7 @@ interface EditableMessageProps {
   isAssistant: boolean;
   enableTypewriter?: boolean;
   onTypingComplete?: () => void;
+  isStreaming?: boolean;
 }
 
 export function EditableMessage({ 
@@ -19,7 +20,8 @@ export function EditableMessage({
   onContentChange, 
   isAssistant, 
   enableTypewriter, 
-  onTypingComplete 
+  onTypingComplete,
+  isStreaming = false
 }: EditableMessageProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(content);
@@ -65,6 +67,7 @@ export function EditableMessage({
           isAssistant={isAssistant}
           enableTypewriter={enableTypewriter}
           onTypingComplete={onTypingComplete}
+          isStreaming={isStreaming}
         />
         {isAssistant && (
           <div className="flex items-center gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-all duration-200">

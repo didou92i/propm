@@ -3,31 +3,34 @@ import remarkGfm from 'remark-gfm';
 import { Copy, Check, Zap } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { useTypewriter } from '@/hooks/useTypewriter';
+import { useOptimizedTypewriter } from '@/hooks/useOptimizedTypewriter';
 
 interface MarkdownRendererProps {
   content: string;
   isAssistant?: boolean;
   enableTypewriter?: boolean;
   onTypingComplete?: () => void;
+  isStreaming?: boolean;
 }
 
 export const MarkdownRenderer = ({ 
   content, 
   isAssistant = false, 
   enableTypewriter = false,
-  onTypingComplete 
+  onTypingComplete,
+  isStreaming = false
 }: MarkdownRendererProps) => {
   const [copied, setCopied] = useState(false);
   
-  const { displayedText, isTyping, skipAnimation } = useTypewriter({
+  const { displayedText, isTyping, skipAnimation, fastForward } = useOptimizedTypewriter({
     text: content,
-    speed: 15,
     delay: 0,
-    onComplete: onTypingComplete
+    onComplete: onTypingComplete,
+    disabled: !enableTypewriter || !isAssistant || isStreaming,
+    adaptiveSpeed: true
   });
 
-  const textToRender = enableTypewriter && isAssistant ? displayedText : content;
+  const textToRender = enableTypewriter && isAssistant && !isStreaming ? displayedText : content;
 
   const handleCopy = async () => {
     try {
@@ -155,22 +158,30 @@ export const MarkdownRenderer = ({
       </div>
 
       {/* Skip animation button for typewriter */}
-      {enableTypewriter && isAssistant && isTyping && (
-        <div className="flex items-center justify-center mt-2">
+      {enableTypewriter && isAssistant && isTyping && !isStreaming && (
+        <div className="flex items-center justify-center gap-2 mt-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={fastForward}
+            className="text-xs text-muted-foreground hover:text-foreground"
+          >
+            <Zap className="h-3 w-3 mr-1" />
+            Accélérer
+          </Button>
           <Button
             variant="ghost"
             size="sm"
             onClick={skipAnimation}
             className="text-xs text-muted-foreground hover:text-foreground"
           >
-            <Zap className="h-3 w-3 mr-1" />
-            Afficher instantanément
+            Terminer
           </Button>
         </div>
       )}
 
       {/* Typing indicator */}
-      {enableTypewriter && isAssistant && isTyping && (
+      {enableTypewriter && isAssistant && isTyping && !isStreaming && (
         <div className="flex items-center gap-1 mt-2 text-muted-foreground text-xs">
           <div className="flex gap-1">
             <div className="w-1 h-1 bg-current rounded-full animate-pulse"></div>

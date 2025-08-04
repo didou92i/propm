@@ -448,8 +448,9 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
                   content={message.content}
                   onContentChange={(newContent) => handleMessageEdit(message.id, newContent)}
                   isAssistant={message.role === "assistant"}
-                  enableTypewriter={false}
+                  enableTypewriter={message.role === "assistant" && message.id === typingMessageId}
                   onTypingComplete={() => {}}
+                  isStreaming={streamingState.isStreaming && message.id === typingMessageId}
                 />
               </div>
               {message.role === "user" && (
