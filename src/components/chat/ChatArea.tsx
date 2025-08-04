@@ -346,7 +346,7 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
   const currentAgent = agentInfo[selectedAgent as keyof typeof agentInfo];
 
   return (
-    <div className="flex-1 flex flex-col">
+    <div className="flex flex-col h-full">
       {messages.length === 0 ? (
         <div className="flex-1 flex items-center justify-center p-8 animate-fade-in">
           <div className="text-center max-w-2xl">
