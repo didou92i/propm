@@ -1,4 +1,4 @@
-import { Bot, FileText, Calculator, MessageSquare, Search, User } from "lucide-react";
+import { Bot, FileText, Calculator, MessageSquare, Search, User, GraduationCap } from "lucide-react";
 
 export const AGENTS = [
   { 
@@ -24,6 +24,14 @@ export const AGENTS = [
     color: "text-green-400",
     avatar: "/lovable-uploads/47594ea7-a3ab-47c8-b4f5-6081c3b7f039.png",
     description: "Spécialiste des arrêtés territoriaux"
+  },
+  { 
+    id: "prepacds", 
+    name: "Prepa CDS", 
+    icon: GraduationCap, 
+    color: "text-orange-400",
+    avatar: "/lovable-uploads/657d8222-aff4-4e40-b5ce-4c598b0103b6.png",
+    description: "Assistant de préparation CDS"
   },
 ];
 

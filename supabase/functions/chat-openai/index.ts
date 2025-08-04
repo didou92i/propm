@@ -92,7 +92,8 @@ serve(async (req) => {
     const assistantIds = {
       redacpro: "asst_nVveo2OzbB2h8uHY2oIDpob1",
       cdspro: "asst_ljWenYnbNEERVydsDaeVSHVl", 
-      arrete: "asst_e4AMY6vpiqgqFwbQuhNCbyeL"
+      arrete: "asst_e4AMY6vpiqgqFwbQuhNCbyeL",
+      prepacds: "asst_MxbbQeTimcxV2mYR0KwAPNsu"
     };
 
     const assistantId = assistantIds[selectedAgent as keyof typeof assistantIds] || assistantIds.redacpro;

@@ -89,7 +89,8 @@ serve(async (req) => {
         assistant_id: {
           redacpro: "asst_nVveo2OzbB2h8uHY2oIDpob1",
           cdspro: "asst_ljWenYnbNEERVydsDaeVSHVl", 
-          arrete: "asst_e4AMY6vpiqgqFwbQuhNCbyeL"
+          arrete: "asst_e4AMY6vpiqgqFwbQuhNCbyeL",
+          prepacds: "asst_MxbbQeTimcxV2mYR0KwAPNsu"
         }[selectedAgent] || "asst_nVveo2OzbB2h8uHY2oIDpob1"
       })
     });

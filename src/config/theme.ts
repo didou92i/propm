@@ -17,6 +17,12 @@ export const THEME_COLORS = {
       secondary: "hsl(142, 76%, 23%)",
       accent: "hsl(142, 76%, 46%)",
       gradient: "linear-gradient(135deg, hsl(142, 76%, 36%), hsl(142, 76%, 23%))"
+    },
+    prepacds: {
+      primary: "hsl(39, 96%, 56%)",
+      secondary: "hsl(39, 96%, 43%)",
+      accent: "hsl(39, 96%, 66%)",
+      gradient: "linear-gradient(135deg, hsl(39, 96%, 56%), hsl(39, 96%, 43%))"
     }
   },
   effects: {
