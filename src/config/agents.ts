@@ -30,7 +30,7 @@ export const AGENTS = [
     name: "Prepa CDS", 
     icon: GraduationCap, 
     color: "text-orange-400",
-    avatar: "/lovable-uploads/657d8222-aff4-4e40-b5ce-4c598b0103b6.png",
+    avatar: "/lovable-uploads/67da1939-3215-457e-bc29-ea5425cd6aea.png",
     description: "Assistant de préparation CDS"
   },
 ];
