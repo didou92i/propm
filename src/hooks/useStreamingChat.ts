@@ -6,16 +6,14 @@ import { logger } from '@/utils/logger';
 interface StreamingState {
   isStreaming: boolean;
   currentContent: string;
-  status: string;
-  progress: number;
+  isTyping: boolean;
 }
 
 export function useStreamingChat() {
   const [streamingState, setStreamingState] = useState<StreamingState>({
     isStreaming: false,
     currentContent: '',
-    status: '',
-    progress: 0
+    isTyping: false
   });
   
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -32,8 +30,7 @@ export function useStreamingChat() {
       setStreamingState({
         isStreaming: true,
         currentContent: '',
-        status: 'Connexion...',
-        progress: 0
+        isTyping: true
       });
 
       // Cancel any existing request
@@ -42,10 +39,8 @@ export function useStreamingChat() {
       }
       abortControllerRef.current = new AbortController();
 
-      // Progress simulation
-      setStreamingState(prev => ({ ...prev, status: 'Traitement...', progress: 20 }));
-      
-      const { data, error } = await supabase.functions.invoke('chat-openai', {
+      // Use streaming endpoint
+      const { data, error } = await supabase.functions.invoke('chat-openai-stream', {
         body: {
           messages,
           selectedAgent,
@@ -57,22 +52,45 @@ export function useStreamingChat() {
         throw new Error(`Erreur: ${error.message}`);
       }
 
-      // Simulate progress for better UX
-      setStreamingState(prev => ({ ...prev, status: 'Finalisation...', progress: 80 }));
-      
-      // Brief delay to show progress
-      await new Promise(resolve => setTimeout(resolve, 300));
-
+      // Handle streaming response
       if (data && data.content) {
-        setStreamingState(prev => ({
-          ...prev,
-          currentContent: data.content,
-          status: 'Terminé',
-          progress: 100,
-          isStreaming: false
-        }));
-        onMessageUpdate(data.content, true);
-        onComplete(data.content, data.threadId);
+        // Simulate real-time streaming by revealing text progressively
+        const content = data.content;
+        let currentIndex = 0;
+        
+        const revealNextChunk = () => {
+          if (currentIndex < content.length && !abortControllerRef.current?.signal.aborted) {
+            // Reveal 1-3 characters at a time for natural typing effect
+            const chunkSize = Math.floor(Math.random() * 3) + 1;
+            const nextChunk = content.slice(0, currentIndex + chunkSize);
+            currentIndex += chunkSize;
+            
+            setStreamingState(prev => ({
+              ...prev,
+              currentContent: nextChunk,
+              isTyping: currentIndex < content.length
+            }));
+            
+            onMessageUpdate(nextChunk, currentIndex >= content.length);
+            
+            if (currentIndex < content.length) {
+              // Variable delay for natural typing rhythm
+              const delay = Math.random() * 30 + 20; // 20-50ms per character
+              setTimeout(revealNextChunk, delay);
+            } else {
+              // Finished streaming
+              setStreamingState(prev => ({
+                ...prev,
+                isStreaming: false,
+                isTyping: false
+              }));
+              onComplete(content, data.threadId);
+            }
+          }
+        };
+        
+        // Start the streaming effect
+        setTimeout(revealNextChunk, 100);
       }
 
     } catch (error) {
@@ -80,8 +98,7 @@ export function useStreamingChat() {
       setStreamingState(prev => ({
         ...prev,
         isStreaming: false,
-        status: 'Erreur',
-        progress: 0
+        isTyping: false
       }));
       onError(error instanceof Error ? error.message : 'Erreur inconnue');
     }
@@ -95,8 +112,7 @@ export function useStreamingChat() {
     setStreamingState({
       isStreaming: false,
       currentContent: '',
-      status: 'Annulé',
-      progress: 0
+      isTyping: false
     });
   }, []);
 
