@@ -75,7 +75,7 @@ export function useStreamingChat() {
             
             if (currentIndex < content.length) {
               // Variable delay for natural typing rhythm
-              const delay = Math.random() * 30 + 20; // 20-50ms per character
+              const delay = Math.random() * 15 + 10; // 10-25ms per character - plus rapide
               setTimeout(revealNextChunk, delay);
             } else {
               // Finished streaming

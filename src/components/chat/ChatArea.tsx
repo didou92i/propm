@@ -125,8 +125,11 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
   }, [sharedContext, contextShared, toast]);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    const timeoutId = setTimeout(() => {
+      scrollToBottom();
+    }, 100);
+    return () => clearTimeout(timeoutId);
+  }, [messages, streamingState.currentContent]);
 
   // Save messages to conversation history
   useEffect(() => {
@@ -445,15 +448,8 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
                   content={message.content}
                   onContentChange={(newContent) => handleMessageEdit(message.id, newContent)}
                   isAssistant={message.role === "assistant"}
-                  enableTypewriter={message.role === "assistant" && message.id === typingMessageId}
-                  onTypingComplete={() => {
-                    // Use setTimeout to avoid setState during render
-                    setTimeout(() => {
-                      if (message.id === typingMessageId) {
-                        setTypingMessageId(null);
-                      }
-                    }, 0);
-                  }}
+                  enableTypewriter={false}
+                  onTypingComplete={() => {}}
                 />
               </div>
               {message.role === "user" && (
@@ -463,43 +459,6 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
               )}
             </div>
           ))}
-          {streamingState.isTyping && (
-            <div className="flex gap-4 justify-start animate-fade-in">
-              <div className="w-8 h-8 rounded-full gradient-agent-animated flex items-center justify-center flex-shrink-0 overflow-hidden">
-                {selectedAgent === 'redacpro' ? (
-                  <img 
-                    src="/lovable-uploads/190796cd-907b-454f-aea2-f482b263655d.png"
-                    alt="RedacPro Avatar" 
-                    className="w-6 h-6 object-cover rounded-full"
-                  />
-                ) : selectedAgent === 'cdspro' ? (
-                  <img 
-                    src="/lovable-uploads/321ab54b-a748-42b7-b5e3-22717904fe90.png" 
-                    alt="CDS Pro Avatar" 
-                    className="w-6 h-6 object-cover rounded-full"
-                  />
-                ) : selectedAgent === 'arrete' ? (
-                  <img 
-                    src="/lovable-uploads/47594ea7-a3ab-47c8-b4f5-6081c3b7f039.png" 
-                    alt="ArreteTerritorial Avatar" 
-                    className="w-6 h-6 object-cover rounded-full"
-                  />
-                ) : (
-                  <Bot className="w-6 h-6 text-primary" />
-                )}
-              </div>
-              <div className="max-w-3xl p-4 rounded-2xl glass neomorphism">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
-                    <div className="w-2 h-2 bg-primary rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
-                    <div className="w-2 h-2 bg-primary rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
-                  </div>
-                  <span className="text-sm">En train d'écrire...</span>
-                </div>
-              </div>
-            </div>
-          )}
           <div ref={messagesEndRef} />
         </div>
       )}
