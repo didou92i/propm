@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { FixedSizeList as List } from 'react-window';
 import { Message, MessageAttachment } from '@/types/chat';
-import { MessageWithAttachments } from './MessageWithAttachments';
+import { MessageWithAttachments } from '@/components/chat';
 import { SkeletonTyping } from './SkeletonMessage';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { Bot, User } from 'lucide-react';

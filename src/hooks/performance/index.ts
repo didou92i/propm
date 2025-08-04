@@ -1,0 +1,1 @@
+export { usePerformanceOptimization } from '@/hooks/usePerformanceOptimization';

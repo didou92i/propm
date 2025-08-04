@@ -7,18 +7,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
-import { MarkdownRenderer } from "@/components/MarkdownRenderer";
-import { SkeletonTyping } from "@/components/SkeletonMessage";
-import { EditableMessage } from "@/components/EditableMessage";
-import { ChatAttachment } from "@/components/ChatAttachment";
-import { MessageWithAttachments } from "@/components/MessageWithAttachments";
-import { ConversationExport } from "@/components/ConversationExport";
-import { VirtualizedMessageList, VirtualizedMessageListRef } from "@/components/VirtualizedMessageList";
+import { MarkdownRenderer, SkeletonMessage, VirtualizedMessageList } from "@/components/common";
+import type { VirtualizedMessageListRef } from "@/components/common/VirtualizedMessageList";
+import { EditableMessage, ChatAttachment, MessageWithAttachments } from "@/components/chat";
+import { ConversationExport } from "@/components/conversation";
 import { useRipple } from "@/hooks/useRipple";
 import { useConversationHistory } from "@/hooks/useConversationHistory";
 import { useStreamingChat } from "@/hooks/useStreamingChat";
 import { usePerformanceOptimization } from "@/hooks/usePerformanceOptimization";
-import { StreamingProgress } from "@/components/StreamingProgress";
+import { StreamingProgress } from "@/components/common";
 import { Message, MessageAttachment } from "@/types/chat";
 import { useToast } from "@/hooks/use-toast";
 import { logger } from "@/utils/logger";
@@ -466,7 +463,7 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
               )}
             </div>
           ))}
-          {isLoading && <SkeletonTyping />}
+          {isLoading && <SkeletonMessage />}
           <div ref={messagesEndRef} />
         </div>
       )}

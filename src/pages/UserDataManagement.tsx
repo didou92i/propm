@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Database } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { GDPRRightsManager } from '@/components/GDPRRightsManager';
+import { GDPRRightsManager } from '@/components/legal';
 
 export default function UserDataManagement() {
   const navigate = useNavigate();

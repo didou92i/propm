@@ -1,5 +1,5 @@
 import React from 'react';
-import { CookiePreferences } from '@/components/CookiePreferences';
+import { CookiePreferences } from '@/components/legal';
 import { useNavigate } from 'react-router-dom';
 
 export function LegalFooter() {

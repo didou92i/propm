@@ -1,15 +1,14 @@
 import { useState } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { ChatArea } from "@/components/ChatArea";
-import { ParallaxBackground } from "@/components/ParallaxBackground";
+import { ChatArea } from "@/components/chat";
+import { ParallaxBackground, MorphingIcon } from "@/components/common";
 import { FloatingActionButton } from "@/components/FloatingActionButton";
-import { MorphingIcon } from "@/components/MorphingIcon";
 import { PlatformDiagnostics } from "@/components/PlatformDiagnostics";
-import { SemanticSearchDialog } from "@/components/SemanticSearchDialog";
+import { SemanticSearchDialog } from "@/components/search";
 import { MonitoringDashboard } from "@/components/MonitoringDashboard";
 import { useAgentTheme } from "@/hooks/useAgentTheme";
-import { LegalFooter } from "@/components/LegalFooter";
+import { LegalFooter } from "@/components/legal";
 import { Bot, Sparkles, Plus, Settings, FileSearch, Activity, BarChart3 } from "lucide-react";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 const Index = () => {

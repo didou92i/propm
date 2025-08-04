@@ -4,7 +4,7 @@ import { Bot, FileText, Calculator, MessageSquare, Search, Settings, Plus, User,
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
-import { ConversationSwitcher } from "@/components/ConversationSwitcher";
+import { ConversationSwitcher } from "@/components/conversation";
 import { useConversationHistory } from "@/hooks/useConversationHistory";
 import { Message } from "@/types/chat";
 import {
