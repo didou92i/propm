@@ -1,12 +1,13 @@
 
 import { useState } from "react";
-import { Bot, FileText, Calculator, MessageSquare, Search, Settings, Plus, User, Moon, Sun, LogOut } from "lucide-react";
+import { Calculator, Search, Settings, Plus, User, Moon, Sun, LogOut, MessageSquare } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { ConversationSwitcher } from "@/components/conversation";
 import { useConversationHistory } from "@/hooks/useConversationHistory";
 import { Message } from "@/types/chat";
+import { AGENTS, TOOLS } from "@/config/agents";
 import {
   Sidebar,
   SidebarContent,
@@ -21,18 +22,6 @@ import {
 } from "@/components/ui/sidebar";
 import { useRipple } from "@/hooks/useRipple";
 import { useTheme } from "@/hooks/useTheme";
-
-const agents = [
-  { id: "redacpro", name: "RedacPro", icon: Bot, color: "text-blue-400" },
-  { id: "cdspro", name: "CDS Pro", icon: FileText, color: "text-purple-400" },
-  { id: "arrete", name: "ArreteTerritorial", icon: MessageSquare, color: "text-green-400" },
-];
-
-const tools = [
-  { id: "salary", name: "Simulateur de salaire", icon: Calculator, color: "text-yellow-400" },
-  { id: "natif", name: "Pro Natif", icon: Search, color: "text-cyan-400" },
-  { id: "azzabi", name: "Azzabi", icon: User, color: "text-pink-400" },
-];
 
 interface AppSidebarProps {
   selectedAgent: string;
@@ -120,7 +109,7 @@ export function AppSidebar({ selectedAgent, onAgentSelect, onContextShare }: App
           </div>
           <SidebarGroupContent>
             <SidebarMenu>
-              {agents.map((agent, index) => (
+              {AGENTS.map((agent, index) => (
                 <SidebarMenuItem key={agent.id} className="animate-fade-in" style={{ animationDelay: `${index * 0.1}s` }}>
                   <SidebarMenuButton
                     onClick={(e) => handleAgentSelect(agent.id, e)}
@@ -130,31 +119,11 @@ export function AppSidebar({ selectedAgent, onAgentSelect, onContextShare }: App
                         : "hover:bg-sidebar-accent/50 hover-glow glass-subtle"
                     }`}
                   >
-                    {agent.id === "redacpro" ? (
+                    {agent.avatar ? (
                       <div className="w-5 h-5 rounded-full overflow-hidden">
                         <img 
-                          src="/lovable-uploads/190796cd-907b-454f-aea2-f482b263655d.png"
-                          alt="RedacPro Avatar" 
-                          className={`w-5 h-5 object-cover transition-all duration-300 ${
-                            selectedAgent === agent.id ? 'scale-110' : ''
-                          }`}
-                        />
-                      </div>
-                    ) : agent.id === "cdspro" ? (
-                      <div className="w-5 h-5 rounded-full overflow-hidden">
-                        <img 
-                          src="/lovable-uploads/321ab54b-a748-42b7-b5e3-22717904fe90.png"
-                          alt="CDS Pro Avatar" 
-                          className={`w-5 h-5 object-cover transition-all duration-300 ${
-                            selectedAgent === agent.id ? 'scale-110' : ''
-                          }`}
-                        />
-                      </div>
-                    ) : agent.id === "arrete" ? (
-                      <div className="w-5 h-5 rounded-full overflow-hidden">
-                        <img 
-                          src="/lovable-uploads/47594ea7-a3ab-47c8-b4f5-6081c3b7f039.png" 
-                          alt="ArreteTerritorial Avatar" 
+                          src={agent.avatar}
+                          alt={`${agent.name} Avatar`} 
                           className={`w-5 h-5 object-cover transition-all duration-300 ${
                             selectedAgent === agent.id ? 'scale-110' : ''
                           }`}
@@ -187,7 +156,7 @@ export function AppSidebar({ selectedAgent, onAgentSelect, onContextShare }: App
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {tools.map((tool, index) => (
+              {TOOLS.map((tool, index) => (
                 <SidebarMenuItem key={tool.id} className="animate-fade-in" style={{ animationDelay: `${(index + 3) * 0.1}s` }}>
                   <SidebarMenuButton
                     onClick={(e) => handleAgentSelect(tool.id, e)}
