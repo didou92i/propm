@@ -6,7 +6,12 @@ export const PERFORMANCE_CONFIG = {
     localStorageMaxAge: 7 * 24 * 60 * 60 * 1000, // 7 jours
     enableDebugLogs: false,
     enableMetrics: true,
-    cacheSize: 50
+    cacheSize: 50,
+    // Animation performance settings
+    typewriterSpeed: 3, // 3ms per character for production
+    chunkSize: 3, // Characters revealed per chunk
+    disableAnimations: false,
+    adaptiveSpeed: true // Auto-adjust speed based on message length
   },
   DEVELOPMENT: {
     maxMessages: 50,
@@ -15,7 +20,12 @@ export const PERFORMANCE_CONFIG = {
     localStorageMaxAge: 1 * 24 * 60 * 60 * 1000, // 1 jour
     enableDebugLogs: true,
     enableMetrics: true,
-    cacheSize: 20
+    cacheSize: 20,
+    // Animation performance settings
+    typewriterSpeed: 5, // 5ms per character for development
+    chunkSize: 2, // Characters revealed per chunk
+    disableAnimations: false,
+    adaptiveSpeed: true
   }
 };
 

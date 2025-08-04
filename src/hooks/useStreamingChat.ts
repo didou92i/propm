@@ -58,10 +58,10 @@ export function useStreamingChat() {
         const content = data.content;
         let currentIndex = 0;
         
-        const revealNextChunk = () => {
-          if (currentIndex < content.length && !abortControllerRef.current?.signal.aborted) {
-            // Reveal 1-3 characters at a time for natural typing effect
-            const chunkSize = Math.floor(Math.random() * 3) + 1;
+          const revealNextChunk = () => {
+            if (currentIndex < content.length && !abortControllerRef.current?.signal.aborted) {
+              // Reveal 2-5 characters at a time for faster streaming
+              const chunkSize = Math.floor(Math.random() * 4) + 2;
             const nextChunk = content.slice(0, currentIndex + chunkSize);
             currentIndex += chunkSize;
             
@@ -74,8 +74,8 @@ export function useStreamingChat() {
             onMessageUpdate(nextChunk, currentIndex >= content.length);
             
             if (currentIndex < content.length) {
-              // Variable delay for natural typing rhythm
-              const delay = Math.random() * 15 + 10; // 10-25ms per character - plus rapide
+              // Optimized delay for much faster typing rhythm
+              const delay = Math.random() * 3 + 2; // 2-5ms per character - ultra rapide
               setTimeout(revealNextChunk, delay);
             } else {
               // Finished streaming

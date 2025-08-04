@@ -9,7 +9,7 @@ interface UseTypewriterOptions {
 
 export const useTypewriter = ({ 
   text, 
-  speed = 20, 
+  speed = 5, // Reduced from 20ms to 5ms for faster animation
   delay = 0,
   onComplete 
 }: UseTypewriterOptions) => {
