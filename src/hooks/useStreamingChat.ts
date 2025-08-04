@@ -92,12 +92,12 @@ export function useStreamingChat() {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
     }
-    setStreamingState(prev => ({
-      ...prev,
+    setStreamingState({
       isStreaming: false,
+      currentContent: '',
       status: 'Annulé',
       progress: 0
-    }));
+    });
   }, []);
 
   return {
