@@ -2,7 +2,7 @@ import React, { useRef, useEffect, forwardRef, useImperativeHandle } from 'react
 import { FixedSizeList as List } from 'react-window';
 import { Message, MessageAttachment } from '@/types/chat';
 import { MessageWithAttachments } from '@/components/chat';
-import { SkeletonTyping } from './SkeletonMessage';
+import { SkeletonMessage } from './SkeletonMessage';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { Bot, User } from 'lucide-react';
 
@@ -108,7 +108,7 @@ const VirtualizedMessageList = forwardRef<VirtualizedMessageListRef, Virtualized
       if (index === messages.length && isLoading) {
         return (
           <div style={style} className="px-6 py-3">
-            <SkeletonTyping />
+            <SkeletonMessage />
           </div>
         );
       }
