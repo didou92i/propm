@@ -1,4 +1,5 @@
 import { Bot, FileText, Calculator, MessageSquare, Search, User, GraduationCap } from "lucide-react";
+import { getAgentPrompt, hasAgentPrompt } from "./prompts";
 
 export const AGENTS = [
   { 
@@ -63,4 +64,33 @@ export const ALL_AGENTS = [...AGENTS, ...TOOLS];
 
 export const getAgentById = (id: string) => {
   return ALL_AGENTS.find(agent => agent.id === id);
+};
+
+/**
+ * Récupère un assistant avec ses informations de prompt
+ * @param id - Identifiant de l'assistant
+ * @returns L'assistant avec ses infos de prompt ou undefined
+ */
+export const getAgentWithPrompt = (id: string) => {
+  const agent = getAgentById(id);
+  if (!agent) return undefined;
+  
+  const promptInfo = getAgentPrompt(id);
+  return {
+    ...agent,
+    prompt: promptInfo,
+    hasPrompt: hasAgentPrompt(id)
+  };
+};
+
+/**
+ * Récupère tous les assistants avec indication de leurs prompts
+ * @returns Tableau des assistants avec infos de prompt
+ */
+export const getAllAgentsWithPromptInfo = () => {
+  return ALL_AGENTS.map(agent => ({
+    ...agent,
+    hasPrompt: hasAgentPrompt(agent.id),
+    prompt: getAgentPrompt(agent.id)
+  }));
 };
