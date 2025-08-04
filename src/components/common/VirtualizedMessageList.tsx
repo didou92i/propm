@@ -5,6 +5,7 @@ import { MessageWithAttachments } from '@/components/chat';
 import { SkeletonMessage } from './SkeletonMessage';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { Bot, User } from 'lucide-react';
+import { getAgentById } from '@/config/agents';
 
 interface VirtualizedMessageListProps {
   messages: Message[];
@@ -49,27 +50,19 @@ const VirtualizedMessageList = forwardRef<VirtualizedMessageListRef, Virtualized
           >
             {message.role === "assistant" && (
               <div className="w-8 h-8 rounded-full gradient-agent-animated flex items-center justify-center flex-shrink-0 hover-lift neomorphism-hover overflow-hidden">
-                {selectedAgent === 'redacpro' ? (
-                  <img 
-                    src="/lovable-uploads/190796cd-907b-454f-aea2-f482b263655d.png"
-                    alt="RedacPro Avatar" 
-                    className="w-6 h-6 object-cover rounded-full"
-                  />
-                ) : selectedAgent === 'cdspro' ? (
-                  <img 
-                    src="/lovable-uploads/321ab54b-a748-42b7-b5e3-22717904fe90.png" 
-                    alt="CDS Pro Avatar" 
-                    className="w-6 h-6 object-cover rounded-full"
-                  />
-                ) : selectedAgent === 'arrete' ? (
-                  <img 
-                    src="/lovable-uploads/47594ea7-a3ab-47c8-b4f5-6081c3b7f039.png" 
-                    alt="ArreteTerritorial Avatar" 
-                    className="w-6 h-6 object-cover rounded-full"
-                  />
-                ) : (
-                  <Bot className="w-6 h-6 text-primary" />
-                )}
+                {(() => {
+                  const agent = getAgentById(selectedAgent);
+                  if (agent && 'avatar' in agent && typeof agent.avatar === 'string') {
+                    return (
+                      <img 
+                        src={agent.avatar}
+                        alt={`${agent.name} Avatar`} 
+                        className="w-6 h-6 object-cover rounded-full"
+                      />
+                    );
+                  }
+                  return <Bot className="w-6 h-6 text-primary" />;
+                })()}
               </div>
             )}
             <div
