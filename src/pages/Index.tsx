@@ -73,11 +73,13 @@ const Index = () => {
             </header>
 
             {/* Main Chat Area */}
-            <ChatArea selectedAgent={selectedAgent} sharedContext={sharedContext} />
-            
-            {/* Legal Footer */}
-            <LegalFooter />
+            <div className="pb-16">
+              <ChatArea selectedAgent={selectedAgent} sharedContext={sharedContext} />
+            </div>
           </div>
+          
+          {/* Fixed Legal Footer */}
+          <LegalFooter />
           
           {/* Enhanced Floating Action Buttons */}
           <FloatingActionButton icon={Plus} onClick={handleNewChat} position="bottom-right" variant="primary" size="md" tooltip="Nouvelle conversation" />
