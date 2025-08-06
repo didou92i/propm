@@ -4,3 +4,6 @@ export { MessageWithAttachments } from './MessageWithAttachments';
 export { EditableMessage } from './EditableMessage';
 export { PrepaCdsControls } from './PrepaCdsControls';
 export { PrepaCdsWelcome } from './PrepaCdsWelcome';
+export { PrepaCdsProgressTracker } from './PrepaCdsProgressTracker';
+export { PrepaCdsSessionMgmt } from './PrepaCdsSessionMgmt';
+export { PrepaCdsSmartSuggestions } from './PrepaCdsSmartSuggestions';

@@ -1,17 +1,17 @@
 import { useState } from "react";
-import { GraduationCap, Target, BookOpen, Clock, Trophy, TrendingUp, FileText } from "lucide-react";
+import { GraduationCap, Target, BookOpen, Clock, Trophy, TrendingUp, FileText, HelpCircle, CheckCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { PrepaCdsControls } from "./PrepaCdsControls";
+import { PrepaCdsControls, TrainingType } from "./PrepaCdsControls";
 import { usePrepaCdsEnhancements } from "@/hooks/chat/usePrepaCdsEnhancements";
 import type { 
   UserLevel, 
-  StudyDomain as ServiceStudyDomain, 
-  TrainingType 
+  StudyDomain as ServiceStudyDomain
 } from "@/services/prepaCdsService";
 import type { StudyDomain as ControlsStudyDomain } from "./PrepaCdsControls";
+import { PrepaCdsProgressTracker } from "./PrepaCdsProgressTracker";
 
 interface PrepaCdsWelcomeProps {
   onSuggestionClick: (suggestion: string) => void;
@@ -28,22 +28,31 @@ export function PrepaCdsWelcome({ onSuggestionClick }: PrepaCdsWelcomeProps) {
     startSession 
   } = usePrepaCdsEnhancements();
 
-  const handleStartSession = (type: TrainingType) => {
-    startSession(type);
+  const handleStartSession = (trainingType: TrainingType) => {
+    startSession(trainingType);
     setShowConfig(false);
     
-    // Générer le message approprié selon le type d'entraînement
-    const trainingMessages: Record<string, string> = {
-      "qcm": "Je souhaite commencer un entraînement QCM adapté à mon niveau",
-      "cas_pratique": "Générez-moi un cas pratique pour m'entraîner",
-      "plan_revision": "Créez un plan de révision personnalisé selon mes besoins",
-      "oral": "Simulez un entretien oral pour ma préparation",
-      "vrai_faux": "Proposez-moi des questions vrai/faux pour réviser",
-      "question_ouverte": "Donnez-moi une question ouverte pour approfondir",
-      "evaluation": "Évaluez mes progrès et donnez-moi des conseils"
+    // Générer automatiquement le prompt selon le type d'entraînement
+    const trainingPrompts: Record<TrainingType, string> = {
+      'analyse_documents': `Générez un exercice d'analyse documentaire pour mon niveau ${configuration.level} en ${configuration.domain}. Proposez-moi des documents administratifs réalistes à analyser avec une méthodologie de synthèse.`,
+      'questionnaire_droit': `Créez un questionnaire de droit pour mon niveau ${configuration.level}, focalisé sur ${configuration.domain}. Posez-moi des questions précises avec explications détaillées.`,
+      'management_redaction': `Proposez-moi un exercice de management et rédaction pour niveau ${configuration.level}. Donnez-moi un cas pratique de gestion d'équipe avec rédaction d'une note de service.`,
+      'entrainement_mixte': `Lancez un entraînement mixte combinant documents et questions pour mon profil ${configuration.level} en ${configuration.domain}. Alternez analyse documentaire et questionnaire.`,
+      'evaluation_connaissances': `Démarrez une évaluation de connaissances avec 10 questions pour niveau ${configuration.level} dans le domaine ${configuration.domain}. Variez les types de questions.`,
+      'vrai_faux': `Créez un test Vrai/Faux de 15 questions pour mon niveau ${configuration.level} en ${configuration.domain}. Chaque réponse doit être justifiée.`,
+      'evaluation_note_service': `Proposez-moi l'analyse d'une note de service administrative pour niveau ${configuration.level}. Donnez-moi une note réaliste à examiner et critiquer.`
     };
     
-    onSuggestionClick(trainingMessages[type]);
+    // Déclencher automatiquement la session avec le prompt personnalisé
+    const sessionPrompt = trainingPrompts[trainingType];
+    setTimeout(() => {
+      onSuggestionClick(sessionPrompt);
+    }, 100);
+  };
+
+  const handleStartSessionFromControls = (trainingType: TrainingType) => {
+    handleStartSession(trainingType);
+    setShowConfig(false);
   };
 
   const stats = [
@@ -55,32 +64,46 @@ export function PrepaCdsWelcome({ onSuggestionClick }: PrepaCdsWelcomeProps) {
 
   const quickActions = [
     {
-      title: "Entraînement QCM",
-      description: "Questions à choix multiples adaptées",
-      icon: Target,
-      action: () => handleStartSession("qcm" as TrainingType),
-      color: "text-orange-500"
-    },
-    {
-      title: "Cas Pratique",
-      description: "Situations concrètes à analyser",
-      icon: FileText,
-      action: () => handleStartSession("cas_pratique" as TrainingType),
+      title: "Questionnaire de droit",
+      description: "Questions précises en droit public et pénal",
+      icon: BookOpen,
+      action: () => handleStartSession("questionnaire_droit"),
       color: "text-blue-500"
     },
     {
-      title: "Plan de Révision",
-      description: "Stratégie personnalisée d'apprentissage",
-      icon: BookOpen,
-      action: () => handleStartSession("plan_revision" as TrainingType),
+      title: "Analyse de documents",
+      description: "Note de synthèse méthodologique",
+      icon: FileText,
+      action: () => handleStartSession("analyse_documents"),
       color: "text-green-500"
     },
     {
-      title: "Simulation Orale",
-      description: "Préparation aux entretiens",
-      icon: GraduationCap,
-      action: () => handleStartSession("oral" as TrainingType),
+      title: "Management & rédaction",
+      description: "Cas pratiques de gestion d'équipe",
+      icon: Target,
+      action: () => handleStartSession("management_redaction"),
       color: "text-purple-500"
+    },
+    {
+      title: "Évaluation 10 questions",
+      description: "Test de connaissances générales",
+      icon: CheckCircle,
+      action: () => handleStartSession("evaluation_connaissances"),
+      color: "text-orange-500"
+    },
+    {
+      title: "Vrai ou Faux",
+      description: "15 affirmations à valider",
+      icon: HelpCircle,
+      action: () => handleStartSession("vrai_faux"),
+      color: "text-red-500"
+    },
+    {
+      title: "Entraînement mixte",
+      description: "Documents + questions alternés",
+      icon: TrendingUp,
+      action: () => handleStartSession("entrainement_mixte"),
+      color: "text-cyan-500"
     }
   ];
 
@@ -98,8 +121,8 @@ export function PrepaCdsWelcome({ onSuggestionClick }: PrepaCdsWelcomeProps) {
         <PrepaCdsControls
           onLevelChange={updateLevel}
           onDomainChange={(domain: ControlsStudyDomain) => updateDomain(domain as ServiceStudyDomain)}
-          onTrainingTypeSelect={(type: string) => selectTrainingType(type as TrainingType)}
-          onStartSession={() => setShowConfig(false)}
+          onTrainingTypeSelect={(type: TrainingType) => selectTrainingType(type)}
+          onStartSession={handleStartSessionFromControls}
         />
         
         <Button 
@@ -139,83 +162,49 @@ export function PrepaCdsWelcome({ onSuggestionClick }: PrepaCdsWelcomeProps) {
         )}
       </div>
 
-      {/* Statistiques utilisateur */}
-      {userProgress.completedExercises > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-fade-in" style={{ animationDelay: '0.3s' }}>
-          {stats.map((stat, index) => (
-            <Card key={stat.label} className="glass neomorphism-subtle hover-lift">
-              <CardContent className="p-4 text-center">
-                <stat.icon className="w-6 h-6 mx-auto mb-2 text-orange-500" />
-                <div className="text-2xl font-bold text-orange-500">{stat.value}</div>
-                <div className="text-xs text-muted-foreground">{stat.label}</div>
-              </CardContent>
+      {/* Tableau de progression avancé */}
+      <PrepaCdsProgressTracker 
+        progressData={{
+          completedExercises: userProgress.completedExercises,
+          averageScore: userProgress.averageScore,
+          weakAreas: userProgress.weakAreas,
+          strengths: userProgress.strengths,
+          totalStudyTime: userProgress.totalStudyTime,
+          currentStreak: 3, // Simulé pour l'instant
+          level: configuration.level,
+          domain: configuration.domain
+        }}
+      />
+
+      {/* Actions rapides - Types d'entraînement */}
+      <div>
+        <h3 className="text-xl font-semibold mb-4 text-center">Types d'entraînement disponibles</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {quickActions.map((action, index) => (
+            <Card 
+              key={action.title}
+              className="glass neomorphism-subtle hover-lift cursor-pointer group animate-fade-in ripple-container transition-all duration-300 hover:scale-105"
+              style={{ animationDelay: `${(index + 1) * 0.1}s` }}
+              onClick={action.action}
+            >
+              <CardHeader className="pb-2">
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-lg glass flex items-center justify-center ${action.color} group-hover:scale-110 transition-transform`}>
+                    <action.icon className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1">
+                    <CardTitle className="text-base group-hover:text-prepacds transition-colors">
+                      {action.title}
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      {action.description}
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
             </Card>
           ))}
         </div>
-      )}
-
-      {/* Progression globale */}
-      {userProgress.completedExercises > 0 && (
-        <Card className="glass neomorphism hover-glow animate-fade-in" style={{ animationDelay: '0.4s' }}>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-orange-500" />
-              Votre progression
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <div className="flex justify-between text-sm mb-2">
-                  <span>Score moyen</span>
-                  <span className="font-medium">{Math.round(userProgress.averageScore)}%</span>
-                </div>
-                <Progress value={userProgress.averageScore} className="h-2" />
-              </div>
-              
-              {userProgress.strengths.length > 0 && (
-                <div>
-                  <p className="text-sm font-medium mb-2">Domaines de force:</p>
-                  <div className="flex flex-wrap gap-1">
-                    {userProgress.strengths.slice(0, 3).map((strength, index) => (
-                      <Badge key={index} variant="secondary" className="text-xs glass">
-                        {strength}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Actions rapides */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {quickActions.map((action, index) => (
-          <Card 
-            key={action.title}
-            className="glass neomorphism-subtle hover-lift cursor-pointer group animate-fade-in ripple-container"
-            style={{ animationDelay: `${(index + 1) * 0.1}s` }}
-            onClick={action.action}
-          >
-            <CardHeader className="pb-2">
-              <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-lg glass flex items-center justify-center ${action.color}`}>
-                  <action.icon className="w-5 h-5" />
-                </div>
-                <div>
-                  <CardTitle className="text-lg group-hover:text-orange-500 transition-colors">
-                    {action.title}
-                  </CardTitle>
-                  <CardDescription className="text-sm">
-                    {action.description}
-                  </CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-          </Card>
-        ))}
       </div>
 
       {/* Bouton de configuration */}

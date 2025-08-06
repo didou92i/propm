@@ -13,7 +13,7 @@ interface PrepaCdsControlsProps {
   onLevelChange: (level: UserLevel) => void;
   onTrainingTypeSelect: (type: TrainingType) => void;
   onDomainChange: (domain: StudyDomain) => void;
-  onStartSession: () => void;
+  onStartSession: (trainingType: TrainingType) => void;
 }
 
 const trainingTypeLabels: Record<TrainingType, { label: string; icon: React.ReactNode; description: string }> = {
@@ -91,7 +91,8 @@ export function PrepaCdsControls({ onLevelChange, onTrainingTypeSelect, onDomain
 
   const handleStartSession = () => {
     if (selectedTrainingType) {
-      onStartSession();
+      // Passer le type d'entraînement sélectionné au parent
+      onStartSession(selectedTrainingType);
     }
   };
 
