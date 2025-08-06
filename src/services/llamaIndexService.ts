@@ -42,9 +42,9 @@ class LlamaIndexService {
    */
   private configureSettings(): void {
     try {
-      // For now, use LlamaIndex default settings for client-side
-      // The embedding generation will happen via Supabase functions
-      // LlamaIndex configured with default settings
+      // Configure Settings with proper embedding model to avoid initialization errors
+      Settings.embedModel = null; // Disable client-side embeddings 
+      Settings.llm = null; // Use Supabase functions for LLM calls
     } catch (error) {
       logger.warn('LlamaIndex configuration warning', error, 'LlamaIndexService');
     }
