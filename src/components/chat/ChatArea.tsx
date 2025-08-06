@@ -371,6 +371,9 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
                 onSuggestionClick={(suggestion) => {
                   sendMessage(suggestion);
                 }}
+                onSendMessage={(message) => {
+                  setMessages(prev => [...prev, message]);
+                }}
               />
             ) : (
               <>

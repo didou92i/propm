@@ -6,18 +6,22 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { PrepaCdsControls, TrainingType } from "./PrepaCdsControls";
 import { usePrepaCdsEnhancements } from "@/hooks/chat/usePrepaCdsEnhancements";
+import { usePrepaCdsChat } from "@/hooks/usePrepaCdsChat";
 import type { 
   UserLevel, 
   StudyDomain as ServiceStudyDomain
 } from "@/services/prepaCdsService";
 import type { StudyDomain as ControlsStudyDomain } from "./PrepaCdsControls";
 import { PrepaCdsProgressTracker } from "./PrepaCdsProgressTracker";
+import type { Message } from "@/types/chat";
+import { toast } from "sonner";
 
 interface PrepaCdsWelcomeProps {
   onSuggestionClick: (suggestion: string) => void;
+  onSendMessage: (message: Message) => void;
 }
 
-export function PrepaCdsWelcome({ onSuggestionClick }: PrepaCdsWelcomeProps) {
+export function PrepaCdsWelcome({ onSuggestionClick, onSendMessage }: PrepaCdsWelcomeProps) {
   const [showConfig, setShowConfig] = useState(false);
   const { 
     configuration, 
@@ -27,6 +31,20 @@ export function PrepaCdsWelcome({ onSuggestionClick }: PrepaCdsWelcomeProps) {
     selectTrainingType,
     startSession 
   } = usePrepaCdsEnhancements();
+  
+  const { generateContent, isLoading } = usePrepaCdsChat();
+
+  const getTrainingPrompt = (trainingType: TrainingType, level: UserLevel, domain: ServiceStudyDomain): string => {
+    const prompts: Record<TrainingType, string> = {
+      'qcm': `Créez des questions à choix multiples pour mon niveau ${level}, focalisé sur ${domain}. Proposez des QCM avec explications détaillées.`,
+      'vrai_faux': `Créez un test Vrai/Faux pour mon niveau ${level} en ${domain}. Chaque réponse doit être justifiée.`,
+      'cas_pratique': `Proposez-moi un exercice de management et rédaction pour niveau ${level}. Donnez-moi un cas pratique de gestion d'équipe avec rédaction d'une note de service.`,
+      'question_ouverte': `Créez des questions ouvertes pour mon niveau ${level}, focalisé sur ${domain}. Demandez développement et argumentation.`,
+      'simulation_oral': `Démarrez une simulation d'entretien oral pour le niveau ${level} dans le domaine ${domain}. Simulez un jury de concours.`,
+      'plan_revision': `Créez un plan de révision personnalisé pour mon niveau ${level} en ${domain}. Organisez un planning d'apprentissage structuré.`
+    };
+    return prompts[trainingType];
+  };
 
   const handleStartSession = (trainingType: TrainingType) => {
     startSession(trainingType);
@@ -34,13 +52,12 @@ export function PrepaCdsWelcome({ onSuggestionClick }: PrepaCdsWelcomeProps) {
     
     // Générer automatiquement le prompt selon le type d'entraînement
     const trainingPrompts: Record<TrainingType, string> = {
-      'analyse_documents': `Générez un exercice d'analyse documentaire pour mon niveau ${configuration.level} en ${configuration.domain}. Proposez-moi des documents administratifs réalistes à analyser avec une méthodologie de synthèse.`,
-      'questionnaire_droit': `Créez un questionnaire de droit pour mon niveau ${configuration.level}, focalisé sur ${configuration.domain}. Posez-moi des questions précises avec explications détaillées.`,
-      'management_redaction': `Proposez-moi un exercice de management et rédaction pour niveau ${configuration.level}. Donnez-moi un cas pratique de gestion d'équipe avec rédaction d'une note de service.`,
-      'entrainement_mixte': `Lancez un entraînement mixte combinant documents et questions pour mon profil ${configuration.level} en ${configuration.domain}. Alternez analyse documentaire et questionnaire.`,
-      'evaluation_connaissances': `Démarrez une évaluation de connaissances avec 10 questions pour niveau ${configuration.level} dans le domaine ${configuration.domain}. Variez les types de questions.`,
-      'vrai_faux': `Créez un test Vrai/Faux de 15 questions pour mon niveau ${configuration.level} en ${configuration.domain}. Chaque réponse doit être justifiée.`,
-      'evaluation_note_service': `Proposez-moi l'analyse d'une note de service administrative pour niveau ${configuration.level}. Donnez-moi une note réaliste à examiner et critiquer.`
+      'qcm': `Créez des questions à choix multiples pour mon niveau ${configuration.level}, focalisé sur ${configuration.domain}. Proposez des QCM avec explications détaillées.`,
+      'vrai_faux': `Créez un test Vrai/Faux pour mon niveau ${configuration.level} en ${configuration.domain}. Chaque réponse doit être justifiée.`,
+      'cas_pratique': `Proposez-moi un exercice de management et rédaction pour niveau ${configuration.level}. Donnez-moi un cas pratique de gestion d'équipe avec rédaction d'une note de service.`,
+      'question_ouverte': `Créez des questions ouvertes pour mon niveau ${configuration.level}, focalisé sur ${configuration.domain}. Demandez développement et argumentation.`,
+      'simulation_oral': `Démarrez une simulation d'entretien oral pour le niveau ${configuration.level} dans le domaine ${configuration.domain}. Simulez un jury de concours.`,
+      'plan_revision': `Créez un plan de révision personnalisé pour mon niveau ${configuration.level} en ${configuration.domain}. Organisez un planning d'apprentissage structuré.`
     };
     
     // Déclencher automatiquement la session avec le prompt personnalisé
@@ -64,45 +81,45 @@ export function PrepaCdsWelcome({ onSuggestionClick }: PrepaCdsWelcomeProps) {
 
   const quickActions = [
     {
-      title: "Questionnaire de droit",
-      description: "Questions précises en droit public et pénal",
-      icon: BookOpen,
-      action: () => handleStartSession("questionnaire_droit"),
+      title: "Questions à choix multiples",
+      description: "QCM avec corrections détaillées",
+      icon: CheckCircle,
+      action: () => handleStartSession("qcm"),
       color: "text-blue-500"
     },
     {
-      title: "Analyse de documents",
-      description: "Note de synthèse méthodologique",
-      icon: FileText,
-      action: () => handleStartSession("analyse_documents"),
-      color: "text-green-500"
-    },
-    {
-      title: "Management & rédaction",
-      description: "Cas pratiques de gestion d'équipe",
-      icon: Target,
-      action: () => handleStartSession("management_redaction"),
-      color: "text-purple-500"
-    },
-    {
-      title: "Évaluation 10 questions",
-      description: "Test de connaissances générales",
-      icon: CheckCircle,
-      action: () => handleStartSession("evaluation_connaissances"),
-      color: "text-orange-500"
-    },
-    {
       title: "Vrai ou Faux",
-      description: "15 affirmations à valider",
+      description: "Affirmations à valider ou invalider",
       icon: HelpCircle,
       action: () => handleStartSession("vrai_faux"),
       color: "text-red-500"
     },
     {
-      title: "Entraînement mixte",
-      description: "Documents + questions alternés",
+      title: "Cas pratiques",
+      description: "Situations de management et rédaction",
+      icon: FileText,
+      action: () => handleStartSession("cas_pratique"),
+      color: "text-green-500"
+    },
+    {
+      title: "Questions ouvertes",
+      description: "Développement et argumentation",
+      icon: BookOpen,
+      action: () => handleStartSession("question_ouverte"),
+      color: "text-purple-500"
+    },
+    {
+      title: "Simulation d'oral",
+      description: "Préparation entretien jury",
+      icon: Target,
+      action: () => handleStartSession("simulation_oral"),
+      color: "text-orange-500"
+    },
+    {
+      title: "Plan de révision",
+      description: "Planning personnalisé d'apprentissage",
       icon: TrendingUp,
-      action: () => handleStartSession("entrainement_mixte"),
+      action: () => handleStartSession("plan_revision"),
       color: "text-cyan-500"
     }
   ];

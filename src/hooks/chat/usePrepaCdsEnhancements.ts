@@ -134,7 +134,7 @@ export function usePrepaCdsEnhancements() {
     return enrichedPrompt;
   }, [configuration, userProgress]);
 
-  const generateQuestion = async (level: UserLevel, domain: StudyDomain, type: 'qcm' | 'vrai_faux' | 'ouverte' = 'qcm') => {
+  const generateQuestion = async (level: UserLevel, domain: StudyDomain, type: TrainingType = 'qcm') => {
     setIsGeneratingContent(true);
     try {
       const prepaCdsService = PrepaCdsService.getInstance();
@@ -309,13 +309,12 @@ export function usePrepaCdsEnhancements() {
 // Helper functions
 function getSessionStepsCount(trainingType: TrainingType): number {
   const stepCounts: Record<TrainingType, number> = {
-    analyse_documents: 5,
-    questionnaire_droit: 10,
-    management_redaction: 3,
-    entrainement_mixte: 8,
-    evaluation_connaissances: 10,
+    qcm: 10,
     vrai_faux: 15,
-    evaluation_note_service: 2
+    cas_pratique: 3,
+    question_ouverte: 5,
+    simulation_oral: 8,
+    plan_revision: 2
   };
   return stepCounts[trainingType] || 5;
 }
@@ -342,13 +341,12 @@ function getDomainInstructions(domain: StudyDomain): string {
 
 function getTrainingTypeInstructions(trainingType: TrainingType): string {
   const instructions: Record<TrainingType, string> = {
-    analyse_documents: 'Documents séquentiels, synthèse obligatoire, méthodologie pas à pas',
-    questionnaire_droit: 'Questions ciblées droit, références précises',
-    management_redaction: 'Cas managériaux, rédaction professionnelle',
-    entrainement_mixte: 'Alternance documents/questions, progression logique',
-    evaluation_connaissances: '10 questions variées, feedback détaillé',
-    vrai_faux: '15 affirmations, explications systématiques',
-    evaluation_note_service: 'Document administratif, analyse critique'
+    qcm: 'Questions à choix multiples, corrections détaillées, références précises',
+    vrai_faux: 'Affirmations à valider, explications systématiques',
+    cas_pratique: 'Cas managériaux, rédaction professionnelle, situations réalistes',
+    question_ouverte: 'Développement libre, argumentation structurée',
+    simulation_oral: 'Entretien jury, communication orale, stress management',
+    plan_revision: 'Planning structuré, objectifs clairs, progression personnalisée'
   };
   return instructions[trainingType];
 }

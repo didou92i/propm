@@ -2,7 +2,13 @@ import { supabase } from '@/integrations/supabase/client';
 
 export type UserLevel = 'debutant' | 'intermediaire' | 'avance';
 export type StudyDomain = 'droit_public' | 'droit_penal' | 'management' | 'redaction' | 'general';
-export type TrainingType = 'analyse_documents' | 'questionnaire_droit' | 'management_redaction' | 'entrainement_mixte' | 'evaluation_connaissances' | 'vrai_faux' | 'evaluation_note_service';
+export type TrainingType = 
+  | 'qcm'
+  | 'vrai_faux'
+  | 'cas_pratique'
+  | 'question_ouverte'
+  | 'simulation_oral'
+  | 'plan_revision';
 
 export interface SessionHistory {
   sessionId: string;
@@ -189,55 +195,40 @@ export class PrepaCdsService {
   /**
    * Génère une question d'entraînement adaptée au profil avec système anti-boucle
    */
-  async generateQuestion(level: UserLevel, domain: StudyDomain, type: 'qcm' | 'vrai_faux' | 'ouverte' = 'qcm', sessionId?: string): Promise<GeneratedQuestion> {
+  async generateQuestion(
+    level: UserLevel, 
+    domain: StudyDomain, 
+    type: TrainingType = 'qcm',
+    sessionId?: string
+  ): Promise<GeneratedQuestion> {
     try {
-      const history = sessionId ? this.getSessionHistory(sessionId) : null;
-      const avoidRecentTopics = history?.questionsAsked || [];
+      const prompt = `Génère un exercice de type ${type} pour le niveau ${level} en ${domain}`;
 
-      const { data, error } = await supabase.functions.invoke('generate-training-question', {
+      const { data, error } = await supabase.functions.invoke('prepa-cds-chat', {
         body: { 
-          level, 
-          domain, 
-          questionType: type,
-          avoidRecentTopics,
-          sessionId
+          prompt,
+          trainingType: type,
+          level,
+          domain,
+          sessionId 
         }
       });
 
-      if (error) throw error;
-      
+      if (error) {
+        console.error('Error generating question:', error);
+        return this.getFallbackQuestion(level, domain, type);
+      }
+
       const question = this.formatGeneratedQuestion(data);
       
-      // Vérifier les doublons
-      if (sessionId && this.isContentAlreadyProposed(sessionId, question.question, 'question')) {
-        // Générer une alternative
-        const { data: altData, error: altError } = await supabase.functions.invoke('generate-training-question', {
-          body: { 
-            level, 
-            domain, 
-            questionType: type,
-            avoidRecentTopics: [...avoidRecentTopics, question.question],
-            forceAlternative: true,
-            sessionId
-          }
-        });
-        
-        if (!altError) {
-          const altQuestion = this.formatGeneratedQuestion(altData);
-          this.recordExercise(sessionId, altQuestion.question, 'question');
-          this.updateSessionHistory(sessionId, 'question', altQuestion.question);
-          return altQuestion;
-        }
-      }
-      
       if (sessionId) {
-        this.recordExercise(sessionId, question.question, 'question');
-        this.updateSessionHistory(sessionId, 'question', question.question);
+        const contentHash = this.generateContentHash(prompt);
+        this.recordExercise(sessionId, contentHash, type);
       }
       
       return question;
     } catch (error) {
-      console.error('Erreur génération question:', error);
+      console.error('Error in generateQuestion:', error);
       return this.getFallbackQuestion(level, domain, type);
     }
   }
@@ -269,72 +260,47 @@ export class PrepaCdsService {
   /**
    * Génère un cas pratique avec système anti-boucle
    */
-  async generateCaseStudy(level: UserLevel, domain: StudyDomain, sessionId?: string): Promise<GeneratedCaseStudy> {
+  async generateCaseStudy(
+    level: UserLevel,
+    domain: StudyDomain,
+    sessionId?: string
+  ): Promise<GeneratedCaseStudy> {
     try {
-      const history = sessionId ? this.getSessionHistory(sessionId) : null;
-      const avoidRecentCases = history?.casesStudied || [];
+      const prompt = `Génère un cas pratique de management et rédaction pour le niveau ${level} en ${domain}. Donnez-moi un cas pratique de gestion d'équipe avec rédaction d'une note de service.`;
 
-      const { data, error } = await supabase.functions.invoke('generate-case-study', {
+      const { data, error } = await supabase.functions.invoke('prepa-cds-chat', {
         body: { 
-          level, 
+          prompt,
+          trainingType: 'cas_pratique',
+          level,
           domain,
-          avoidRecentCases,
-          sessionId
+          sessionId 
         }
       });
 
-      if (error) throw error;
-      
-      const caseStudy = {
-        title: data.title || 'Cas pratique',
-        situation: data.situation || 'Situation à analyser',
-        context: data.context || 'Contexte professionnel',
-        questions: data.questions || ['Analysez la situation'],
-        expectedElements: data.expectedElements || ['Éléments d\'analyse'],
-        difficulty: level,
-        estimatedTime: data.estimatedTime || 30
-      };
-
-      // Vérifier les doublons
-      const caseContent = `${caseStudy.title} ${caseStudy.situation}`;
-      if (sessionId && this.isContentAlreadyProposed(sessionId, caseContent, 'case')) {
-        // Générer une alternative
-        const { data: altData, error: altError } = await supabase.functions.invoke('generate-case-study', {
-          body: { 
-            level, 
-            domain,
-            avoidRecentCases: [...avoidRecentCases, caseStudy.title],
-            forceAlternative: true,
-            sessionId
-          }
-        });
-        
-        if (!altError) {
-          const altCase = {
-            title: altData.title || 'Cas pratique alternatif',
-            situation: altData.situation || 'Situation alternative à analyser',
-            context: altData.context || 'Contexte professionnel alternatif',
-            questions: altData.questions || ['Analysez cette nouvelle situation'],
-            expectedElements: altData.expectedElements || ['Nouveaux éléments d\'analyse'],
-            difficulty: level,
-            estimatedTime: altData.estimatedTime || 30
-          };
-          
-          const altCaseContent = `${altCase.title} ${altCase.situation}`;
-          this.recordExercise(sessionId, altCaseContent, 'case');
-          this.updateSessionHistory(sessionId, 'case', altCase.title);
-          return altCase;
-        }
+      if (error) {
+        console.error('Error generating case study:', error);
+        return this.getFallbackCaseStudy(level, domain);
       }
+
+      const caseStudy: GeneratedCaseStudy = {
+        title: 'Cas Pratique de Management',
+        situation: data.content || 'Situation non générée',
+        context: 'Contexte de gestion municipale',
+        questions: ['Analysez la situation', 'Rédigez une note de service', 'Proposez vos recommandations managériales'],
+        expectedElements: ['Analyse de la situation', 'Rédaction administrative', 'Solutions managériales'],
+        difficulty: level,
+        estimatedTime: 45
+      };
       
       if (sessionId) {
-        this.recordExercise(sessionId, caseContent, 'case');
-        this.updateSessionHistory(sessionId, 'case', caseStudy.title);
+        const contentHash = this.generateContentHash(prompt);
+        this.recordExercise(sessionId, contentHash, 'cas_pratique');
       }
       
       return caseStudy;
     } catch (error) {
-      console.error('Erreur génération cas pratique:', error);
+      console.error('Error in generateCaseStudy:', error);
       return this.getFallbackCaseStudy(level, domain);
     }
   }
@@ -461,13 +427,12 @@ export class PrepaCdsService {
 
   private getTrainingTypeDescription(trainingType: TrainingType): string {
     const descriptions: Record<TrainingType, string> = {
-      analyse_documents: 'Analyse documentaire - Synthèse méthodologique',
-      questionnaire_droit: 'Questions juridiques - Vérification des connaissances',
-      management_redaction: 'Management et rédaction - Cas pratiques de gestion',
-      entrainement_mixte: 'Entraînement mixte - Documents et questions alternés',
-      evaluation_connaissances: 'Évaluation globale - Test de connaissances',
+      qcm: 'Questions à choix multiples - Vérification des connaissances',
       vrai_faux: 'Vrai/Faux - Vérification rapide des acquis',
-      evaluation_note_service: 'Évaluation rédactionnelle - Analyse de documents administratifs'
+      cas_pratique: 'Cas pratiques - Situations professionnelles concrètes',
+      question_ouverte: 'Questions ouvertes - Développement et argumentation',
+      simulation_oral: 'Simulation d\'oral - Préparation entretien jury',
+      plan_revision: 'Plan de révision - Organisation structurée de l\'apprentissage'
     };
     return descriptions[trainingType];
   }

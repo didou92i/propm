@@ -6,7 +6,13 @@ import { Badge } from '@/components/ui/badge';
 import { BookOpen, Target, TrendingUp, FileText, CheckCircle, HelpCircle, Play } from 'lucide-react';
 
 export type UserLevel = 'debutant' | 'intermediaire' | 'avance';
-export type TrainingType = 'analyse_documents' | 'questionnaire_droit' | 'management_redaction' | 'entrainement_mixte' | 'evaluation_connaissances' | 'vrai_faux' | 'evaluation_note_service';
+export type TrainingType = 
+  | 'qcm'
+  | 'vrai_faux'
+  | 'cas_pratique'
+  | 'question_ouverte'
+  | 'simulation_oral'
+  | 'plan_revision';
 export type StudyDomain = 'droit_public' | 'droit_penal' | 'management' | 'procedures' | 'redaction' | 'culture_generale';
 
 interface PrepaCdsControlsProps {
@@ -17,40 +23,35 @@ interface PrepaCdsControlsProps {
 }
 
 const trainingTypeLabels: Record<TrainingType, { label: string; icon: React.ReactNode; description: string }> = {
-  analyse_documents: { 
-    label: 'Analyse de documents', 
-    icon: <FileText className="h-4 w-4" />,
-    description: 'Note de synthèse à partir de documents' 
-  },
-  questionnaire_droit: { 
-    label: 'Questionnaire de droit', 
-    icon: <BookOpen className="h-4 w-4" />,
-    description: 'Droit public et pénal' 
-  },
-  management_redaction: { 
-    label: 'Management & rédaction', 
-    icon: <TrendingUp className="h-4 w-4" />,
-    description: 'Exercices de gestion et rapports' 
-  },
-  entrainement_mixte: { 
-    label: 'Entraînement mixte', 
-    icon: <Target className="h-4 w-4" />,
-    description: 'Documents + questions' 
-  },
-  evaluation_connaissances: { 
-    label: '10 questions d\'évaluation', 
+  qcm: { 
+    label: 'Questions à choix multiples', 
     icon: <CheckCircle className="h-4 w-4" />,
-    description: 'Test de connaissances générales' 
+    description: 'QCM avec corrections détaillées' 
   },
   vrai_faux: { 
     label: 'Vrai ou Faux', 
     icon: <HelpCircle className="h-4 w-4" />,
-    description: '15 questions rapides' 
+    description: 'Affirmations à valider ou invalider' 
   },
-  evaluation_note_service: { 
-    label: 'Évaluation note de service', 
+  cas_pratique: { 
+    label: 'Cas pratiques', 
     icon: <FileText className="h-4 w-4" />,
-    description: 'Analyse d\'une note administrative' 
+    description: 'Situations de management et rédaction' 
+  },
+  question_ouverte: { 
+    label: 'Questions ouvertes', 
+    icon: <BookOpen className="h-4 w-4" />,
+    description: 'Développement et argumentation' 
+  },
+  simulation_oral: { 
+    label: 'Simulation d\'oral', 
+    icon: <Target className="h-4 w-4" />,
+    description: 'Préparation entretien jury' 
+  },
+  plan_revision: { 
+    label: 'Plan de révision', 
+    icon: <TrendingUp className="h-4 w-4" />,
+    description: 'Planning personnalisé d\'apprentissage' 
   }
 };
 
