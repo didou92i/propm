@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { MarkdownRenderer, SkeletonMessage, VirtualizedMessageList } from "@/components/common";
 import type { VirtualizedMessageListRef } from "@/components/common/VirtualizedMessageList";
 import { EditableMessage, ChatAttachment, MessageWithAttachments } from "@/components/chat";
+import { PrepaCdsWelcome } from "@/components/chat/PrepaCdsWelcome";
 import { ConversationExport } from "@/components/conversation";
 import { useRipple } from "@/hooks/useRipple";
 import { useConversationHistory } from "@/hooks/useConversationHistory";
@@ -66,6 +67,19 @@ const agentInfo = {
       "Modifier un arrêté existant", 
       "Vérifier la conformité",
       "Consulter la jurisprudence"
+    ]
+  },
+  prepacds: {
+    name: "Prepa CDS",
+    description: "Assistant personnalisé pour la préparation aux concours de la fonction publique",
+    suggestions: [
+      "🎯 Commencer un entraînement QCM",
+      "📚 Générer un cas pratique",
+      "📝 Créer un plan de révision",
+      "🔍 Simulation d'oral",
+      "📊 Voir mes statistiques",
+      "🎓 Évaluer mes progrès",
+      "📋 Fiche de révision personnalisée"
     ]
   }
 };
@@ -351,45 +365,55 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
     <div className="flex flex-col h-full">
       {messages.length === 0 ? (
         <div className="flex-1 flex items-center justify-center p-8 animate-fade-in">
-          <div className="text-center max-w-2xl">
-             <div className="w-16 h-16 rounded-full gradient-agent-animated flex items-center justify-center mx-auto mb-6 float pulse-glow neomorphism overflow-hidden">
-               {(() => {
-                 const agent = AGENTS.find(a => a.id === selectedAgent);
-                 return agent?.avatar ? (
-                   <img 
-                     src={agent.avatar}
-                     alt={`${agent.name} Avatar`} 
-                     className="w-16 h-16 object-cover rounded-full"
-                   />
-                 ) : (
-                   <Bot className="w-16 h-16 text-primary" />
-                 );
-               })()}
-             </div>
-            <h1 className="text-2xl font-bold mb-2 animate-scale-in">
-              {currentAgent?.name || "Assistant IA"}
-            </h1>
-            <p className="text-muted-foreground mb-8 animate-fade-in" style={{ animationDelay: '0.2s' }}>
-              {currentAgent?.description || "Comment puis-je vous aider ?"}
-            </p>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {currentAgent?.suggestions.map((suggestion, index) => (
-                <button
-                  key={index}
-                  onClick={(e) => {
-                    createRipple(e);
-                    sendMessage(suggestion);
-                  }}
-                  className="p-4 rounded-xl glass neomorphism-subtle hover-lift ripple-container text-left group animate-fade-in transform-3d hover-tilt glass-hover"
-                  style={{ animationDelay: `${(index + 1) * 0.1}s` }}
-                >
-                  <div className="font-medium text-sm group-hover:text-primary transition-colors">
-                    {suggestion}
-                  </div>
-                </button>
-              ))}
-            </div>
+          <div className="text-center max-w-4xl w-full">
+            {selectedAgent === "prepacds" ? (
+              <PrepaCdsWelcome 
+                onSuggestionClick={(suggestion) => {
+                  sendMessage(suggestion);
+                }}
+              />
+            ) : (
+              <>
+                <div className="w-16 h-16 rounded-full gradient-agent-animated flex items-center justify-center mx-auto mb-6 float pulse-glow neomorphism overflow-hidden">
+                  {(() => {
+                    const agent = AGENTS.find(a => a.id === selectedAgent);
+                    return agent?.avatar ? (
+                      <img 
+                        src={agent.avatar}
+                        alt={`${agent.name} Avatar`} 
+                        className="w-16 h-16 object-cover rounded-full"
+                      />
+                    ) : (
+                      <Bot className="w-16 h-16 text-primary" />
+                    );
+                  })()}
+                </div>
+                <h1 className="text-2xl font-bold mb-2 animate-scale-in">
+                  {currentAgent?.name || "Assistant IA"}
+                </h1>
+                <p className="text-muted-foreground mb-8 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+                  {currentAgent?.description || "Comment puis-je vous aider ?"}
+                </p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {currentAgent?.suggestions.map((suggestion, index) => (
+                    <button
+                      key={index}
+                      onClick={(e) => {
+                        createRipple(e);
+                        sendMessage(suggestion);
+                      }}
+                      className="p-4 rounded-xl glass neomorphism-subtle hover-lift ripple-container text-left group animate-fade-in transform-3d hover-tilt glass-hover"
+                      style={{ animationDelay: `${(index + 1) * 0.1}s` }}
+                    >
+                      <div className="font-medium text-sm group-hover:text-primary transition-colors">
+                        {suggestion}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </div>
       ) : (

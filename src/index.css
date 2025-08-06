@@ -123,6 +123,13 @@ All colors MUST be HSL.
     --agent-accent: 340 85% 55%;
     --gradient-direction: 315deg;
   }
+
+  :root[data-agent="prepacds"] {
+    --agent-primary: 30 100% 55%;
+    --agent-glow: 35 100% 60%;
+    --agent-accent: 25 95% 50%;
+    --gradient-direction: 135deg;
+  }
 }
 
 @layer base {
