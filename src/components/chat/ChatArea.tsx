@@ -48,12 +48,14 @@ const agentInfo = {
   },
   cdspro: {
     name: "CDS Pro",
-    description: "Assistant pour la gestion des événements",
+    description: "Assistant spécialisé pour responsables de police municipale",
     suggestions: [
-      "Planifier un événement",
-      "Organiser une réunion",
-      "Créer un planning",
-      "Gérer les ressources"
+      "Rédiger une note de service",
+      "Analyser la conformité juridique",
+      "Organiser les cycles de travail",
+      "Procédures de contrôle d'identité",
+      "Systèmes de vidéoprotection",
+      "Coordination avec forces de l'ordre"
     ]
   },
   arrete: {
