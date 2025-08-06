@@ -229,6 +229,143 @@ export type Database = {
         }
         Relationships: []
       }
+      prepa_cds_exercise_history: {
+        Row: {
+          content_hash: string
+          content_preview: string
+          difficulty_level: string
+          domain: string
+          exercise_type: string
+          generated_at: string
+          id: string
+          session_id: string
+          user_id: string | null
+          was_alternative: boolean | null
+        }
+        Insert: {
+          content_hash: string
+          content_preview: string
+          difficulty_level: string
+          domain: string
+          exercise_type: string
+          generated_at?: string
+          id?: string
+          session_id: string
+          user_id?: string | null
+          was_alternative?: boolean | null
+        }
+        Update: {
+          content_hash?: string
+          content_preview?: string
+          difficulty_level?: string
+          domain?: string
+          exercise_type?: string
+          generated_at?: string
+          id?: string
+          session_id?: string
+          user_id?: string | null
+          was_alternative?: boolean | null
+        }
+        Relationships: []
+      }
+      prepa_cds_progress_logs: {
+        Row: {
+          created_at: string
+          evaluation_score: number | null
+          exercise_id: string | null
+          feedback_provided: string | null
+          id: string
+          session_id: string
+          time_spent_seconds: number | null
+          user_answer: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          evaluation_score?: number | null
+          exercise_id?: string | null
+          feedback_provided?: string | null
+          id?: string
+          session_id: string
+          time_spent_seconds?: number | null
+          user_answer?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          evaluation_score?: number | null
+          exercise_id?: string | null
+          feedback_provided?: string | null
+          id?: string
+          session_id?: string
+          time_spent_seconds?: number | null
+          user_answer?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prepa_cds_progress_logs_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "prepa_cds_exercise_history"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prepa_cds_sessions: {
+        Row: {
+          anti_loop_warnings: number | null
+          cases_studied: Json | null
+          completed_at: string | null
+          created_at: string
+          documents_analyzed: Json | null
+          domain: string
+          exercises_proposed: Json | null
+          id: string
+          level: string
+          questions_asked: Json | null
+          session_duration: number | null
+          session_id: string
+          training_type: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          anti_loop_warnings?: number | null
+          cases_studied?: Json | null
+          completed_at?: string | null
+          created_at?: string
+          documents_analyzed?: Json | null
+          domain: string
+          exercises_proposed?: Json | null
+          id?: string
+          level: string
+          questions_asked?: Json | null
+          session_duration?: number | null
+          session_id: string
+          training_type: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          anti_loop_warnings?: number | null
+          cases_studied?: Json | null
+          completed_at?: string | null
+          created_at?: string
+          documents_analyzed?: Json | null
+          domain?: string
+          exercises_proposed?: Json | null
+          id?: string
+          level?: string
+          questions_asked?: Json | null
+          session_duration?: number | null
+          session_id?: string
+          training_type?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -264,6 +401,14 @@ export type Database = {
       binary_quantize: {
         Args: { "": string } | { "": unknown }
         Returns: unknown
+      }
+      check_exercise_duplicate: {
+        Args: {
+          p_session_id: string
+          p_content_hash: string
+          p_exercise_type: string
+        }
+        Returns: boolean
       }
       cleanup_old_conversations: {
         Args: Record<PropertyKey, never>

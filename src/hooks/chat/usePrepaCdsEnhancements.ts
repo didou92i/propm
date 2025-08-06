@@ -1,32 +1,23 @@
 import { useState, useCallback } from 'react';
-import { UserLevel, TrainingType, StudyDomain } from '@/components/chat/PrepaCdsControls';
+import { UserLevel, TrainingType } from '@/components/chat/PrepaCdsControls';
+import { PrepaCdsService, StudyDomain } from '@/services/prepaCdsService';
 
 interface PrepaCdsConfiguration {
   level: UserLevel;
   domain: StudyDomain;
   trainingType: TrainingType | null;
-  sessionActive: boolean;
+  sessionState: 'idle' | 'active' | 'completed';
   currentStep: number;
   totalSteps: number;
 }
 
 interface UserProgress {
-  domain: StudyDomain;
-  level: UserLevel;
-  correctAnswers: number;
-  totalQuestions: number;
-  lastSessionDate: string;
+  completedExercises: number;
+  averageScore: number;
   weakAreas: string[];
   strengths: string[];
-}
-
-interface TrainingSession {
-  type: TrainingType;
-  startTime: Date;
-  documents?: string[];
-  currentDocumentIndex: number;
-  userResponses: string[];
-  evaluations: string[];
+  lastSessionDate: Date | null;
+  totalStudyTime: number;
 }
 
 export function usePrepaCdsEnhancements() {
@@ -34,69 +25,85 @@ export function usePrepaCdsEnhancements() {
     level: 'intermediaire',
     domain: 'droit_public',
     trainingType: null,
-    sessionActive: false,
+    sessionState: 'idle',
     currentStep: 0,
     totalSteps: 0
   });
 
   const [userProgress, setUserProgress] = useState<UserProgress>({
-    domain: 'droit_public',
-    level: 'intermediaire',
-    correctAnswers: 0,
-    totalQuestions: 0,
-    lastSessionDate: new Date().toISOString(),
+    completedExercises: 0,
+    averageScore: 0,
     weakAreas: [],
-    strengths: []
+    strengths: [],
+    lastSessionDate: null,
+    totalStudyTime: 0
   });
 
-  const [currentSession, setCurrentSession] = useState<TrainingSession | null>(null);
   const [isGeneratingContent, setIsGeneratingContent] = useState(false);
+  const [sessionId] = useState(() => crypto.randomUUID());
+  const [sessionHistory, setSessionHistory] = useState<{
+    proposedContent: Set<string>;
+    currentExercises: string[];
+    antiLoopWarnings: number;
+  }>({
+    proposedContent: new Set(),
+    currentExercises: [],
+    antiLoopWarnings: 0
+  });
 
   const updateLevel = useCallback((level: UserLevel) => {
     setConfiguration(prev => ({ ...prev, level }));
-    setUserProgress(prev => ({ ...prev, level }));
+    setUserProgress(prev => ({ ...prev, lastSessionDate: new Date() }));
   }, []);
 
   const updateDomain = useCallback((domain: StudyDomain) => {
     setConfiguration(prev => ({ ...prev, domain }));
-    setUserProgress(prev => ({ ...prev, domain }));
   }, []);
 
   const selectTrainingType = useCallback((trainingType: TrainingType) => {
     setConfiguration(prev => ({ ...prev, trainingType }));
   }, []);
 
-  const startSession = useCallback(() => {
-    if (!configuration.trainingType) return;
-
-    const session: TrainingSession = {
-      type: configuration.trainingType,
-      startTime: new Date(),
-      currentDocumentIndex: 0,
-      userResponses: [],
-      evaluations: []
-    };
-
-    setCurrentSession(session);
-    setConfiguration(prev => ({ 
-      ...prev, 
-      sessionActive: true, 
-      currentStep: 1,
-      totalSteps: getSessionStepsCount(configuration.trainingType)
-    }));
-  }, [configuration.trainingType]);
-
-  const endSession = useCallback(() => {
-    setConfiguration(prev => ({ ...prev, sessionActive: false, currentStep: 0 }));
-    setCurrentSession(null);
-  }, []);
-
-  const nextStep = useCallback(() => {
+  const startSession = (trainingType: TrainingType) => {
+    const totalSteps = getSessionStepsCount(trainingType);
+    
+    // Réinitialiser l'historique pour une nouvelle session
+    setSessionHistory({
+      proposedContent: new Set(),
+      currentExercises: [],
+      antiLoopWarnings: 0
+    });
+    
     setConfiguration(prev => ({
       ...prev,
-      currentStep: Math.min(prev.currentStep + 1, prev.totalSteps)
+      trainingType,
+      sessionState: 'active',
+      currentStep: 0,
+      totalSteps
     }));
-  }, []);
+  };
+
+  const endSession = () => {
+    setConfiguration(prev => ({
+      ...prev,
+      sessionState: 'completed',
+      trainingType: null
+    }));
+    
+    // Log des statistiques de session
+    console.log('Session terminée:', {
+      exercicesProposés: sessionHistory.currentExercises.length,
+      avertissementsBoucle: sessionHistory.antiLoopWarnings,
+      sessionId
+    });
+  };
+
+  const nextStep = () => {
+    setConfiguration(prev => ({
+      ...prev,
+      currentStep: prev.currentStep + 1
+    }));
+  };
 
   const enrichPrompt = useCallback((originalPrompt: string): string => {
     const { level, domain, trainingType } = configuration;
@@ -122,83 +129,115 @@ export function usePrepaCdsEnhancements() {
     enrichedPrompt += `- Focaliser sur le domaine "${domain}"\n`;
     enrichedPrompt += `- Présenter l'analyse AVANT la conclusion/feedback\n`;
     enrichedPrompt += `- Proposer des améliorations personnalisées basées sur l'historique\n`;
+    enrichedPrompt += `- Éviter strictement toute répétition ou boucle dans le contenu\n`;
 
     return enrichedPrompt;
   }, [configuration, userProgress]);
 
-  const generateQuestion = useCallback(async (questionType: 'qcm' | 'vrai_faux' | 'ouverte' = 'qcm'): Promise<string> => {
+  const generateQuestion = async (level: UserLevel, domain: StudyDomain, type: 'qcm' | 'vrai_faux' | 'ouverte' = 'qcm') => {
     setIsGeneratingContent(true);
     try {
-      const questionConfig = {
-        type: questionType,
-        level: configuration.level,
-        domain: configuration.domain,
-        avoidTopics: userProgress.strengths.slice(0, 3) // Éviter les sujets maîtrisés
-      };
-
-      // Simulation de génération de question
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const prepaCdsService = PrepaCdsService.getInstance();
+      const result = await prepaCdsService.generateQuestion(level, domain, type, sessionId);
       
-      return generateQuestionContent(questionConfig);
+      // Anti-boucle: marquer le contenu comme proposé
+      const contentKey = `question_${result.question.substring(0, 50)}`;
+      if (sessionHistory.proposedContent.has(contentKey)) {
+        setSessionHistory(prev => ({
+          ...prev,
+          antiLoopWarnings: prev.antiLoopWarnings + 1
+        }));
+        console.warn('Contenu similaire déjà proposé, alternative générée');
+      }
+      
+      setSessionHistory(prev => ({
+        ...prev,
+        proposedContent: new Set([...prev.proposedContent, contentKey]),
+        currentExercises: [...prev.currentExercises, contentKey]
+      }));
+      
+      return result;
+    } catch (error) {
+      console.error('Erreur génération question:', error);
+      throw error;
     } finally {
       setIsGeneratingContent(false);
     }
-  }, [configuration, userProgress]);
+  };
 
-  const correctAnswer = useCallback(async (userAnswer: string, correctAnswer: string): Promise<string> => {
+  const correctAnswer = async (userAnswer: string, correctAnswer: string) => {
     setIsGeneratingContent(true);
     try {
-      // Simulation d'analyse et correction
-      await new Promise(resolve => setTimeout(resolve, 800));
+      const prepaCdsService = PrepaCdsService.getInstance();
+      const result = await prepaCdsService.correctAnswer(userAnswer, correctAnswer, configuration.level, configuration.domain);
       
-      const isCorrect = userAnswer.toLowerCase().includes(correctAnswer.toLowerCase());
-      
-      // Mettre à jour les statistiques
+      // Mettre à jour les progrès
       setUserProgress(prev => ({
         ...prev,
-        totalQuestions: prev.totalQuestions + 1,
-        correctAnswers: prev.correctAnswers + (isCorrect ? 1 : 0),
-        lastSessionDate: new Date().toISOString()
+        completedExercises: prev.completedExercises + 1,
+        lastSessionDate: new Date()
       }));
-
-      return generateFeedback(userAnswer, correctAnswer, isCorrect, configuration.level);
+      
+      return result;
+    } catch (error) {
+      console.error('Erreur correction réponse:', error);
+      throw error;
     } finally {
       setIsGeneratingContent(false);
     }
-  }, [configuration.level]);
+  };
 
-  const generateCaseStudy = useCallback(async (): Promise<string> => {
+  const generateCaseStudy = async (level: UserLevel, domain: StudyDomain) => {
     setIsGeneratingContent(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1200));
-      return generateCaseStudyContent(configuration.domain, configuration.level);
+      const prepaCdsService = PrepaCdsService.getInstance();
+      const result = await prepaCdsService.generateCaseStudy(level, domain, sessionId);
+      
+      // Anti-boucle: marquer le contenu comme proposé
+      const contentKey = `case_${result.title}`;
+      if (sessionHistory.proposedContent.has(contentKey)) {
+        setSessionHistory(prev => ({
+          ...prev,
+          antiLoopWarnings: prev.antiLoopWarnings + 1
+        }));
+        console.warn('Cas similaire déjà proposé, alternative générée');
+      }
+      
+      setSessionHistory(prev => ({
+        ...prev,
+        proposedContent: new Set([...prev.proposedContent, contentKey]),
+        currentExercises: [...prev.currentExercises, contentKey]
+      }));
+      
+      return result;
+    } catch (error) {
+      console.error('Erreur génération cas pratique:', error);
+      throw error;
     } finally {
       setIsGeneratingContent(false);
     }
-  }, [configuration]);
+  };
 
   const generateRevisionPlan = useCallback(async (duration: number = 30): Promise<string> => {
     setIsGeneratingContent(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      return generatePersonalizedPlan(configuration.level, configuration.domain, userProgress, duration);
+      const prepaCdsService = PrepaCdsService.getInstance();
+      return await prepaCdsService.generateRevisionPlan(configuration.level, configuration.domain, duration, userProgress.weakAreas);
     } finally {
       setIsGeneratingContent(false);
     }
   }, [configuration, userProgress]);
 
   const evaluateProgress = useCallback((): string => {
-    const { correctAnswers, totalQuestions, weakAreas, strengths } = userProgress;
-    const successRate = totalQuestions > 0 ? (correctAnswers / totalQuestions) * 100 : 0;
+    const { completedExercises, averageScore, weakAreas, strengths } = userProgress;
     
     let evaluation = `**ANALYSE DE VOTRE PROGRESSION**\n\n`;
-    evaluation += `Taux de réussite global: ${successRate.toFixed(1)}%\n`;
-    evaluation += `Questions traitées: ${totalQuestions}\n`;
-    evaluation += `Réponses correctes: ${correctAnswers}\n\n`;
+    evaluation += `Score moyen: ${averageScore.toFixed(1)}%\n`;
+    evaluation += `Exercices complétés: ${completedExercises}\n\n`;
     
-    if (successRate >= 80) {
+    if (averageScore >= 80) {
       evaluation += `**Excellent travail !** Vous maîtrisez bien le niveau ${configuration.level}.\n`;
-    } else if (successRate >= 60) {
+    } else if (averageScore >= 60) {
       evaluation += `**Progression satisfaisante.** Continuez vos efforts pour consolider vos acquis.\n`;
     } else {
       evaluation += `**Des efforts supplémentaires sont nécessaires.** Focalisez-vous sur les points faibles identifiés.\n`;
@@ -216,37 +255,54 @@ export function usePrepaCdsEnhancements() {
   }, [userProgress, configuration.level]);
 
   const suggestResources = useCallback((topic: string): string[] => {
-    const resources = getResourcesByDomainAndTopic(configuration.domain, topic, configuration.level);
-    return resources;
+    const prepaCdsService = PrepaCdsService.getInstance();
+    return prepaCdsService.suggestResources(configuration.domain, configuration.level, topic);
   }, [configuration]);
+
+  // Fonction de validation anti-boucle
+  const checkForLoop = (content: string): boolean => {
+    const contentKey = `content_${content.substring(0, 50)}`;
+    return sessionHistory.proposedContent.has(contentKey);
+  };
+
+  const markContentAsProposed = (content: string, type: string) => {
+    const contentKey = `${type}_${content.substring(0, 50)}`;
+    setSessionHistory(prev => ({
+      ...prev,
+      proposedContent: new Set([...prev.proposedContent, contentKey])
+    }));
+  };
 
   return {
     // Configuration
     configuration,
+    userProgress,
+    sessionId,
+    sessionHistory,
+    
+    // Actions de configuration
     updateLevel,
     updateDomain,
     selectTrainingType,
     
-    // Session management
-    currentSession,
+    // Actions de session
     startSession,
     endSession,
     nextStep,
     
-    // Progress tracking
-    userProgress,
-    evaluateProgress,
-    
-    // Content generation
+    // Génération de contenu
+    isGeneratingContent,
     enrichPrompt,
     generateQuestion,
     correctAnswer,
     generateCaseStudy,
     generateRevisionPlan,
+    evaluateProgress,
     suggestResources,
     
-    // State
-    isGeneratingContent
+    // Anti-boucle
+    checkForLoop,
+    markContentAsProposed
   };
 }
 
@@ -278,9 +334,8 @@ function getDomainInstructions(domain: StudyDomain): string {
     droit_public: 'CGCT, pouvoirs de police, contentieux administratif',
     droit_penal: 'Code pénal, procédures, infractions spécifiques',
     management: 'Gestion d\'équipe, organisation, planification',
-    procedures: 'Protocoles opérationnels, chaîne de commandement',
     redaction: 'Notes de service, rapports, correspondance officielle',
-    culture_generale: 'Actualités sécuritaires, évolutions réglementaires'
+    general: 'Culture générale sécuritaire, actualités, évolutions'
   };
   return instructions[domain];
 }
@@ -296,48 +351,4 @@ function getTrainingTypeInstructions(trainingType: TrainingType): string {
     evaluation_note_service: 'Document administratif, analyse critique'
   };
   return instructions[trainingType];
-}
-
-function generateQuestionContent(config: any): string {
-  // Simulation de génération de contenu de question
-  return `Question générée pour le niveau ${config.level} en ${config.domain}...`;
-}
-
-function generateFeedback(userAnswer: string, correctAnswer: string, isCorrect: boolean, level: UserLevel): string {
-  let feedback = `**ANALYSE DE VOTRE RÉPONSE**\n\n`;
-  
-  if (isCorrect) {
-    feedback += `✅ **Réponse correcte !**\n`;
-    feedback += `Votre analyse démontre une bonne compréhension du sujet.\n\n`;
-  } else {
-    feedback += `❌ **Réponse à améliorer**\n`;
-    feedback += `Votre raisonnement contient quelques lacunes.\n\n`;
-  }
-  
-  feedback += `**Points observés dans votre réponse:**\n`;
-  feedback += `- Structure de la réponse: ${userAnswer.length > 50 ? 'Développée' : 'Concise'}\n`;
-  feedback += `- Vocabulaire juridique: ${userAnswer.includes('article') || userAnswer.includes('code') ? 'Approprié' : 'À améliorer'}\n\n`;
-  
-  feedback += `**CONCLUSION**\n`;
-  feedback += `${isCorrect ? 'Continuez sur cette voie !' : 'Révisez les concepts de base avant de poursuivre.'}\n`;
-  
-  return feedback;
-}
-
-function generateCaseStudyContent(domain: StudyDomain, level: UserLevel): string {
-  return `Cas pratique généré pour ${domain} niveau ${level}...`;
-}
-
-function generatePersonalizedPlan(level: UserLevel, domain: StudyDomain, progress: UserProgress, duration: number): string {
-  return `Plan de révision personnalisé sur ${duration} jours pour ${domain} niveau ${level}...`;
-}
-
-function getResourcesByDomainAndTopic(domain: StudyDomain, topic: string, level: UserLevel): string[] {
-  // Simulation de recommandations de ressources
-  return [
-    `Article spécialisé: ${topic} en ${domain}`,
-    `Fiche de révision niveau ${level}`,
-    `Cas pratiques ${domain}`,
-    `Jurisprudence récente ${topic}`
-  ];
 }

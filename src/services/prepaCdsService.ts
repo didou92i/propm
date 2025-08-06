@@ -1,5 +1,25 @@
 import { supabase } from '@/integrations/supabase/client';
-import { UserLevel, TrainingType, StudyDomain } from '@/components/chat/PrepaCdsControls';
+
+export type UserLevel = 'debutant' | 'intermediaire' | 'avance';
+export type StudyDomain = 'droit_public' | 'droit_penal' | 'management' | 'redaction' | 'general';
+export type TrainingType = 'analyse_documents' | 'questionnaire_droit' | 'management_redaction' | 'entrainement_mixte' | 'evaluation_connaissances' | 'vrai_faux' | 'evaluation_note_service';
+
+export interface SessionHistory {
+  sessionId: string;
+  exercisesProposed: string[];
+  questionsAsked: string[];
+  casesStudied: string[];
+  documentsAnalyzed: string[];
+  lastActivity: Date;
+}
+
+export interface ExerciseMemory {
+  id: string;
+  type: string;
+  content: string;
+  timestamp: Date;
+  hash: string;
+}
 
 interface PrepaCdsRequest {
   type: 'question' | 'case_study' | 'evaluation' | 'revision_plan';
@@ -32,7 +52,7 @@ interface TrainingEvaluation {
   nextLevelRecommendation?: UserLevel;
 }
 
-interface GeneratedQuestion {
+export interface GeneratedQuestion {
   type: 'qcm' | 'vrai_faux' | 'ouverte';
   question: string;
   options?: string[];
@@ -41,16 +61,107 @@ interface GeneratedQuestion {
   references: LegalReference[];
 }
 
-interface GeneratedCaseStudy {
+export interface GeneratedCaseStudy {
   title: string;
+  situation: string;
   context: string;
-  documents: string[];
   questions: string[];
-  expectedStructure: string[];
-  evaluationCriteria: string[];
+  expectedElements: string[];
+  difficulty: UserLevel;
+  estimatedTime: number;
 }
 
-class PrepaCdsService {
+export class PrepaCdsService {
+  private static instance: PrepaCdsService;
+  private sessionHistory: Map<string, SessionHistory> = new Map();
+  private exerciseMemory: Map<string, ExerciseMemory[]> = new Map();
+
+  public static getInstance(): PrepaCdsService {
+    if (!PrepaCdsService.instance) {
+      PrepaCdsService.instance = new PrepaCdsService();
+    }
+    return PrepaCdsService.instance;
+  }
+
+  // Système anti-boucle
+  private generateContentHash(content: string): string {
+    return btoa(content).substring(0, 10);
+  }
+
+  private isContentAlreadyProposed(sessionId: string, content: string, type: string): boolean {
+    const exercises = this.exerciseMemory.get(sessionId) || [];
+    const hash = this.generateContentHash(content);
+    
+    return exercises.some(ex => 
+      ex.hash === hash && 
+      ex.type === type && 
+      Date.now() - ex.timestamp.getTime() < 24 * 60 * 60 * 1000 // 24h window
+    );
+  }
+
+  private recordExercise(sessionId: string, content: string, type: string): void {
+    const exercises = this.exerciseMemory.get(sessionId) || [];
+    const newExercise: ExerciseMemory = {
+      id: crypto.randomUUID(),
+      type,
+      content,
+      timestamp: new Date(),
+      hash: this.generateContentHash(content)
+    };
+    
+    exercises.push(newExercise);
+    
+    // Garder seulement les 50 derniers exercices
+    if (exercises.length > 50) {
+      exercises.splice(0, exercises.length - 50);
+    }
+    
+    this.exerciseMemory.set(sessionId, exercises);
+  }
+
+  private getSessionHistory(sessionId: string): SessionHistory {
+    if (!this.sessionHistory.has(sessionId)) {
+      this.sessionHistory.set(sessionId, {
+        sessionId,
+        exercisesProposed: [],
+        questionsAsked: [],
+        casesStudied: [],
+        documentsAnalyzed: [],
+        lastActivity: new Date()
+      });
+    }
+    return this.sessionHistory.get(sessionId)!;
+  }
+
+  private updateSessionHistory(sessionId: string, type: 'exercise' | 'question' | 'case' | 'document', id: string): void {
+    const history = this.getSessionHistory(sessionId);
+    
+    switch(type) {
+      case 'exercise':
+        if (!history.exercisesProposed.includes(id)) {
+          history.exercisesProposed.push(id);
+        }
+        break;
+      case 'question':
+        if (!history.questionsAsked.includes(id)) {
+          history.questionsAsked.push(id);
+        }
+        break;
+      case 'case':
+        if (!history.casesStudied.includes(id)) {
+          history.casesStudied.push(id);
+        }
+        break;
+      case 'document':
+        if (!history.documentsAnalyzed.includes(id)) {
+          history.documentsAnalyzed.push(id);
+        }
+        break;
+    }
+    
+    history.lastActivity = new Date();
+  }
+
   /**
    * Enrichit une requête utilisateur avec le contexte pédagogique approprié
    */
@@ -76,22 +187,55 @@ class PrepaCdsService {
   }
 
   /**
-   * Génère une question d'entraînement adaptée au profil
+   * Génère une question d'entraînement adaptée au profil avec système anti-boucle
    */
-  async generateQuestion(level: UserLevel, domain: StudyDomain, type: 'qcm' | 'vrai_faux' | 'ouverte' = 'qcm'): Promise<GeneratedQuestion> {
+  async generateQuestion(level: UserLevel, domain: StudyDomain, type: 'qcm' | 'vrai_faux' | 'ouverte' = 'qcm', sessionId?: string): Promise<GeneratedQuestion> {
     try {
+      const history = sessionId ? this.getSessionHistory(sessionId) : null;
+      const avoidRecentTopics = history?.questionsAsked || [];
+
       const { data, error } = await supabase.functions.invoke('generate-training-question', {
-        body: {
-          level,
-          domain,
+        body: { 
+          level, 
+          domain, 
           questionType: type,
-          avoidRecentTopics: true // Éviter la répétition
+          avoidRecentTopics,
+          sessionId
         }
       });
 
       if (error) throw error;
       
-      return this.formatGeneratedQuestion(data, type);
+      const question = this.formatGeneratedQuestion(data);
+      
+      // Vérifier les doublons
+      if (sessionId && this.isContentAlreadyProposed(sessionId, question.question, 'question')) {
+        // Générer une alternative
+        const { data: altData, error: altError } = await supabase.functions.invoke('generate-training-question', {
+          body: { 
+            level, 
+            domain, 
+            questionType: type,
+            avoidRecentTopics: [...avoidRecentTopics, question.question],
+            forceAlternative: true,
+            sessionId
+          }
+        });
+        
+        if (!altError) {
+          const altQuestion = this.formatGeneratedQuestion(altData);
+          this.recordExercise(sessionId, altQuestion.question, 'question');
+          this.updateSessionHistory(sessionId, 'question', altQuestion.question);
+          return altQuestion;
+        }
+      }
+      
+      if (sessionId) {
+        this.recordExercise(sessionId, question.question, 'question');
+        this.updateSessionHistory(sessionId, 'question', question.question);
+      }
+      
+      return question;
     } catch (error) {
       console.error('Erreur génération question:', error);
       return this.getFallbackQuestion(level, domain, type);
@@ -99,7 +243,7 @@ class PrepaCdsService {
   }
 
   /**
-   * Corrige et évalue une réponse utilisateur
+   * Corrige et évalue une réponse utilisateur avec feedback structuré
    */
   async correctAnswer(userAnswer: string, expectedAnswer: string, level: UserLevel, domain: StudyDomain): Promise<TrainingEvaluation> {
     try {
@@ -123,22 +267,72 @@ class PrepaCdsService {
   }
 
   /**
-   * Génère un cas pratique ou une situation professionnelle
+   * Génère un cas pratique avec système anti-boucle
    */
-  async generateCaseStudy(level: UserLevel, domain: StudyDomain): Promise<GeneratedCaseStudy> {
+  async generateCaseStudy(level: UserLevel, domain: StudyDomain, sessionId?: string): Promise<GeneratedCaseStudy> {
     try {
+      const history = sessionId ? this.getSessionHistory(sessionId) : null;
+      const avoidRecentCases = history?.casesStudied || [];
+
       const { data, error } = await supabase.functions.invoke('generate-case-study', {
-        body: {
-          level,
+        body: { 
+          level, 
           domain,
-          scenarioType: this.getCaseStudyType(domain),
-          complexityLevel: this.getComplexityLevel(level)
+          avoidRecentCases,
+          sessionId
         }
       });
 
       if (error) throw error;
       
-      return this.formatCaseStudy(data);
+      const caseStudy = {
+        title: data.title || 'Cas pratique',
+        situation: data.situation || 'Situation à analyser',
+        context: data.context || 'Contexte professionnel',
+        questions: data.questions || ['Analysez la situation'],
+        expectedElements: data.expectedElements || ['Éléments d\'analyse'],
+        difficulty: level,
+        estimatedTime: data.estimatedTime || 30
+      };
+
+      // Vérifier les doublons
+      const caseContent = `${caseStudy.title} ${caseStudy.situation}`;
+      if (sessionId && this.isContentAlreadyProposed(sessionId, caseContent, 'case')) {
+        // Générer une alternative
+        const { data: altData, error: altError } = await supabase.functions.invoke('generate-case-study', {
+          body: { 
+            level, 
+            domain,
+            avoidRecentCases: [...avoidRecentCases, caseStudy.title],
+            forceAlternative: true,
+            sessionId
+          }
+        });
+        
+        if (!altError) {
+          const altCase = {
+            title: altData.title || 'Cas pratique alternatif',
+            situation: altData.situation || 'Situation alternative à analyser',
+            context: altData.context || 'Contexte professionnel alternatif',
+            questions: altData.questions || ['Analysez cette nouvelle situation'],
+            expectedElements: altData.expectedElements || ['Nouveaux éléments d\'analyse'],
+            difficulty: level,
+            estimatedTime: altData.estimatedTime || 30
+          };
+          
+          const altCaseContent = `${altCase.title} ${altCase.situation}`;
+          this.recordExercise(sessionId, altCaseContent, 'case');
+          this.updateSessionHistory(sessionId, 'case', altCase.title);
+          return altCase;
+        }
+      }
+      
+      if (sessionId) {
+        this.recordExercise(sessionId, caseContent, 'case');
+        this.updateSessionHistory(sessionId, 'case', caseStudy.title);
+      }
+      
+      return caseStudy;
     } catch (error) {
       console.error('Erreur génération cas pratique:', error);
       return this.getFallbackCaseStudy(level, domain);
@@ -259,9 +453,8 @@ class PrepaCdsService {
       droit_public: 'Droit public territorial - CGCT, pouvoirs de police, contentieux',
       droit_penal: 'Droit pénal - Code pénal, procédures, infractions',
       management: 'Management et GRH - Gestion d\'équipe, organisation, planification',
-      procedures: 'Procédures opérationnelles - Protocoles, chaîne de commandement',
       redaction: 'Rédaction administrative - Notes, rapports, correspondance',
-      culture_generale: 'Culture générale sécuritaire - Actualités, évolutions'
+      general: 'Culture générale sécuritaire - Actualités, évolutions'
     };
     return descriptions[domain];
   }
@@ -301,33 +494,14 @@ class PrepaCdsService {
         break;
     }
     
-    // Instructions selon le type
-    switch (type) {
-      case 'question':
-        instructions += '- Formulation claire et précise\n';
-        instructions += '- Réponse attendue détaillée\n';
-        instructions += '- Références juridiques obligatoires\n';
-        break;
-      case 'case_study':
-        instructions += '- Contexte réaliste et actuel\n';
-        instructions += '- Documents diversifiés\n';
-        instructions += '- Consignes d\'analyse explicites\n';
-        break;
-      case 'evaluation':
-        instructions += '- Grille d\'évaluation transparente\n';
-        instructions += '- Feedback constructif obligatoire\n';
-        instructions += '- Pistes d\'amélioration personnalisées\n';
-        break;
-    }
-    
     return instructions;
   }
 
-  // ... Autres méthodes d'assistance (formatters, fallbacks, etc.)
+  // Formatteurs, fallbacks, etc.
   
-  private formatGeneratedQuestion(data: any, type: string): GeneratedQuestion {
+  private formatGeneratedQuestion(data: any): GeneratedQuestion {
     return {
-      type: type as any,
+      type: data.type || 'qcm',
       question: data.question || 'Question de test',
       options: data.options || [],
       correctAnswer: data.correctAnswer || '',
@@ -368,25 +542,15 @@ class PrepaCdsService {
     };
   }
 
-  private formatCaseStudy(data: any): GeneratedCaseStudy {
-    return {
-      title: data.title || 'Cas pratique',
-      context: data.context || 'Contexte du cas',
-      documents: data.documents || [],
-      questions: data.questions || [],
-      expectedStructure: data.structure || [],
-      evaluationCriteria: data.criteria || []
-    };
-  }
-
   private getFallbackCaseStudy(level: UserLevel, domain: StudyDomain): GeneratedCaseStudy {
     return {
       title: `Cas pratique ${domain}`,
-      context: `Situation professionnelle niveau ${level}`,
-      documents: ['Document 1', 'Document 2'],
-      questions: ['Question 1', 'Question 2'],
-      expectedStructure: ['Introduction', 'Développement', 'Conclusion'],
-      evaluationCriteria: ['Analyse', 'Synthèse', 'Propositions']
+      situation: `Situation professionnelle niveau ${level}`,
+      context: `Contexte professionnel de police municipale`,
+      questions: ['Analysez la situation', 'Proposez des solutions'],
+      expectedElements: ['Introduction', 'Analyse juridique', 'Conclusion'],
+      difficulty: level,
+      estimatedTime: 30
     };
   }
 
@@ -444,7 +608,6 @@ class PrepaCdsService {
   }
 
   private getBaseResources(domain: StudyDomain, level: UserLevel): string[] {
-    // Ressources de base par domaine et niveau
     return [`Ressource ${domain} niveau ${level}`];
   }
 
@@ -458,14 +621,6 @@ class PrepaCdsService {
 
   private getOralEvaluationGrid(level: UserLevel): string[] {
     return [`Critère d'évaluation niveau ${level}`];
-  }
-
-  private getCaseStudyType(domain: StudyDomain): string {
-    return `Type de cas pour ${domain}`;
-  }
-
-  private getComplexityLevel(level: UserLevel): string {
-    return `Complexité ${level}`;
   }
 
   private getRecommendedStudyTime(level: UserLevel): number {
