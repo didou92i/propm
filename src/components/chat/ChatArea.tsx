@@ -447,7 +447,7 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
         </div>
       )}
 
-      <div className="p-6 pb-12 border-t border-border/40">
+      <div className="sticky bottom-16 z-20 p-6 border-t border-border/40 bg-background/95 backdrop-blur-sm">
         {attachmentError && (
           <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
             <p className="text-sm text-destructive">{attachmentError}</p>
