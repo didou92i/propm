@@ -10,7 +10,7 @@ const corsHeaders = {
 interface SearchRequest {
   query: string;
   database: string;
-  context: 'rural' | 'moyenne' | 'metropole';
+  context: 'rural' | 'moyenne' | 'metropole' | 'large';
   filters?: {
     police_municipale?: boolean;
     droit_administratif?: boolean;
@@ -27,7 +27,14 @@ serve(async (req) => {
   try {
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: {
+            Authorization: req.headers.get('Authorization') || '',
+          },
+        },
+      }
     );
 
     const { query, database, context, filters = {}, maxResults = 10 }: SearchRequest = await req.json();
@@ -102,13 +109,20 @@ function enrichQueryWithContext(query: string, context: string): string {
   const contextKeywords = {
     rural: ['intercommunalité', 'mutualisation', 'polyvalence', 'gendarmerie'],
     moyenne: ['brigade', 'coordination', 'prévention', 'police nationale'],
-    metropole: ['vidéoprotection', 'centre supervision', 'unité spécialisée', 'métropole']
+    metropole: ['vidéoprotection', 'centre supervision', 'unité spécialisée', 'métropole'],
   };
 
   const keywords = contextKeywords[context as keyof typeof contextKeywords] || [];
-  const enrichedTerms = keywords.join(' OR ');
-  
-  return `${query} AND (${enrichedTerms}) AND police municipale`;
+  let enriched = query.trim();
+
+  if (keywords.length > 0) {
+    const enrichedTerms = keywords.join(' OR ');
+    enriched += ` AND (${enrichedTerms})`;
+  }
+
+  // Always bias towards police municipale context
+  enriched += ' AND police municipale';
+  return enriched;
 }
 
 /**
@@ -122,6 +136,8 @@ function determineSearchLevel(context: string): string | null {
       return 'paragraph'; // Recherche équilibrée
     case 'metropole':
       return 'title'; // Recherche précise pour métropoles
+    case 'large':
+      return null; // Pas de filtrage de niveau
     default:
       return null;
   }
