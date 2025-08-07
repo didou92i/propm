@@ -98,6 +98,8 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
   const [contextShared, setContextShared] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const composerRef = useRef<HTMLDivElement>(null);
+  const [bottomPadding, setBottomPadding] = useState<number>(200);
   const createRipple = useRipple('intense');
   const { toast } = useToast();
   const { updateConversation, getConversation } = useConversationHistory();
@@ -105,6 +107,30 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
   const { optimizeMessages } = usePerformanceOptimization();
   const { generateContent: generatePrepaContent } = usePrepaCdsChat();
   const { config: prepaConfig } = usePrepaCdsConfig();
+
+  // Ensure content never scrolls under the fixed composer and legal footer
+  useEffect(() => {
+    const updateOffsets = () => {
+      const composerH = composerRef.current?.getBoundingClientRect().height ?? 0;
+      const footerEl = document.querySelector('footer') as HTMLElement | null;
+      const footerH = footerEl?.getBoundingClientRect().height ?? 0;
+      const bottomOffset = 48; // tailwind bottom-12 => 3rem => 48px
+      const extra = 24; // extra breathing space
+      setBottomPadding(composerH + footerH + bottomOffset + extra);
+    };
+
+    updateOffsets();
+    window.addEventListener('resize', updateOffsets);
+    const ro = new ResizeObserver(updateOffsets);
+    if (composerRef.current) ro.observe(composerRef.current);
+    const footerNode = document.querySelector('footer');
+    if (footerNode) ro.observe(footerNode);
+    return () => {
+      window.removeEventListener('resize', updateOffsets);
+      ro.disconnect();
+    };
+  }, []);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -399,7 +425,7 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
   return (
     <div className="flex flex-col h-full">
       {messages.length === 0 ? (
-        <div className="flex-1 flex items-center justify-center p-8 animate-fade-in">
+        <div className="flex-1 flex items-center justify-center p-8 animate-fade-in" style={{ paddingBottom: bottomPadding }}>
           <div className="text-center max-w-4xl w-full">
             {selectedAgent === "prepacds" ? (
               <PrepaCdsWelcome 
@@ -455,7 +481,7 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
           </div>
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto p-6 space-y-6" style={{ paddingBottom: bottomPadding }}>
           {messages.map((message, index) => (
             <div
               key={message.id}
@@ -511,7 +537,7 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
         </div>
       )}
 
-      <div className="fixed bottom-12 left-0 md:left-64 right-0 z-30 p-6 border-t border-border/40 bg-background/95 backdrop-blur-sm">
+      <div ref={composerRef} className="fixed bottom-12 left-0 md:left-64 right-0 z-30 p-6 border-t border-border/40 bg-background/95 backdrop-blur-sm">
         {attachmentError && (
           <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
             <p className="text-sm text-destructive">{attachmentError}</p>
