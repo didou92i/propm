@@ -38,6 +38,9 @@ verify_jwt = false
 [functions.chat-openai-stream]
 verify_jwt = true
 
+[functions.search-cds-vectorial]
+verify_jwt = true
+
 [db]
 enabled = true
 port = 54322

@@ -127,16 +127,67 @@ export const PlatformDiagnostics = () => {
     }
   };
 
+  // Teste les trois agents principaux via la fonction chat (réponse non-streaming)
+  const testAgentChats = async () => {
+    const agents = ['redacpro', 'arrete', 'cdspro'] as const;
+    for (const agent of agents) {
+      const name = `chat_${agent}`;
+      updateDiagnostic(name, 'loading', `Test chat ${agent}...`);
+      try {
+        const { data, error } = await supabase.functions.invoke('chat-openai', {
+          body: {
+            messages: [{ role: 'user', content: `Ping ${agent}` }],
+            selectedAgent: agent,
+            userSession: 'diag-session'
+          }
+        });
+        if (error) throw error;
+        if (data && data.success) {
+          updateDiagnostic(name, 'success', `Assistant ${agent} OK`);
+        } else {
+          throw new Error(data?.error || 'Pas de réponse');
+        }
+      } catch (error) {
+        updateDiagnostic(name, 'error', `Erreur assistant ${agent}`, error.message);
+      }
+    }
+  };
+
+  // Teste la fonction de recherche vectorielle dédiée à CDS Pro
+  const testCdsVectorialSearch = async () => {
+    updateDiagnostic('cds_vector', 'loading', 'Test recherche vectorielle CDS Pro...');
+    try {
+      const { data, error } = await supabase.functions.invoke('search-cds-vectorial', {
+        body: {
+          query: 'police municipale pouvoirs du maire',
+          database: 'vs_67eefbe160348191b7a19ad6210afd55',
+          context: 'moyenne',
+          filters: { police_municipale: true, droit_administratif: true },
+          maxResults: 3
+        }
+      });
+      if (error) throw error;
+      const count = data?.results?.length || 0;
+      if (count > 0) {
+        updateDiagnostic('cds_vector', 'success', 'Recherche CDS Pro OK', `${count} résultats pertinents`);
+      } else {
+        updateDiagnostic('cds_vector', 'warning', 'Aucun résultat vectoriel', 'Vérifiez les documents indexés');
+      }
+    } catch (error) {
+      updateDiagnostic('cds_vector', 'error', 'Erreur recherche CDS Pro', error.message);
+    }
+  };
+
   const runAllDiagnostics = async () => {
     setIsRunning(true);
     setDiagnostics([]);
-    
-    
     
     await testSupabaseConnection();
     await testDocumentProcessing();
     await testChatFunction();
     await testSemanticSearch();
+    await testAgentChats();
+    await testCdsVectorialSearch();
     
     setIsRunning(false);
     
@@ -155,7 +206,6 @@ export const PlatformDiagnostics = () => {
         variant: errors.length > 0 ? "destructive" : "default"
       });
     }
-    
     
   };
 

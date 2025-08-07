@@ -44,7 +44,7 @@ export const useSemanticSearch = () => {
     isSearching: isLlamaSearching,
     searchResults: llamaResults,
     addDocument: addToLlamaIndex
-  } = useLlamaSearch({ autoInitialize: true });
+  } = useLlamaSearch({ autoInitialize: false });
 
   const generateEmbedding = async (query: string): Promise<number[]> => {
     const { data, error } = await supabase.functions.invoke('generate-embedding', {

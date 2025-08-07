@@ -23,6 +23,9 @@ import { useToast } from "@/hooks/use-toast";
 import { logger } from "@/utils/logger";
 import { usePrepaCdsChat } from "@/hooks/usePrepaCdsChat";
 import { usePrepaCdsConfig } from "@/hooks/chat/usePrepaCdsConfig";
+import { CdsProControls } from "@/components/chat/CdsProControls";
+import { useCdsProEnhancements } from "@/hooks/chat/useCdsProEnhancements";
+import { cdsProService } from "@/services/cdsProService";
 
 interface ChatAreaProps {
   selectedAgent: string;
@@ -107,6 +110,7 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
   const { optimizeMessages } = usePerformanceOptimization();
   const { generateContent: generatePrepaContent } = usePrepaCdsChat();
   const { config: prepaConfig } = usePrepaCdsConfig();
+  const cdsPro = useCdsProEnhancements();
 
   // Ensure content never scrolls under the fixed composer and legal footer
   useEffect(() => {
@@ -338,8 +342,40 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
         return;
       }
 
+      // Prépare le contenu final et les messages à envoyer (enrichissement CDS Pro)
+      const buildMessagesForSend = async () => {
+        let finalUserContent = messageContent;
+        if (selectedAgent === 'cdspro') {
+          const isValid = cdsPro.validateSecurityRequest(messageContent);
+          if (!isValid) {
+            setMessages(prev => prev.map(msg => 
+              msg.id === assistantMessageId 
+                ? { ...msg, content: cdsPro.getSecurityResponse() }
+                : msg
+            ));
+            setTypingMessageId(null);
+            setIsLoading(false);
+            return null;
+          }
+
+          const enriched = cdsPro.enrichPrompt(messageContent);
+          const vec = await cdsProService.searchVectorialDatabase(content, cdsPro.configuration.context);
+          let vecCtx = '';
+          if (vec && vec.length > 0) {
+            vecCtx = '\n\nRéférences (extraits):\n' + vec.slice(0, 3).map((r: any, i: number) => `[$${'{'}i+1${'}'}] ${'$'}{r.content?.slice(0, 280)}...`).join('\n');
+            toast({ title: 'Références juridiques incluses', description: `${Math.min(3, vec.length)} extraits ajoutés.`});
+          }
+          finalUserContent = enriched + vecCtx;
+        }
+        const replaced = optimizedMessages.map((m, i, arr) => (i === arr.length - 1 && m.role === 'user' ? { ...m, content: finalUserContent } : m));
+        return replaced;
+      };
+
+      const messagesToSend = await buildMessagesForSend();
+      if (!messagesToSend) return;
+
       await sendStreamingMessage(
-        optimizedMessages,
+        messagesToSend,
         selectedAgent,
         userSession,
         // onMessageUpdate
@@ -465,9 +501,23 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
                 <h1 className="text-2xl font-bold mb-2 animate-scale-in">
                   {currentAgent?.name || "Assistant IA"}
                 </h1>
-                <p className="text-muted-foreground mb-8 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+                <p className="text-muted-foreground mb-6 animate-fade-in" style={{ animationDelay: '0.2s' }}>
                   {currentAgent?.description || "Comment puis-je vous aider ?"}
                 </p>
+
+                {selectedAgent === 'cdspro' && (
+                  <div className="mb-6 max-w-2xl mx-auto">
+                    <CdsProControls
+                      onContextChange={cdsPro.updateContext}
+                      onPriorityChange={cdsPro.updatePriority}
+                      onTemplateSelect={async (template) => {
+                        const generated = await cdsPro.generateDocumentTemplate(template);
+                        setInput(prev => (prev ? prev + '\n\n' : '') + generated);
+                        toast({ title: 'Modèle inséré', description: 'Le template a été ajouté dans l’éditeur.' });
+                      }}
+                    />
+                  </div>
+                )}
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {currentAgent?.suggestions.map((suggestion, index) => (
