@@ -193,29 +193,64 @@ export const PlatformDiagnostics = () => {
   const testCdsVectorialSearch = async () => {
     updateDiagnostic('cds_vector', 'loading', 'Test recherche vectorielle CDS Pro...');
     try {
-      const { data, error } = await supabase.functions.invoke('search-cds-vectorial', {
-        body: {
-          query: 'police municipale pouvoirs du maire',
-          database: 'vs_67eefbe160348191b7a19ad6210afd55',
-          context: 'moyenne',
-          filters: { police_municipale: true, droit_administratif: true },
-          maxResults: 3
-        }
+      const basePayload = {
+        query: 'police municipale pouvoirs du maire',
+        database: 'vs_67eefbe160348191b7a19ad6210afd55',
+        context: 'moyenne',
+        filters: { police_municipale: true, droit_administratif: true },
+        maxResults: 3,
+      } as const;
+
+      // Tentative initiale (avec filtres)
+      const { data: firstData, error: firstError } = await supabase.functions.invoke('search-cds-vectorial', {
+        body: basePayload,
       });
-      if (error) throw error;
-      const count = data?.results?.length || 0;
-      if (count > 0) {
-        updateDiagnostic('cds_vector', 'success', 'Recherche CDS Pro OK', `${count} résultats pertinents`);
+      if (firstError) throw (firstError as any);
+
+      const firstCount = firstData?.results?.length || 0;
+      const firstDetails = `DB: ${basePayload.database} | contexte: ${basePayload.context} | filtres: ${JSON.stringify(basePayload.filters)} | requête: ${firstData?.query || basePayload.query}`;
+
+      if (firstCount > 0) {
+        updateDiagnostic('cds_vector', 'success', 'Recherche CDS Pro OK', `${firstCount} résultats. ${firstDetails}`);
+        return;
+      }
+
+      // Fallback: relancer SANS filtres et avec contexte élargi
+      updateDiagnostic(
+        'cds_vector',
+        'warning',
+        'Aucun résultat vectoriel (1ère tentative)',
+        `${firstDetails}. On retente sans filtres...`
+      );
+
+      const fallbackPayload = {
+        query: basePayload.query,
+        database: basePayload.database,
+        context: 'large',
+        filters: {},
+        maxResults: 5,
+      } as const;
+
+      const { data: fallbackData, error: fallbackError } = await supabase.functions.invoke('search-cds-vectorial', {
+        body: fallbackPayload,
+      });
+      if (fallbackError) throw (fallbackError as any);
+
+      const fbCount = fallbackData?.results?.length || 0;
+      const fbDetails = `DB: ${fallbackPayload.database} | contexte: ${fallbackPayload.context} | filtres: ${JSON.stringify(fallbackPayload.filters)} | requête: ${fallbackData?.query || fallbackPayload.query}`;
+
+      if (fbCount > 0) {
+        updateDiagnostic('cds_vector_fallback', 'success', 'Fallback CDS Pro OK', `${fbCount} résultats (sans filtres). ${fbDetails}`);
       } else {
         updateDiagnostic(
-          'cds_vector',
-          'warning',
-          'Aucun résultat vectoriel',
-          'Index possiblement vide/non alimenté. Vérifiez l’ingestion des documents et les filtres. Voir logs Edge pour "search-cds-vectorial".'
+          'cds_vector_fallback',
+          'error',
+          'Toujours aucun résultat',
+          `${fbDetails}. Index possiblement vide/non alimenté. Vérifiez l’ingestion et les logs Edge "search-cds-vectorial".`
         );
       }
-    } catch (error) {
-      updateDiagnostic('cds_vector', 'error', 'Erreur recherche CDS Pro', error.message);
+    } catch (error: any) {
+      updateDiagnostic('cds_vector', 'error', 'Erreur recherche CDS Pro', error?.message || JSON.stringify(error));
     }
   };
 
