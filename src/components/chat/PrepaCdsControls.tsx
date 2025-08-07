@@ -4,6 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { BookOpen, Target, TrendingUp, FileText, CheckCircle, HelpCircle, Play } from 'lucide-react';
+import { usePrepaCdsConfig } from "@/hooks/chat/usePrepaCdsConfig";
+import { mapUiToEdge, mapEdgeToUi } from "@/types/prepacds";
 
 export type UserLevel = 'debutant' | 'intermediaire' | 'avance';
 export type TrainingType = 
@@ -71,24 +73,28 @@ const domainLabels: Record<StudyDomain, string> = {
 };
 
 export function PrepaCdsControls({ onLevelChange, onTrainingTypeSelect, onDomainChange, onStartSession }: PrepaCdsControlsProps) {
-  const [selectedLevel, setSelectedLevel] = useState<UserLevel>('intermediaire');
-  const [selectedDomain, setSelectedDomain] = useState<StudyDomain>('droit_public');
-  const [selectedTrainingType, setSelectedTrainingType] = useState<TrainingType | null>(null);
+  const { config, updateConfig } = usePrepaCdsConfig();
+  const [selectedLevel, setSelectedLevel] = useState<UserLevel>(config.level);
+  const [selectedDomain, setSelectedDomain] = useState<StudyDomain>(mapEdgeToUi(config.domain));
+  const [selectedTrainingType, setSelectedTrainingType] = useState<TrainingType | null>(config.trainingType);
 
-  const handleLevelChange = (level: UserLevel) => {
-    setSelectedLevel(level);
-    onLevelChange(level);
-  };
+const handleLevelChange = (level: UserLevel) => {
+  setSelectedLevel(level);
+  updateConfig({ level });
+  onLevelChange(level);
+};
 
-  const handleDomainChange = (domain: StudyDomain) => {
-    setSelectedDomain(domain);
-    onDomainChange(domain);
-  };
+const handleDomainChange = (domain: StudyDomain) => {
+  setSelectedDomain(domain);
+  updateConfig({ domain: mapUiToEdge(domain) });
+  onDomainChange(domain);
+};
 
-  const handleTrainingTypeSelect = (type: TrainingType) => {
-    setSelectedTrainingType(type);
-    onTrainingTypeSelect(type);
-  };
+const handleTrainingTypeSelect = (type: TrainingType) => {
+  setSelectedTrainingType(type);
+  updateConfig({ trainingType: type });
+  onTrainingTypeSelect(type);
+};
 
   const handleStartSession = () => {
     if (selectedTrainingType) {

@@ -15,6 +15,8 @@ import type { StudyDomain as ControlsStudyDomain } from "./PrepaCdsControls";
 import { PrepaCdsProgressTracker } from "./PrepaCdsProgressTracker";
 import type { Message } from "@/types/chat";
 import { toast } from "sonner";
+import { usePrepaCdsConfig } from "@/hooks/chat/usePrepaCdsConfig";
+import { mapServiceToEdge } from "@/types/prepacds";
 
 interface PrepaCdsWelcomeProps {
   onSuggestionClick: (suggestion: string) => void;
@@ -32,7 +34,8 @@ export function PrepaCdsWelcome({ onSuggestionClick, onSendMessage }: PrepaCdsWe
     startSession 
   } = usePrepaCdsEnhancements();
   
-  const { generateContent, isLoading } = usePrepaCdsChat();
+const { generateContent, isLoading } = usePrepaCdsChat();
+  const { updateConfig } = usePrepaCdsConfig();
 
   const getTrainingPrompt = (trainingType: TrainingType, level: UserLevel, domain: ServiceStudyDomain): string => {
     const prompts: Record<TrainingType, string> = {
@@ -48,6 +51,7 @@ export function PrepaCdsWelcome({ onSuggestionClick, onSendMessage }: PrepaCdsWe
 
   const handleStartSession = (trainingType: TrainingType) => {
     startSession(trainingType);
+    updateConfig({ trainingType, level: configuration.level, domain: mapServiceToEdge(configuration.domain as ServiceStudyDomain) });
     setShowConfig(false);
     
     // Générer automatiquement le prompt selon le type d'entraînement
@@ -137,7 +141,18 @@ export function PrepaCdsWelcome({ onSuggestionClick, onSendMessage }: PrepaCdsWe
         
         <PrepaCdsControls
           onLevelChange={updateLevel}
-          onDomainChange={(domain: ControlsStudyDomain) => updateDomain(domain as ServiceStudyDomain)}
+          onDomainChange={(domain: ControlsStudyDomain) => {
+            // Map UI domain to service domain
+            const map: Record<ControlsStudyDomain, ServiceStudyDomain> = {
+              droit_public: 'droit_public',
+              droit_penal: 'droit_penal',
+              management: 'management',
+              procedures: 'droit_public', // map to closest service domain
+              redaction: 'redaction',
+              culture_generale: 'general',
+            } as const;
+            updateDomain(map[domain]);
+          }}
           onTrainingTypeSelect={(type: TrainingType) => selectTrainingType(type)}
           onStartSession={handleStartSessionFromControls}
         />

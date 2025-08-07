@@ -22,6 +22,7 @@ import { Message, MessageAttachment } from "@/types/chat";
 import { useToast } from "@/hooks/use-toast";
 import { logger } from "@/utils/logger";
 import { usePrepaCdsChat } from "@/hooks/usePrepaCdsChat";
+import { usePrepaCdsConfig } from "@/hooks/chat/usePrepaCdsConfig";
 
 interface ChatAreaProps {
   selectedAgent: string;
@@ -102,7 +103,8 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
   const { updateConversation, getConversation } = useConversationHistory();
   const { streamingState, sendStreamingMessage, cancelStream } = useStreamingChat();
   const { optimizeMessages } = usePerformanceOptimization();
-  const { generateContent: generatePrepaContent } = usePrepaCdsChat();
+const { generateContent: generatePrepaContent } = usePrepaCdsChat();
+const { config: prepaConfig } = usePrepaCdsConfig();
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -281,9 +283,9 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
         try {
           const result = await generatePrepaContent(
             messageContent,
-            'question_ouverte',
-            'intermediaire',
-            'droit_administratif'
+            prepaConfig.trainingType ?? 'question_ouverte',
+            prepaConfig.level ?? 'intermediaire',
+            prepaConfig.domain ?? 'droit_administratif'
           );
 
           setMessages(prev => prev.map(msg => 

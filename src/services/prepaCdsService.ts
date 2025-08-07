@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { mapServiceToEdge } from '@/types/prepacds';
 
 export type UserLevel = 'debutant' | 'intermediaire' | 'avance';
 export type StudyDomain = 'droit_public' | 'droit_penal' | 'management' | 'redaction' | 'general';
@@ -310,14 +311,13 @@ export class PrepaCdsService {
    */
   async generateRevisionPlan(level: UserLevel, domain: StudyDomain, duration: number = 30, weakAreas: string[] = []): Promise<string> {
     try {
-      const { data, error } = await supabase.functions.invoke('generate-revision-plan', {
+      const prompt = `Crée un plan de révision de ${duration} jours pour le niveau ${level} en ${domain}. Points faibles: ${weakAreas.join(', ') || 'non spécifiés'}.`;
+      const { data, error } = await supabase.functions.invoke('prepa-cds-chat', {
         body: {
+          prompt,
+          trainingType: 'plan_revision',
           level,
           domain,
-          duration,
-          weakAreas,
-          studyTime: this.getRecommendedStudyTime(level),
-          priorities: this.getDomainPriorities(domain)
         }
       });
 

@@ -2,16 +2,7 @@ import { useState } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-type TrainingType = 
-  | 'qcm'
-  | 'vrai_faux'
-  | 'cas_pratique'
-  | 'question_ouverte'
-  | 'simulation_oral'
-  | 'plan_revision';
-
-type UserLevel = 'debutant' | 'intermediaire' | 'avance';
-type StudyDomain = 'droit_administratif' | 'droit_penal' | 'management' | 'redaction_administrative';
+import type { TrainingType, UserLevel, StudyDomain } from "@/types/prepacds";
 
 interface PrepaCdsResponse {
   content: string;
