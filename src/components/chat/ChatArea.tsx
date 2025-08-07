@@ -103,8 +103,8 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
   const { updateConversation, getConversation } = useConversationHistory();
   const { streamingState, sendStreamingMessage, cancelStream } = useStreamingChat();
   const { optimizeMessages } = usePerformanceOptimization();
-const { generateContent: generatePrepaContent } = usePrepaCdsChat();
-const { config: prepaConfig } = usePrepaCdsConfig();
+  const { generateContent: generatePrepaContent } = usePrepaCdsChat();
+  const { config: prepaConfig } = usePrepaCdsConfig();
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };

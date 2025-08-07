@@ -13,6 +13,7 @@ import { Bot, Sparkles, Plus, Settings, FileSearch, Activity, BarChart3 } from "
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 const Index = () => {
   const [selectedAgent, setSelectedAgent] = useState("redacpro");
+  const [chatKey, setChatKey] = useState(0);
   const [isNewChatMode, setIsNewChatMode] = useState(false);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
   const [showSemanticSearch, setShowSemanticSearch] = useState(false);
@@ -26,8 +27,8 @@ const Index = () => {
   useAgentTheme(selectedAgent);
   const handleNewChat = () => {
     setIsNewChatMode(true);
-    // Refresh the page to start a new chat
-    window.location.reload();
+    setSharedContext(undefined);
+    setChatKey((k) => k + 1);
   };
   const handleSemanticSearch = () => {
     setShowSemanticSearch(true);
@@ -74,7 +75,7 @@ const Index = () => {
 
             {/* Main Chat Area */}
             <div className="pb-16">
-              <ChatArea selectedAgent={selectedAgent} sharedContext={sharedContext} />
+              <ChatArea key={chatKey} selectedAgent={selectedAgent} sharedContext={sharedContext} />
             </div>
           </div>
           
