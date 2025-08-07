@@ -422,6 +422,16 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
 
   const currentAgent = agentInfo[selectedAgent as keyof typeof agentInfo];
 
+  // Format timestamp for messages (HH:MM)
+  const formatTime = (t: Date | string) => {
+    const d = typeof t === 'string' ? new Date(t) : t;
+    try {
+      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch {
+      return '';
+    }
+  };
+
   return (
     <div className="flex flex-col h-full">
       {messages.length === 0 ? (
@@ -525,6 +535,9 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
                   onTypingComplete={() => {}}
                   isStreaming={streamingState.isStreaming && message.id === typingMessageId}
                 />
+                <div className={`mt-1 text-[11px] ${message.role === "user" ? "text-primary-foreground/70 text-right" : "text-muted-foreground/70"}`}>
+                  {formatTime(message.timestamp)}
+                </div>
               </div>
               {message.role === "user" && (
                 <div className="w-8 h-8 rounded-full neomorphism flex items-center justify-center flex-shrink-0 hover-lift neomorphism-hover">

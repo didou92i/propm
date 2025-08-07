@@ -44,27 +44,32 @@ export const MarkdownRenderer = ({
 
   return (
     <div className="group relative">
-      <div className="prose prose-sm max-w-none dark:prose-invert">
+      <div className="prose prose-sm md:prose-base max-w-none dark:prose-invert">
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
           components={{
+            a: ({ href, children }) => (
+              <a href={href as string} target="_blank" rel="noreferrer" className="story-link text-primary">
+                {children}
+              </a>
+            ),
             h1: ({ children }) => (
-              <h1 className="text-xl font-bold text-foreground mb-4 mt-6 first:mt-0">
+              <h1 className="text-xl md:text-2xl font-bold text-foreground mb-4 mt-6 first:mt-0">
                 {children}
               </h1>
             ),
             h2: ({ children }) => (
-              <h2 className="text-lg font-semibold text-foreground mb-3 mt-5 first:mt-0">
+              <h2 className="text-lg md:text-xl font-semibold text-foreground mb-3 mt-5 first:mt-0">
                 {children}
               </h2>
             ),
             h3: ({ children }) => (
-              <h3 className="text-base font-medium text-foreground mb-2 mt-4 first:mt-0">
+              <h3 className="text-base md:text-lg font-medium text-foreground mb-2 mt-4 first:mt-0">
                 {children}
               </h3>
             ),
             p: ({ children }) => (
-              <p className="text-foreground mb-3 last:mb-0 leading-relaxed">
+              <p className="text-foreground/95 mb-3 last:mb-0 leading-relaxed">
                 {children}
               </p>
             ),
@@ -97,27 +102,28 @@ export const MarkdownRenderer = ({
               const isInline = !className;
               if (isInline) {
                 return (
-                  <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono text-foreground">
+                  <code className="bg-muted/60 border border-border/40 px-1.5 py-0.5 rounded text-sm font-mono text-foreground">
                     {children}
                   </code>
                 );
               }
               return (
-                <code className="block bg-muted p-4 rounded-lg text-sm font-mono text-foreground overflow-x-auto">
+                <code className="block glass-subtle border border-border/40 p-4 rounded-xl text-sm font-mono text-foreground overflow-x-auto">
                   {children}
                 </code>
               );
             },
             pre: ({ children }) => (
-              <pre className="bg-muted p-4 rounded-lg overflow-x-auto mb-3">
+              <pre className="glass-subtle border border-border/40 p-4 rounded-xl overflow-x-auto mb-3">
                 {children}
               </pre>
             ),
             blockquote: ({ children }) => (
-              <blockquote className="border-l-4 border-primary pl-4 py-2 bg-muted/50 rounded-r-lg mb-3">
+              <blockquote className="border-l-4 border-primary/60 pl-4 py-2 bg-muted/30 rounded-r-lg mb-3">
                 {children}
               </blockquote>
             ),
+            hr: () => <hr className="my-6 border-border/40" />,
             table: ({ children }) => (
               <div className="overflow-x-auto mb-3">
                 <table className="w-full border-collapse border border-border rounded-lg">
