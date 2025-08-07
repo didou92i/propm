@@ -85,15 +85,20 @@ export const PlatformDiagnostics = () => {
         }
       });
 
-      if (error) throw error;
-      
-      if (data && data.success) {
-        updateDiagnostic('chat', 'success', 'Fonction chat OK', 'Réponse reçue de l\'assistant');
+      if (error) throw (error as any);
+      const content: string = typeof data?.content === 'string' ? data.content : '';
+      if (data?.success === true || content.trim().length > 0) {
+        updateDiagnostic(
+          'chat',
+          'success',
+          'Fonction chat OK',
+          content ? `Aperçu: "${content.slice(0, 140)}"…` : 'Réponse reçue de l\'assistant'
+        );
       } else {
         throw new Error(data?.error || 'Pas de réponse');
       }
-    } catch (error) {
-      updateDiagnostic('chat', 'error', 'Erreur fonction chat', error.message);
+    } catch (error: any) {
+      updateDiagnostic('chat', 'error', 'Erreur fonction chat', error?.message || JSON.stringify(error));
     }
   };
 
@@ -106,14 +111,20 @@ export const PlatformDiagnostics = () => {
           selectedAgent: 'redacpro'
         }
       });
-      if (error) throw error as any;
-      if (data) {
-        updateDiagnostic('chat_stream', 'success', 'Chat streaming OK', 'Réponse finale reçue');
+      if (error) throw (error as any);
+      const content: string = typeof data?.content === 'string' ? data.content : '';
+      if (content.trim().length > 0 || data) {
+        updateDiagnostic(
+          'chat_stream',
+          'success',
+          'Chat streaming OK',
+          content ? `Aperçu: "${content.slice(0, 140)}"…` : 'Réponse finale reçue'
+        );
       } else {
         throw new Error('Pas de réponse');
       }
     } catch (error: any) {
-      updateDiagnostic('chat_stream', 'error', 'Erreur chat streaming', error?.message || String(error));
+      updateDiagnostic('chat_stream', 'error', 'Erreur chat streaming', error?.message || JSON.stringify(error));
     }
   };
 
@@ -160,14 +171,20 @@ export const PlatformDiagnostics = () => {
             userSession: 'diag-session'
           }
         });
-        if (error) throw error;
-        if (data && data.success) {
-          updateDiagnostic(name, 'success', `Assistant ${agent} OK`);
+        if (error) throw (error as any);
+        const content: string = typeof data?.content === 'string' ? data.content : '';
+        if (data?.success === true || content.trim().length > 0) {
+          updateDiagnostic(
+            name,
+            'success',
+            `Assistant ${agent} OK`,
+            content ? `Aperçu: "${content.slice(0, 140)}"…` : undefined
+          );
         } else {
           throw new Error(data?.error || 'Pas de réponse');
         }
-      } catch (error) {
-        updateDiagnostic(name, 'error', `Erreur assistant ${agent}`, error.message);
+      } catch (error: any) {
+        updateDiagnostic(name, 'error', `Erreur assistant ${agent}`, error?.message || JSON.stringify(error));
       }
     }
   };
