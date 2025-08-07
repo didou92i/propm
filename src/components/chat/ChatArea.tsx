@@ -21,6 +21,7 @@ import { StreamingProgress } from "@/components/common";
 import { Message, MessageAttachment } from "@/types/chat";
 import { useToast } from "@/hooks/use-toast";
 import { logger } from "@/utils/logger";
+import { usePrepaCdsChat } from "@/hooks/usePrepaCdsChat";
 
 interface ChatAreaProps {
   selectedAgent: string;
@@ -101,9 +102,7 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
   const { updateConversation, getConversation } = useConversationHistory();
   const { streamingState, sendStreamingMessage, cancelStream } = useStreamingChat();
   const { optimizeMessages } = usePerformanceOptimization();
-  
-  
-
+  const { generateContent: generatePrepaContent } = usePrepaCdsChat();
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -275,6 +274,40 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
         if (attachmentContext) {
           messageContent = `Contexte des documents joints:\n${attachmentContext}\n\nQuestion: ${content}`;
         }
+      }
+
+      // If PrepaCDS agent, use the dedicated edge function (non-streaming)
+      if (selectedAgent === "prepacds") {
+        try {
+          const result = await generatePrepaContent(
+            messageContent,
+            'question_ouverte',
+            'intermediaire',
+            'droit_administratif'
+          );
+
+          setMessages(prev => prev.map(msg => 
+            msg.id === assistantMessageId 
+              ? { ...msg, content: result }
+              : msg
+          ));
+          setTypingMessageId(null);
+          setIsLoading(false);
+        } catch (err: any) {
+          setMessages(prev => prev.map(msg => 
+            msg.id === assistantMessageId 
+              ? { ...msg, content: `Désolé, une erreur s'est produite: ${err?.message || 'Erreur inconnue'}. Veuillez réessayer.` }
+              : msg
+          ));
+          setTypingMessageId(null);
+          setIsLoading(false);
+          toast({
+            title: "Erreur Prepa CDS",
+            description: err?.message || 'Erreur inconnue',
+            variant: "destructive"
+          });
+        }
+        return;
       }
 
       await sendStreamingMessage(
