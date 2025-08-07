@@ -13,6 +13,7 @@ import Terms from "./pages/Terms";
 import Legal from "./pages/Legal";
 import Cookies from "./pages/Cookies";
 import UserDataManagement from "./pages/UserDataManagement";
+import Diagnostics from "./pages/Diagnostics";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +38,11 @@ const App = () => (
           <Route path="/" element={
             <ProtectedRoute>
               <Index />
+            </ProtectedRoute>
+          } />
+          <Route path="/diagnostics" element={
+            <ProtectedRoute>
+              <Diagnostics />
             </ProtectedRoute>
           } />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

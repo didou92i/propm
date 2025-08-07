@@ -1,6 +1,5 @@
-
 import { useState } from "react";
-import { Calculator, Search, Settings, Plus, User, Moon, Sun, LogOut, MessageSquare } from "lucide-react";
+import { Calculator, Search, Settings, Plus, User, Moon, Sun, LogOut, MessageSquare, Activity } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useRipple } from "@/hooks/useRipple";
 import { useTheme } from "@/hooks/useTheme";
+import { NavLink } from "react-router-dom";
 
 interface AppSidebarProps {
   selectedAgent: string;
@@ -173,6 +173,26 @@ export function AppSidebar({ selectedAgent, onAgentSelect, onContextShare }: App
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-2">
+            Système
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <NavLink to="/diagnostics" className={({ isActive }) =>
+                    `flex items-center gap-3 p-3 rounded-lg hover:bg-sidebar-accent/50 transition-colors ${isActive ? 'glass-intense border-l-2 border-primary' : 'glass-subtle'}`
+                  }>
+                    <Activity className="w-5 h-5 text-muted-foreground" />
+                    <span className="font-medium">Diagnostics</span>
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

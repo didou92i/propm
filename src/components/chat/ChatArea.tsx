@@ -398,7 +398,9 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
           
           // Update user session with threadId if provided
           if (threadId) {
-            // Could save threadId to localStorage or state for future use
+            try {
+              localStorage.setItem(`threadId_${selectedAgent}`, threadId);
+            } catch {}
           }
         },
         // onError
@@ -470,6 +472,13 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
 
   return (
     <div className="flex flex-col h-full">
+      {selectedAgent === 'cdspro' && (
+        <div className="px-6 pt-3">
+          <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">
+            Références juridiques activées
+          </span>
+        </div>
+      )}
       {messages.length === 0 ? (
         <div className="flex-1 flex items-center justify-center p-8 animate-fade-in" style={{ paddingBottom: bottomPadding }}>
           <div className="text-center max-w-4xl w-full">
