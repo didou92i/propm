@@ -28,7 +28,7 @@ const positionClasses = {
   'top-left': 'top-6 left-6'
 };
 const variantClasses = {
-  primary: 'gradient-agent-animated text-white shadow-lg hover:shadow-xl',
+  primary: 'gradient-agent-animated text-primary-foreground shadow-lg hover:shadow-xl',
   secondary: 'glass neomorphism text-foreground hover:glass-intense',
   accent: 'bg-accent text-accent-foreground shadow-lg hover:shadow-xl'
 };
@@ -43,11 +43,24 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   const createRipple = useRipple();
+
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     createRipple(e);
     onClick();
   };
-  return <div className={`fixed ${positionClasses[position]} z-50`}>
-      
-    </div>;
+
+  return (
+    <div className={`fixed ${positionClasses[position]} z-50`}>
+      <Button
+        onClick={handleClick}
+        className={`rounded-full ${sizeClasses[size]} ${variantClasses[variant]} ${className}`}
+        aria-label={tooltip || 'Action'}
+        title={tooltip}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        <Icon size={iconSizes[size]} />
+      </Button>
+    </div>
+  );
 };

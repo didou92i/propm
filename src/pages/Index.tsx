@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { ChatArea } from "@/components/chat";
@@ -11,6 +11,7 @@ import { useAgentTheme } from "@/hooks/useAgentTheme";
 import { LegalFooter } from "@/components/legal";
 import { Bot, Sparkles, Plus, Settings, FileSearch, Activity, BarChart3 } from "lucide-react";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 const Index = () => {
   const [selectedAgent, setSelectedAgent] = useState("redacpro");
   const [chatKey, setChatKey] = useState(0);
@@ -18,6 +19,7 @@ const Index = () => {
   const [showDiagnostics, setShowDiagnostics] = useState(false);
   const [showSemanticSearch, setShowSemanticSearch] = useState(false);
   const [showMonitoring, setShowMonitoring] = useState(false);
+  const [showConfirmNewChat, setShowConfirmNewChat] = useState(false);
   const [sharedContext, setSharedContext] = useState<{
     sourceAgent: string;
     messages: any[];
@@ -51,6 +53,23 @@ const Index = () => {
     // Clear shared context when manually switching agents
     setSharedContext(undefined);
   };
+
+  // Keyboard shortcut: Cmd/Ctrl + N to start a new conversation
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const isCmdOrCtrl = e.metaKey || e.ctrlKey;
+      if (isCmdOrCtrl && (e.key === 'n' || e.key === 'N')) {
+        // Avoid triggering inside inputs/textareas/contenteditable
+        const target = e.target as HTMLElement;
+        const isTypingContext = ['INPUT', 'TEXTAREA'].includes(target.tagName) || target.isContentEditable;
+        if (isTypingContext) return;
+        e.preventDefault();
+        setShowConfirmNewChat(true);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
   return <ParallaxBackground className="min-h-screen">
       <SidebarProvider>
         <div className="min-h-screen flex w-full theme-transition">
@@ -83,7 +102,7 @@ const Index = () => {
           <LegalFooter />
           
           {/* Enhanced Floating Action Buttons */}
-          <FloatingActionButton icon={Plus} onClick={handleNewChat} position="bottom-right" variant="primary" size="md" tooltip="Nouvelle conversation" />
+          <FloatingActionButton icon={Plus} onClick={() => setShowConfirmNewChat(true)} position="bottom-right" variant="primary" size="md" tooltip="Nouvelle conversation (Ctrl/Cmd+N)" />
           
           <FloatingActionButton icon={FileSearch} onClick={handleSemanticSearch} position="bottom-left" variant="secondary" size="sm" tooltip="Recherche sémantique" />
 
@@ -104,6 +123,24 @@ const Index = () => {
           </Dialog>
 
           <SemanticSearchDialog open={showSemanticSearch} onOpenChange={setShowSemanticSearch} />
+
+          {/* Confirm new conversation */}
+          <AlertDialog open={showConfirmNewChat} onOpenChange={setShowConfirmNewChat}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Démarrer une nouvelle conversation ?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Cela réinitialisera l'affichage actuel pour repartir sur une discussion vierge. L'historique reste accessible dans la barre latérale.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                <AlertDialogAction onClick={() => { handleNewChat(); setShowConfirmNewChat(false); }}>
+                  Oui, démarrer
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
 
           <Dialog open={showMonitoring} onOpenChange={setShowMonitoring}>
             <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
