@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -18,31 +18,31 @@ export const PlatformDiagnostics = () => {
   const [diagnostics, setDiagnostics] = useState<DiagnosticResult[]>([]);
   const [isRunning, setIsRunning] = useState(false);
   const { toast } = useToast();
-
+  const diagnosticsRef = useRef<DiagnosticResult[]>([]);
   const updateDiagnostic = (name: string, status: DiagnosticResult['status'], message: string, details?: string) => {
     setDiagnostics(prev => {
       const existing = prev.find(d => d.name === name);
-      const newDiagnostic = { name, status, message, details };
-      
-      if (existing) {
-        return prev.map(d => d.name === name ? newDiagnostic : d);
-      } else {
-        return [...prev, newDiagnostic];
-      }
+      const newDiagnostic: DiagnosticResult = { name, status, message, details };
+      const next = existing ? prev.map(d => d.name === name ? newDiagnostic : d) : [...prev, newDiagnostic];
+      diagnosticsRef.current = next;
+      return next;
     });
   };
 
   const testSupabaseConnection = async () => {
     updateDiagnostic('supabase', 'loading', 'Test de connexion Supabase...');
-    
     try {
-      const { data, error } = await supabase.from('documents').select('count', { count: 'exact', head: true });
-      
-      if (error) throw error;
-      
-      updateDiagnostic('supabase', 'success', 'Connexion Supabase OK', `${data?.length || 0} documents en base`);
-    } catch (error) {
-      updateDiagnostic('supabase', 'error', 'Erreur connexion Supabase', error.message);
+      const { data, error } = await supabase.rpc('get_system_stats');
+      if (error) throw error as any;
+      if (data) {
+        const stats = data as any;
+        const details = `Docs: ${stats.total_documents} | Conv.: ${stats.total_conversations} | Msgs: ${stats.total_messages} | DB ~${Math.round((stats.database_size_mb || 0) as number)} Mo`;
+        updateDiagnostic('supabase', 'success', 'Connexion Supabase OK', details);
+      } else {
+        updateDiagnostic('supabase', 'warning', 'Connexion OK, stats indisponibles');
+      }
+    } catch (error: any) {
+      updateDiagnostic('supabase', 'error', 'Erreur connexion Supabase', error?.message || String(error));
     }
   };
 
@@ -97,8 +97,27 @@ export const PlatformDiagnostics = () => {
     }
   };
 
+  const testStreamingChat = async () => {
+    updateDiagnostic('chat_stream', 'loading', 'Test du chat en streaming...');
+    try {
+      const { data, error } = await supabase.functions.invoke('chat-openai-stream', {
+        body: {
+          messages: [{ role: 'user', content: 'Ping streaming' }],
+          selectedAgent: 'redacpro'
+        }
+      });
+      if (error) throw error as any;
+      if (data) {
+        updateDiagnostic('chat_stream', 'success', 'Chat streaming OK', 'Réponse finale reçue');
+      } else {
+        throw new Error('Pas de réponse');
+      }
+    } catch (error: any) {
+      updateDiagnostic('chat_stream', 'error', 'Erreur chat streaming', error?.message || String(error));
+    }
+  };
+
   const testSemanticSearch = async () => {
-    updateDiagnostic('search', 'loading', 'Test de recherche sémantique...');
     
     try {
       const { data: documents } = await supabase.from('documents').select('*').limit(5);
@@ -171,7 +190,12 @@ export const PlatformDiagnostics = () => {
       if (count > 0) {
         updateDiagnostic('cds_vector', 'success', 'Recherche CDS Pro OK', `${count} résultats pertinents`);
       } else {
-        updateDiagnostic('cds_vector', 'warning', 'Aucun résultat vectoriel', 'Vérifiez les documents indexés');
+        updateDiagnostic(
+          'cds_vector',
+          'warning',
+          'Aucun résultat vectoriel',
+          'Index possiblement vide/non alimenté. Vérifiez l’ingestion des documents et les filtres. Voir logs Edge pour "search-cds-vectorial".'
+        );
       }
     } catch (error) {
       updateDiagnostic('cds_vector', 'error', 'Erreur recherche CDS Pro', error.message);
@@ -185,28 +209,43 @@ export const PlatformDiagnostics = () => {
     await testSupabaseConnection();
     await testDocumentProcessing();
     await testChatFunction();
+    await testStreamingChat();
     await testSemanticSearch();
     await testAgentChats();
     await testCdsVectorialSearch();
     
     setIsRunning(false);
     
-    const errors = diagnostics.filter(d => d.status === 'error');
-    const warnings = diagnostics.filter(d => d.status === 'warning');
+    const errors = diagnosticsRef.current.filter(d => d.status === 'error');
+    const warnings = diagnosticsRef.current.filter(d => d.status === 'warning');
+    const successes = diagnosticsRef.current.filter(d => d.status === 'success');
+
+    toast({
+      title: 'Diagnostics terminés',
+      description: `${successes.length} succès, ${warnings.length} avertissements, ${errors.length} erreurs`,
+      variant: errors.length > 0 ? 'destructive' : 'default'
+    });
     
-    if (errors.length === 0 && warnings.length === 0) {
-      toast({
-        title: "Diagnostics terminés",
-        description: "Toutes les fonctionnalités sont opérationnelles",
-      });
-    } else {
-      toast({
-        title: "Diagnostics terminés",
-        description: `${errors.length} erreurs, ${warnings.length} avertissements`,
-        variant: errors.length > 0 ? "destructive" : "default"
-      });
+  };
+
+  // Lancement auto à l’ouverture de la page
+  useEffect(() => {
+    runAllDiagnostics();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const copyReport = async () => {
+    const errors = diagnosticsRef.current.filter(d => d.status === 'error').length;
+    const warnings = diagnosticsRef.current.filter(d => d.status === 'warning').length;
+    const successes = diagnosticsRef.current.filter(d => d.status === 'success').length;
+    const lines = diagnosticsRef.current.map(d => `- [${d.status.toUpperCase()}] ${d.name}: ${d.message}${d.details ? ` — ${d.details}` : ''}`);
+    const text = `Diagnostics système\nRésumé: ${successes} succès, ${warnings} avertissements, ${errors} erreurs\n\n${lines.join('\n')}`;
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({ title: 'Rapport copié', description: 'Le résumé a été copié dans le presse-papiers.' });
+    } catch (e) {
+      toast({ title: 'Copie impossible', description: 'Votre navigateur a bloqué la copie.', variant: 'destructive' });
     }
-    
   };
 
   const getStatusIcon = (status: DiagnosticResult['status']) => {
@@ -236,20 +275,32 @@ export const PlatformDiagnostics = () => {
           <Database className="w-6 h-6 text-primary" />
           <h2 className="text-xl font-semibold">Diagnostics de la Plateforme</h2>
         </div>
-        <Button 
-          onClick={runAllDiagnostics} 
-          disabled={isRunning}
-          className="gradient-agent-animated text-white"
-        >
-          {isRunning ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Test en cours...
-            </>
-          ) : (
-            'Lancer les tests'
+        <div className="flex items-center gap-2">
+          {diagnostics.length > 0 && (
+            <Button
+              variant="secondary"
+              onClick={copyReport}
+              className="border border-border/60"
+              disabled={isRunning}
+            >
+              Copier le rapport
+            </Button>
           )}
-        </Button>
+          <Button 
+            onClick={runAllDiagnostics} 
+            disabled={isRunning}
+            className="gradient-agent-animated text-white"
+          >
+            {isRunning ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Test en cours...
+              </>
+            ) : (
+              'Lancer les tests'
+            )}
+          </Button>
+        </div>
       </div>
 
       <div className="space-y-4">
