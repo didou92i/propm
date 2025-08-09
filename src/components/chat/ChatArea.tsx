@@ -1,7 +1,7 @@
 
 // ChatArea component for handling chat interactions
 import { useState, useRef, useEffect } from "react";
-import { Send, Bot, User, Download, MoreVertical } from "lucide-react";
+import { Send, Bot, User, Download, MoreVertical, RotateCcw } from "lucide-react";
 import { getAgentById, AGENTS } from "@/config/agents";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -97,7 +97,10 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
   const [typingMessageId, setTypingMessageId] = useState<string | null>(null);
   const [processingAttachment, setProcessingAttachment] = useState(false);
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
-  const [userSession] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+  const [userSession, setUserSession] = useState<{ id: string; threadId?: string }>(() => ({
+    id: `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    threadId: (() => { try { return localStorage.getItem(`openai.thread.${selectedAgent}`) || localStorage.getItem(`threadId_${selectedAgent}`) || undefined; } catch { return undefined; } })()
+  }));
   const [contextShared, setContextShared] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -149,6 +152,16 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
     }
     setContextShared(false);
   }, [selectedAgent, getConversation]);
+
+  // Sync threadId from localStorage when agent changes
+  useEffect(() => {
+    try {
+      const tid = localStorage.getItem(`openai.thread.${selectedAgent}`) || localStorage.getItem(`threadId_${selectedAgent}`);
+      setUserSession(prev => ({ ...prev, threadId: tid || undefined }));
+    } catch {
+      setUserSession(prev => ({ ...prev, threadId: undefined }));
+    }
+  }, [selectedAgent]);
 
   // Handle shared context
   useEffect(() => {
@@ -399,7 +412,8 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
           // Update user session with threadId if provided
           if (threadId) {
             try {
-              localStorage.setItem(`threadId_${selectedAgent}`, threadId);
+              localStorage.setItem(`openai.thread.${selectedAgent}`, threadId);
+              setUserSession(prev => ({ ...prev, threadId }));
             } catch {}
           }
         },
@@ -672,6 +686,23 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
                   </Button>
                 </ConversationExport>
               )}
+              <Button
+                variant="ghost"
+                size="sm"
+                type="button"
+                className="h-8 w-8 p-0 hover:bg-destructive/10 transition-all duration-200 hover:scale-105"
+                title="Réinitialiser le contexte (nouveau thread)"
+                onClick={() => {
+                  try {
+                    localStorage.removeItem(`openai.thread.${selectedAgent}`);
+                    localStorage.removeItem(`threadId_${selectedAgent}`);
+                  } catch {}
+                  setUserSession(prev => ({ ...prev, threadId: undefined }));
+                  toast({ title: "Contexte réinitialisé", description: "Le fil de discussion a été réinitialisé pour cet agent." });
+                }}
+              >
+                <RotateCcw className="w-4 h-4" />
+              </Button>
             </div>
             
             {/* Zone de texte principale */}

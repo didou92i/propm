@@ -40,16 +40,20 @@ export function useStreamingChat() {
       abortControllerRef.current = new AbortController();
 
       // Use streaming endpoint with loop detection
+      const loopDetected = messages.filter(m => m.content === messages[messages.length - 1].content).length > 2;
+      let storedThreadId: string | null = null;
+      try {
+        storedThreadId = localStorage.getItem(`openai.thread.${selectedAgent}`) || localStorage.getItem(`threadId_${selectedAgent}`);
+      } catch {}
+      const effectiveThreadId = loopDetected ? undefined : (userSession?.threadId ?? storedThreadId ?? undefined);
+
       const { data, error } = await supabase.functions.invoke('chat-openai-stream', {
         body: {
           messages,
           selectedAgent,
           userSession: {
-            ...userSession,
-            // Reset thread if same message repeated more than twice
-            threadId: messages.filter(m => m.content === messages[messages.length - 1].content).length > 2 
-              ? undefined 
-              : userSession?.threadId
+            ...(typeof userSession === 'object' ? userSession : { id: String(userSession || '') }),
+            threadId: effectiveThreadId
           }
         }
       });
@@ -90,6 +94,11 @@ export function useStreamingChat() {
                 isStreaming: false,
                 isTyping: false
               }));
+              try {
+                if (data.threadId) {
+                  localStorage.setItem(`openai.thread.${selectedAgent}`, data.threadId);
+                }
+              } catch {}
               onComplete(content, data.threadId);
             }
           }

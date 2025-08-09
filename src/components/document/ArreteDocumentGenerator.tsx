@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import { LogoUpload } from './LogoUpload';
@@ -244,6 +244,9 @@ export const ArreteDocumentGenerator: React.FC<ArreteDocumentGeneratorProps> = (
             <FileText className="w-5 h-5" />
             Générer l'arrêté finalisé
           </DialogTitle>
+          <DialogDescription>
+            Renseignez les métadonnées de l’arrêté puis prévisualisez et téléchargez le PDF généré.
+          </DialogDescription>
         </DialogHeader>
         
         <div className="grid grid-cols-2 gap-6">

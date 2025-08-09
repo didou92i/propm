@@ -41,10 +41,17 @@ serve(async (req) => {
 
     // Return the complete response directly for client-side streaming
     const lastMessage = messages[messages.length - 1];
+    console.log('chat-openai-stream: incoming request', {
+      userId: user.id,
+      selectedAgent,
+      contentLength: (lastMessage?.content || '').length,
+      hasThreadId: Boolean(userSession?.threadId)
+    });
     
     // Get or create thread
     let threadId = userSession?.threadId;
     if (!threadId) {
+      console.log('chat-openai-stream: creating new thread', { userId: user.id, selectedAgent });
       const threadResponse = await fetch('https://api.openai.com/v1/threads', {
         method: 'POST',
         headers: {
@@ -61,6 +68,9 @@ serve(async (req) => {
       
       const threadData = await threadResponse.json();
       threadId = threadData.id;
+      console.log('chat-openai-stream: created thread', { threadId });
+    } else {
+      console.log('chat-openai-stream: reusing thread', { threadId });
     }
 
     // Add user message to thread
@@ -87,14 +97,29 @@ serve(async (req) => {
     const assistantId = assistantMap[selectedAgent] || assistantMap.redacpro;
 
     const instructionMap: Record<string, string> = {
-      arrete: [
-        "Tu es 'Arrêté Territorial'. Réponds en français.",
-        "Si l'utilisateur demande un exemple ou confirme la génération, PRODUIS IMMÉDIATEMENT un arrêté complet sans reformuler les mêmes questions.",
-        "Structure sans Markdown: En-tête, Visas, Considérants, Articles numérotés, Dispositions finales, Signature.",
-        "Remplace toute donnée manquante par [INFORMATION MANQUANTE].",
-        "N'insiste pas pour reposer les mêmes questions si l'utilisateur écrit 'oui', 'génère', 'exemple' ou équivalent.",
-        "Style administratif formel, concis et juridiquement conforme (CGCT)."
-      ].join(' ')
+      arrete: (() => {
+        const text = (lastMessage?.content || '').toLowerCase();
+        const shouldGenerate = /arr[ée]t[ée]|exemple|g[ée]n[ée]re|g[ée]n[ée]ration|r[ée]dige|produis|mod[èe]le|vas[- ]y|^oui$|^ok$/.test(text.trim());
+        console.log('chat-openai-stream: arrete intent', { shouldGenerate });
+        const base = [
+          "Tu es 'Arrêté Territorial'. Réponds en français.",
+          "Style administratif formel, concis et juridiquement conforme (CGCT)."
+        ];
+        if (shouldGenerate) {
+          base.push(
+            "PRODUIS IMMÉDIATEMENT un arrêté complet sans reformuler les mêmes questions.",
+            "Structure sans Markdown: En-tête, Visas, Considérants, Articles numérotés, Dispositions finales, Signature.",
+            "Remplace toute donnée manquante par [INFORMATION MANQUANTE].",
+            "N'insiste pas pour reposer les mêmes questions."
+          );
+        } else {
+          base.push(
+            "Si la demande est une question générale (analyse juridique, explication), réponds directement sans générer un arrêté.",
+            "Ne boucle pas et ne repose pas les mêmes questions."
+          );
+        }
+        return base.join(' ');
+      })()
     };
     const instructions = instructionMap[selectedAgent];
 
@@ -138,7 +163,9 @@ serve(async (req) => {
       if (statusResponse.ok) {
         const statusData = await statusResponse.json();
         runStatus = statusData.status;
-        
+        if (attempts % 5 === 0) {
+          console.log('chat-openai-stream: run status', { runId, runStatus, attempts });
+        }
         if (runStatus === 'requires_action') {
           await fetch(`https://api.openai.com/v1/threads/${threadId}/runs/${runId}/submit_tool_outputs`, {
             method: 'POST',
@@ -173,6 +200,7 @@ serve(async (req) => {
           const content = assistantMessage.content[0]?.text?.value || 'Aucune réponse générée.';
           
           // Return the complete response for client-side streaming
+          console.log('chat-openai-stream: completed', { runId, contentLength: content.length });
           return new Response(JSON.stringify({ 
             content: content,
             threadId: threadId
