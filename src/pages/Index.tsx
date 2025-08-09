@@ -12,7 +12,9 @@ import { LegalFooter } from "@/components/legal";
 import { Bot, Sparkles, Plus, Settings, FileSearch, Activity, BarChart3 } from "lucide-react";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useNavigate } from "react-router-dom";
 const Index = () => {
+  const navigate = useNavigate();
   const [selectedAgent, setSelectedAgent] = useState("redacpro");
   const [chatKey, setChatKey] = useState(0);
   const [isNewChatMode, setIsNewChatMode] = useState(false);
@@ -50,6 +52,10 @@ const Index = () => {
   };
   const handleAgentSelect = (agentId: string) => {
     setSelectedAgent(agentId);
+    if (agentId === 'salary') {
+      navigate('/simulateur');
+      return;
+    }
     // Clear shared context when manually switching agents
     setSharedContext(undefined);
   };

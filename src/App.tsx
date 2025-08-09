@@ -14,6 +14,7 @@ import Legal from "./pages/Legal";
 import Cookies from "./pages/Cookies";
 import UserDataManagement from "./pages/UserDataManagement";
 import Diagnostics from "./pages/Diagnostics";
+import SimulateurSalaire from "./pages/SimulateurSalaire";
 
 const queryClient = new QueryClient();
 
@@ -40,11 +41,17 @@ const App = () => (
               <Index />
             </ProtectedRoute>
           } />
+          <Route path="/simulateur" element={
+            <ProtectedRoute>
+              <SimulateurSalaire />
+            </ProtectedRoute>
+          } />
           <Route path="/diagnostics" element={
             <ProtectedRoute>
               <Diagnostics />
             </ProtectedRoute>
           } />
+
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

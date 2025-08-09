@@ -158,21 +158,40 @@ export function AppSidebar({ selectedAgent, onAgentSelect, onContextShare }: App
             <SidebarMenu>
               {TOOLS.map((tool, index) => (
                 <SidebarMenuItem key={tool.id} className="animate-fade-in" style={{ animationDelay: `${(index + 3) * 0.1}s` }}>
-                  <SidebarMenuButton
-                    onClick={(e) => handleAgentSelect(tool.id, e)}
-                    className={`flex items-center gap-3 p-3 rounded-lg ripple-container hover-lift transform-3d hover-tilt glass-hover neomorphism-hover ${
-                      selectedAgent === tool.id
-                        ? "glass-intense text-sidebar-accent-foreground border-l-2 border-primary pulse-glow neomorphism"
-                        : "hover:bg-sidebar-accent/50 hover-glow glass-subtle"
-                    }`}
-                  >
-                    <tool.icon className={`w-5 h-5 transition-all duration-300 ${
-                      selectedAgent === tool.id ? 'text-primary scale-110' : tool.color
-                    }`} />
-                    <span className="font-medium">{tool.name}</span>
-                  </SidebarMenuButton>
+                  {tool.id === 'salary' ? (
+                    <SidebarMenuButton asChild>
+                      <NavLink
+                        to="/simulateur"
+                        className={({ isActive }) =>
+                          `flex items-center gap-3 p-3 rounded-lg hover:bg-sidebar-accent/50 transition-colors ${
+                            isActive
+                              ? 'glass-intense text-sidebar-accent-foreground border-l-2 border-primary pulse-glow neomorphism'
+                              : 'glass-subtle hover-glow'
+                          }`
+                        }
+                      >
+                        <tool.icon className={`w-5 h-5 transition-all duration-300 ${tool.color}`} />
+                        <span className="font-medium">{tool.name}</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  ) : (
+                    <SidebarMenuButton
+                      onClick={(e) => handleAgentSelect(tool.id, e)}
+                      className={`flex items-center gap-3 p-3 rounded-lg ripple-container hover-lift transform-3d hover-tilt glass-hover neomorphism-hover ${
+                        selectedAgent === tool.id
+                          ? 'glass-intense text-sidebar-accent-foreground border-l-2 border-primary pulse-glow neomorphism'
+                          : 'hover:bg-sidebar-accent/50 hover-glow glass-subtle'
+                      }`}
+                    >
+                      <tool.icon className={`w-5 h-5 transition-all duration-300 ${
+                        selectedAgent === tool.id ? 'text-primary scale-110' : tool.color
+                      }`} />
+                      <span className="font-medium">{tool.name}</span>
+                    </SidebarMenuButton>
+                  )}
                 </SidebarMenuItem>
               ))}
+
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
