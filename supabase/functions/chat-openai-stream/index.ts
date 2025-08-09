@@ -77,7 +77,27 @@ serve(async (req) => {
       })
     });
 
-    // Create run
+    // Create run with agent-specific instruction overrides
+    const assistantMap: Record<string, string> = {
+      redacpro: "asst_nVveo2OzbB2h8uHY2oIDpob1",
+      cdspro: "asst_ljWenYnbNEERVydsDaeVSHVl",
+      arrete: "asst_e4AMY6vpiqgqFwbQuhNCbyeL",
+      prepacds: "asst_MxbbQeTimcxV2mYR0KwAPNsu"
+    };
+    const assistantId = assistantMap[selectedAgent] || assistantMap.redacpro;
+
+    const instructionMap: Record<string, string> = {
+      arrete: [
+        "Tu es 'Arrêté Territorial'. Réponds en français.",
+        "Si l'utilisateur demande un exemple ou confirme la génération, PRODUIS IMMÉDIATEMENT un arrêté complet sans reformuler les mêmes questions.",
+        "Structure sans Markdown: En-tête, Visas, Considérants, Articles numérotés, Dispositions finales, Signature.",
+        "Remplace toute donnée manquante par [INFORMATION MANQUANTE].",
+        "N'insiste pas pour reposer les mêmes questions si l'utilisateur écrit 'oui', 'génère', 'exemple' ou équivalent.",
+        "Style administratif formel, concis et juridiquement conforme (CGCT)."
+      ].join(' ')
+    };
+    const instructions = instructionMap[selectedAgent];
+
     const runResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs`, {
       method: 'POST',
       headers: {
@@ -86,12 +106,8 @@ serve(async (req) => {
         'OpenAI-Beta': 'assistants=v2'
       },
       body: JSON.stringify({
-        assistant_id: {
-          redacpro: "asst_nVveo2OzbB2h8uHY2oIDpob1",
-          cdspro: "asst_ljWenYnbNEERVydsDaeVSHVl", 
-          arrete: "asst_e4AMY6vpiqgqFwbQuhNCbyeL",
-          prepacds: "asst_MxbbQeTimcxV2mYR0KwAPNsu"
-        }[selectedAgent] || "asst_nVveo2OzbB2h8uHY2oIDpob1"
+        assistant_id: assistantId,
+        ...(instructions ? { instructions } : {})
       })
     });
 
