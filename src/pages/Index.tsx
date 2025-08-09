@@ -56,6 +56,10 @@ const Index = () => {
       navigate('/simulateur');
       return;
     }
+    if (agentId === 'natif') {
+      navigate('/natinf');
+      return;
+    }
     // Clear shared context when manually switching agents
     setSharedContext(undefined);
   };

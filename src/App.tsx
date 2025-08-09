@@ -15,6 +15,7 @@ import Cookies from "./pages/Cookies";
 import UserDataManagement from "./pages/UserDataManagement";
 import Diagnostics from "./pages/Diagnostics";
 import SimulateurSalaire from "./pages/SimulateurSalaire";
+import ProNatinf from "./pages/ProNatinf";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +45,11 @@ const App = () => (
           <Route path="/simulateur" element={
             <ProtectedRoute>
               <SimulateurSalaire />
+            </ProtectedRoute>
+          } />
+          <Route path="/natinf" element={
+            <ProtectedRoute>
+              <ProNatinf />
             </ProtectedRoute>
           } />
           <Route path="/diagnostics" element={
