@@ -7,3 +7,4 @@ export { PrepaCdsWelcome } from './PrepaCdsWelcome';
 export { PrepaCdsProgressTracker } from './PrepaCdsProgressTracker';
 export { PrepaCdsSessionMgmt } from './PrepaCdsSessionMgmt';
 export { PrepaCdsSmartSuggestions } from './PrepaCdsSmartSuggestions';
+export { ArreteGenerationPrompt } from './ArreteGenerationPrompt';

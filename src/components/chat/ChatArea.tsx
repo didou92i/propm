@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { MarkdownRenderer, SkeletonMessage, VirtualizedMessageList } from "@/components/common";
 import type { VirtualizedMessageListRef } from "@/components/common/VirtualizedMessageList";
-import { EditableMessage, ChatAttachment, MessageWithAttachments } from "@/components/chat";
+import { EditableMessage, ChatAttachment, MessageWithAttachments, ArreteGenerationPrompt } from "@/components/chat";
 import { PrepaCdsWelcome } from "@/components/chat/PrepaCdsWelcome";
 import { ConversationExport } from "@/components/conversation";
 import { useRipple } from "@/hooks/useRipple";
@@ -594,9 +594,14 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
                   onTypingComplete={() => {}}
                   isStreaming={streamingState.isStreaming && message.id === typingMessageId}
                 />
-                <div className={`mt-1 text-[11px] ${message.role === "user" ? "text-primary-foreground/70 text-right" : "text-muted-foreground/70"}`}>
-                  {formatTime(message.timestamp)}
-                </div>
+                 <div className={`mt-1 text-[11px] ${message.role === "user" ? "text-primary-foreground/70 text-right" : "text-muted-foreground/70"}`}>
+                   {formatTime(message.timestamp)}
+                 </div>
+                 
+                 {/* Prompt de génération d'arrêté pour ArreteTerritorial */}
+                 {message.role === "assistant" && selectedAgent === "arrete" && (
+                   <ArreteGenerationPrompt messageContent={message.content} />
+                 )}
               </div>
               {message.role === "user" && (
                 <div className="w-8 h-8 rounded-full neomorphism flex items-center justify-center flex-shrink-0 hover-lift neomorphism-hover">
