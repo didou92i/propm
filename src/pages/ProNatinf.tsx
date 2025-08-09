@@ -31,11 +31,11 @@ export default function ProNatinf() {
   const [loadState, setLoadState] = useState<"loading" | "loaded" | "timeout">("loading");
 
   useEffect(() => {
-    document.title = "Pro Natif – Recherche NATINF | Propm";
-    setMeta("description", "Accédez à Pro Natif (NATINF) directement dans Propm pour les agents de Police Municipale.");
+    document.title = "Pro NATINF – Recherche NATINF | Propm";
+    setMeta("description", "Accédez à Pro NATINF directement dans Propm pour les agents de Police Municipale.");
     setCanonical(`${window.location.origin}/natinf`);
 
-    logger.info("Ouverture de Pro Natif (NATINF)", { path: window.location.pathname }, "ProNatinf");
+    logger.info("Ouverture de Pro NATINF", { path: window.location.pathname }, "ProNatinf");
 
     const t = setTimeout(() => {
       setLoadState((s) => (s === "loading" ? "timeout" : s));
@@ -49,7 +49,7 @@ export default function ProNatinf() {
         <nav className="flex items-center justify-between gap-4" aria-label="Fil d'Ariane">
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => navigate("/")}>Retour</Button>
-            <h1 className="text-lg sm:text-xl font-semibold">Pro Natif – Base NATINF</h1>
+            <h1 className="text-lg sm:text-xl font-semibold">Pro NATINF – Base NATINF</h1>
           </div>
           <Button asChild variant="secondary" size="sm">
             <a href={NATINF_URL} target="_blank" rel="noopener noreferrer">Ouvrir dans un nouvel onglet</a>
@@ -66,11 +66,11 @@ export default function ProNatinf() {
           </section>
         )}
 
-        <section aria-label="Zone d'intégration Pro Natif (NATINF)" className="rounded-lg overflow-hidden border border-border/40 bg-background/40">
+        <section aria-label="Zone d'intégration Pro NATINF" className="rounded-lg overflow-hidden border border-border/40 bg-background/40">
           <div className="w-full h-[calc(100vh-10rem)]">
             <iframe
               src={NATINF_URL}
-              title="Pro Natif – NATINF"
+              title="Pro NATINF"
               className="w-full h-full"
               loading="eager"
               referrerPolicy="no-referrer-when-downgrade"

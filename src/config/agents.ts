@@ -46,7 +46,7 @@ export const TOOLS = [
   },
   { 
     id: "natif", 
-    name: "Pro Natif", 
+    name: "Pro NATINF", 
     icon: Search, 
     color: "text-cyan-400",
     description: "Recherche avancée dans la base NATINF"
