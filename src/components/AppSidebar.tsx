@@ -170,7 +170,12 @@ export function AppSidebar({ selectedAgent, onAgentSelect, onContextShare }: App
                           }`
                         }
                       >
-                        <tool.icon className={`w-5 h-5 transition-all duration-300 ${tool.color}`} />
+                        <img
+                          src="/lovable-uploads/97f6fd6a-15b0-4cd6-9c69-62d6ed11ce5e.png"
+                          alt="Simulateur de salaire - avatar"
+                          className="w-5 h-5 rounded-full object-cover transition-all duration-300"
+                          loading="lazy"
+                        />
                         <span className="font-medium">{tool.name}</span>
                       </NavLink>
                     </SidebarMenuButton>
@@ -186,7 +191,12 @@ export function AppSidebar({ selectedAgent, onAgentSelect, onContextShare }: App
                           }`
                         }
                       >
-                        <tool.icon className={`w-5 h-5 transition-all duration-300 ${tool.color}`} />
+                        <img
+                          src="/lovable-uploads/97f6fd6a-15b0-4cd6-9c69-62d6ed11ce5e.png"
+                          alt="Pro NATINF - avatar"
+                          className="w-5 h-5 rounded-full object-cover transition-all duration-300"
+                          loading="lazy"
+                        />
                         <span className="font-medium">{tool.name}</span>
                       </NavLink>
                     </SidebarMenuButton>
