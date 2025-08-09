@@ -8,7 +8,7 @@ export const AGENTS = [
     icon: Bot, 
     color: "text-blue-400",
     avatar: "/lovable-uploads/190796cd-907b-454f-aea2-f482b263655d.png",
-    description: "Assistant de rédaction professionnelle"
+    description: "Expert en rédaction juridique et procédures de police municipale"
   },
   { 
     id: "cdspro", 
