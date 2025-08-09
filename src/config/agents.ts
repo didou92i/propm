@@ -24,7 +24,7 @@ export const AGENTS = [
     icon: MessageSquare, 
     color: "text-green-400",
     avatar: "/lovable-uploads/47594ea7-a3ab-47c8-b4f5-6081c3b7f039.png",
-    description: "Spécialiste des arrêtés territoriaux"
+    description: "Expert en rédaction d'arrêtés municipaux conformes au droit français"
   },
   { 
     id: "prepacds", 
