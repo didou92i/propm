@@ -39,12 +39,18 @@ export function useStreamingChat() {
       }
       abortControllerRef.current = new AbortController();
 
-      // Use streaming endpoint
+      // Use streaming endpoint with loop detection
       const { data, error } = await supabase.functions.invoke('chat-openai-stream', {
         body: {
           messages,
           selectedAgent,
-          userSession
+          userSession: {
+            ...userSession,
+            // Reset thread if same message repeated more than twice
+            threadId: messages.filter(m => m.content === messages[messages.length - 1].content).length > 2 
+              ? undefined 
+              : userSession?.threadId
+          }
         }
       });
 
