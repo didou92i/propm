@@ -43,24 +43,11 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   const createRipple = useRipple();
-
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     createRipple(e);
     onClick();
   };
-
-  return (
-    <div className={`fixed ${positionClasses[position]} z-50`}>
-      <Button
-        onClick={handleClick}
-        className={`rounded-full ${sizeClasses[size]} ${variantClasses[variant]} ${className}`}
-        aria-label={tooltip || 'Action'}
-        title={tooltip}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-      >
-        <Icon size={iconSizes[size]} />
-      </Button>
-    </div>
-  );
+  return <div className={`fixed ${positionClasses[position]} z-50`}>
+      
+    </div>;
 };
