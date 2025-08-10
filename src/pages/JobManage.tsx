@@ -3,19 +3,38 @@ import { JobCard } from "@/components/recruitment";
 import { listJobs, deleteJob, type JobPost } from "@/services/jobsService";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2, Shield, CheckCircle, XCircle } from "lucide-react";
-import { NavLink } from "react-router-dom";
+import { Loader2, Shield, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
+import { NavLink, Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAdmin } from "@/hooks/useAdmin";
 
 const PAGE_SIZE = 20;
 
 const JobManagePage: React.FC = () => {
   const { toast } = useToast();
+  const { isAdmin, loading: adminLoading } = useAdmin();
   const [loading, setLoading] = React.useState(false);
   const [items, setItems] = React.useState<JobPost[]>([]);
   const [total, setTotal] = React.useState(0);
   const [page, setPage] = React.useState(1);
   const [statusFilter, setStatusFilter] = React.useState<"all" | "pending" | "approved" | "rejected">("pending");
+
+  // Rediriger si pas admin
+  if (!adminLoading && !isAdmin) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  // Afficher un loader pendant la vérification des droits
+  if (adminLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          Vérification des droits d'accès...
+        </div>
+      </div>
+    );
+  }
 
   React.useEffect(() => {
     document.title = "Gestion des annonces | Admin • Propm";
@@ -33,20 +52,27 @@ const JobManagePage: React.FC = () => {
   const fetchList = React.useCallback(async () => {
     setLoading(true);
     try {
-      // Pour l'admin, on veut voir toutes les annonces selon le filtre
-      const { data, error } = await supabase
+      // Construire la requête de base
+      let query = supabase
         .from("job_posts")
         .select("id,title,commune,description,skills,contact,deadline,status,created_at,expires_at,author_id", { count: "exact" })
-        .eq("is_active", true)
-        .eq(statusFilter === "all" ? "id" : "status", statusFilter === "all" ? statusFilter : statusFilter)
+        .eq("is_active", true);
+
+      // Appliquer le filtre de statut seulement si ce n'est pas "all"
+      if (statusFilter !== "all") {
+        query = query.eq("status", statusFilter);
+      }
+
+      const { data, error } = await query
         .order("created_at", { ascending: false })
         .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
 
       if (error) throw error;
 
       setItems((data || []) as JobPost[]);
-      setTotal(0); // On ne compte pas précisément pour simplifier
+      setTotal(data?.length || 0);
     } catch (e: any) {
+      console.error("Erreur lors du chargement des annonces:", e);
       toast({ title: "Erreur", description: e.message ?? "Chargement impossible", variant: "destructive" });
     } finally {
       setLoading(false);

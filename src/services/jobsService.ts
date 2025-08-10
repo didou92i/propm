@@ -12,6 +12,7 @@ export type JobPost = {
   status: "pending" | "approved" | "rejected";
   created_at: string;
   expires_at: string;
+  author_id?: string;
 };
 
 export type ListFilters = {
