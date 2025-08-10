@@ -27,6 +27,12 @@ serve(async (req) => {
       .gt("expires_at", new Date().toISOString());
 
     if (error) {
+      // If table doesn't exist yet, return empty array gracefully (42P01 undefined_table)
+      // @ts-ignore
+      if (error.code === "42P01" || (typeof error.message === "string" && error.message.includes("does not exist"))) {
+        console.error("jobs-communes: table job_posts missing, returning empty list");
+        return new Response(JSON.stringify({ communes: [] }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
       console.error("jobs-communes error:", error);
       return new Response(JSON.stringify({ error: error.message }), { status: 400, headers: corsHeaders });
     }

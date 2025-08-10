@@ -67,6 +67,15 @@ serve(async (req) => {
     const { data, count, error } = await query;
 
     if (error) {
+      // If table doesn't exist yet, return empty results gracefully
+      // Postgres error code 42P01 = undefined_table
+      // @ts-ignore - Supabase error may not always carry code field
+      if (error.code === "42P01" || (typeof error.message === "string" && error.message.includes("does not exist"))) {
+        console.error("jobs-list: table job_posts missing, returning empty list");
+        return new Response(JSON.stringify({ items: [], total: 0, page, pageSize }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       console.error("jobs-list error:", error);
       return new Response(JSON.stringify({ error: error.message }), { status: 400, headers: corsHeaders });
     }
