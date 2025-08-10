@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sparkles, Search } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 type Props = {
   communes: string[];
@@ -62,10 +63,17 @@ export const JobsFilterBar: React.FC<Props> = ({ communes, value, onChange, onSe
             onChange={(e) => onChange({ ...value, keywords: e.target.value })}
           />
         </div>
-        <Button type="button" variant="secondary" onClick={onSearchAI} disabled={loadingAI}>
-          <Sparkles className="h-4 w-4 mr-1" />
-          Recherche IA
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button type="button" variant="secondary" onClick={onSearchAI} disabled={loadingAI}>
+              <Sparkles className="h-4 w-4 mr-1" />
+              Recherche IA
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="top" align="end" className="max-w-xs text-xs leading-relaxed">
+            La recherche IA comprend vos besoins même avec des termes approximatifs. Exemple : "job avec les mains" trouvera des postes manuels, artisanaux, etc.
+          </TooltipContent>
+        </Tooltip>
       </div>
     </div>
   );

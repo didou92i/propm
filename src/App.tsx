@@ -16,6 +16,8 @@ import UserDataManagement from "./pages/UserDataManagement";
 import Diagnostics from "./pages/Diagnostics";
 import SimulateurSalaire from "./pages/SimulateurSalaire";
 import ProNatinf from "./pages/ProNatinf";
+import JobsPage from "./pages/Jobs";
+import JobCreatePage from "./pages/JobCreate";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +52,16 @@ const App = () => (
           <Route path="/natinf" element={
             <ProtectedRoute>
               <ProNatinf />
+            </ProtectedRoute>
+          } />
+          <Route path="/jobs" element={
+            <ProtectedRoute>
+              <JobsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/jobs/new" element={
+            <ProtectedRoute>
+              <JobCreatePage />
             </ProtectedRoute>
           } />
           <Route path="/diagnostics" element={

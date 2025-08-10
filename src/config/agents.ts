@@ -1,4 +1,4 @@
-import { Bot, FileText, Calculator, MessageSquare, Search, User, GraduationCap } from "lucide-react";
+import { Bot, FileText, Calculator, MessageSquare, Search, Briefcase, GraduationCap } from "lucide-react";
 import { getAgentPrompt, hasAgentPrompt } from "./prompts";
 
 export const AGENTS = [
@@ -52,11 +52,11 @@ export const TOOLS = [
     description: "Recherche avancée dans la base NATINF"
   },
   { 
-    id: "azzabi", 
-    name: "Azzabi", 
-    icon: User, 
-    color: "text-pink-400",
-    description: "Assistant juridique personnalisé"
+    id: "jobs", 
+    name: "Nous recrutons", 
+    icon: Briefcase, 
+    color: "text-blue-400",
+    description: "Mini job-board : publier et consulter des offres"
   },
 ];
 

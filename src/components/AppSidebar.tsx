@@ -200,6 +200,22 @@ export function AppSidebar({ selectedAgent, onAgentSelect, onContextShare }: App
                         <span className="font-medium">{tool.name}</span>
                       </NavLink>
                     </SidebarMenuButton>
+                  ) : tool.id === 'jobs' ? (
+                    <SidebarMenuButton asChild>
+                      <NavLink
+                        to="/jobs"
+                        className={({ isActive }) =>
+                          `flex items-center gap-3 p-3 rounded-lg hover:bg-sidebar-accent/50 transition-colors ${
+                            isActive
+                              ? 'glass-intense text-sidebar-accent-foreground border-l-2 border-primary pulse-glow neomorphism'
+                              : 'glass-subtle hover-glow'
+                          }`
+                        }
+                      >
+                        <tool.icon className={`w-5 h-5 ${tool.color}`} />
+                        <span className="font-medium">{tool.name}</span>
+                      </NavLink>
+                    </SidebarMenuButton>
                   ) : (
                     <SidebarMenuButton
                       onClick={(e) => handleAgentSelect(tool.id, e)}
