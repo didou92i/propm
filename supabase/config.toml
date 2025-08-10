@@ -1,3 +1,4 @@
+
 project_id = "yulhsufpnjkiozkrgyoq"
 
 [api]
@@ -39,6 +40,25 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.search-cds-vectorial]
+verify_jwt = true
+
+# Job board functions
+[functions.jobs-create]
+verify_jwt = true
+
+[functions.jobs-list]
+verify_jwt = false
+
+[functions.jobs-search-ai]
+verify_jwt = true
+
+[functions.jobs-delete]
+verify_jwt = true
+
+[functions.jobs-communes]
+verify_jwt = false
+
+[functions.jobs-cleanup]
 verify_jwt = true
 
 [db]
