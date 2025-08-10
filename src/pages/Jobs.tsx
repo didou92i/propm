@@ -8,18 +8,6 @@ import { useToast } from "@/components/ui/use-toast";
 import { Loader2, Plus } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
-React.useEffect(() => {
-  document.title = "Nous recrutons | Offres d'emploi • Propm";
-  const content = "Offres d'emploi du secteur public. Filtrez par commune et profitez de la recherche IA.";
-  const meta = document.querySelector('meta[name="description"]');
-  if (meta) meta.setAttribute("content", content);
-  else {
-    const m = document.createElement("meta");
-    m.name = "description";
-    m.content = content;
-    document.head.appendChild(m);
-  }
-}, []);
 
 const PAGE_SIZE = 20;
 
@@ -32,6 +20,19 @@ const JobsPage: React.FC = () => {
   const [items, setItems] = React.useState<JobPost[]>([]);
   const [total, setTotal] = React.useState(0);
   const [page, setPage] = React.useState(1);
+
+  React.useEffect(() => {
+    document.title = "Nous recrutons | Offres d'emploi • Propm";
+    const content = "Offres d'emploi du secteur public. Filtrez par commune et profitez de la recherche IA.";
+    const meta = document.querySelector('meta[name="description"]');
+    if (meta) meta.setAttribute("content", content);
+    else {
+      const m = document.createElement("meta");
+      m.name = "description";
+      m.content = content;
+      document.head.appendChild(m);
+    }
+  }, []);
 
   React.useEffect(() => {
     getCommunes().then((d) => setCommunes(d.communes)).catch(() => setCommunes([]));
