@@ -20,18 +20,41 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Create Supabase client with service role key for cleanup operations
+    // Authenticate caller and ensure admin role
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    
-    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
-      }
+
+    // Client bound to the caller's JWT for auth checks
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: req.headers.get('Authorization') || '' } },
+      auth: { autoRefreshToken: false, persistSession: false }
     });
 
-    console.log('Starting automatic data cleanup...');
+    const { data: { user }, error: userError } = await supabaseAuth.auth.getUser();
+    if (userError || !user) {
+      console.warn('Unauthorized cleanup attempt:', userError);
+      return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 401
+      });
+    }
+
+    const { data: isAdmin, error: roleError } = await supabaseAuth.rpc('is_admin');
+    if (roleError || !isAdmin) {
+      console.warn('Forbidden cleanup attempt by user:', user?.id, roleError);
+      return new Response(JSON.stringify({ success: false, error: 'Forbidden' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 403
+      });
+    }
+
+    // Service role client for privileged operations
+    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: { autoRefreshToken: false, persistSession: false }
+    });
+
+    console.log('Starting automatic data cleanup by admin:', user.id);
 
     // Call the cleanup function
     const { data: cleanupResult, error: cleanupError } = await supabase
