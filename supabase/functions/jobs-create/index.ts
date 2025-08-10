@@ -87,6 +87,26 @@ serve(async (req) => {
     }
 
     const authorId = userData.user.id;
+
+    // Ensure profile exists to satisfy FK constraint
+    const { data: existingProfile } = await supabase
+      .from("profiles")
+      .select("user_id")
+      .eq("user_id", authorId)
+      .maybeSingle();
+
+    if (!existingProfile) {
+      // Best-effort creation; ignore error if already exists or blocked
+      await supabase
+        .from("profiles")
+        .insert({
+          user_id: authorId,
+          display_name: (userData.user.user_metadata as any)?.display_name ?? null,
+        })
+        .select("user_id")
+        .maybeSingle();
+    }
+
     const textForEmbedding = [title, description, skills.join(" ")].filter(Boolean).join("\n\n");
     const embedding = await createEmbedding(textForEmbedding);
 
@@ -99,7 +119,7 @@ serve(async (req) => {
         description,
         skills,
         contact,
-        deadline: deadline ? new Date(deadline).toISOString() : null,
+        deadline: deadline ? deadline : null,
         status: "pending",
         is_active: true,
         embedding: embedding ?? null,
