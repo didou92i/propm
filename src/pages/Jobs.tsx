@@ -90,11 +90,16 @@ const JobsPage: React.FC = () => {
             {total} annonce{total > 1 ? "s" : ""}
           </div>
         </div>
-        <Button asChild>
-          <NavLink to="/jobs/new">
-            <Plus className="h-4 w-4 mr-2" /> Publier une annonce
-          </NavLink>
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" asChild>
+            <NavLink to="/jobs/manage">Gérer les annonces</NavLink>
+          </Button>
+          <Button asChild>
+            <NavLink to="/jobs/new">
+              <Plus className="h-4 w-4 mr-2" /> Publier une annonce
+            </NavLink>
+          </Button>
+        </div>
       </div>
 
       <JobsFilterBar

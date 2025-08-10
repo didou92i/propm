@@ -18,6 +18,7 @@ import SimulateurSalaire from "./pages/SimulateurSalaire";
 import ProNatinf from "./pages/ProNatinf";
 import JobsPage from "./pages/Jobs";
 import JobCreatePage from "./pages/JobCreate";
+import JobManagePage from "./pages/JobManage";
 
 const queryClient = new QueryClient();
 
@@ -62,6 +63,11 @@ const App = () => (
           <Route path="/jobs/new" element={
             <ProtectedRoute>
               <JobCreatePage />
+            </ProtectedRoute>
+          } />
+          <Route path="/jobs/manage" element={
+            <ProtectedRoute>
+              <JobManagePage />
             </ProtectedRoute>
           } />
           <Route path="/diagnostics" element={

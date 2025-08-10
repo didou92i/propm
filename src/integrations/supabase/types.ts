@@ -229,6 +229,60 @@ export type Database = {
         }
         Relationships: []
       }
+      job_posts: {
+        Row: {
+          author_id: string
+          commune: string
+          contact: string
+          created_at: string
+          deadline: string | null
+          description: string
+          embedding: string | null
+          expires_at: string
+          id: string
+          is_active: boolean
+          search_tsv: unknown | null
+          skills: string[]
+          status: Database["public"]["Enums"]["job_post_status"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          commune: string
+          contact: string
+          created_at?: string
+          deadline?: string | null
+          description: string
+          embedding?: string | null
+          expires_at?: string
+          id?: string
+          is_active?: boolean
+          search_tsv?: unknown | null
+          skills?: string[]
+          status?: Database["public"]["Enums"]["job_post_status"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          commune?: string
+          contact?: string
+          created_at?: string
+          deadline?: string | null
+          description?: string
+          embedding?: string | null
+          expires_at?: string
+          id?: string
+          is_active?: boolean
+          search_tsv?: unknown | null
+          skills?: string[]
+          status?: Database["public"]["Enums"]["job_post_status"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       prepa_cds_exercise_history: {
         Row: {
           content_hash: string
@@ -424,6 +478,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      cleanup_expired_job_posts: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       cleanup_old_conversations: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -479,6 +537,22 @@ export type Database = {
           similarity: number
         }[]
       }
+      match_job_posts: {
+        Args: { query_embedding: string; match_count?: number }
+        Returns: {
+          id: string
+          title: string
+          commune: string
+          description: string
+          skills: string[]
+          contact: string
+          deadline: string
+          status: Database["public"]["Enums"]["job_post_status"]
+          created_at: string
+          expires_at: string
+          similarity: number
+        }[]
+      }
       rechercher_code_natinf: {
         Args: { code_recherche: number } | { code_recherche: string }
         Returns: Json
@@ -490,6 +564,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
+      job_post_status: "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -618,6 +693,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
+      job_post_status: ["pending", "approved", "rejected"],
     },
   },
 } as const

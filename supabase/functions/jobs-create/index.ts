@@ -88,48 +88,43 @@ serve(async (req) => {
 
     const authorId = userData.user.id;
 
-    // Ensure profile exists to satisfy FK constraint
-    const { data: existingProfile } = await supabase
-      .from("profiles")
-      .select("user_id")
-      .eq("user_id", authorId)
-      .maybeSingle();
-
-    if (!existingProfile) {
-      // Best-effort creation; ignore error if already exists or blocked
-      await supabase
-        .from("profiles")
-        .insert({
-          user_id: authorId,
-          display_name: (userData.user.user_metadata as any)?.display_name ?? null,
-        })
-        .select("user_id")
-        .maybeSingle();
-    }
-
+    // Créer le texte pour l'embedding
     const textForEmbedding = [title, description, skills.join(" ")].filter(Boolean).join("\n\n");
     const embedding = await createEmbedding(textForEmbedding);
 
+    // Insérer l'annonce avec gestion des erreurs détaillée
+    const insertData = {
+      author_id: authorId,
+      title,
+      commune,
+      description,
+      skills,
+      contact,
+      deadline: deadline || null,
+      status: "pending" as const,
+      is_active: true,
+      embedding: embedding,
+    };
+
+    console.log("Attempting to insert job post:", { 
+      ...insertData, 
+      embedding: embedding ? `[${embedding.length} dimensions]` : null 
+    });
+
     const { data, error } = await supabase
       .from("job_posts")
-      .insert({
-        author_id: authorId,
-        title,
-        commune,
-        description,
-        skills,
-        contact,
-        deadline: deadline ? deadline : null,
-        status: "pending",
-        is_active: true,
-        embedding: embedding ?? null,
-      })
+      .insert(insertData)
       .select("id, status")
       .single();
 
     if (error) {
-      console.error("Insert job_post error:", error);
-      return new Response(JSON.stringify({ error: error.message }), { status: 400, headers: corsHeaders });
+      console.error("Insert job_post error:", JSON.stringify(error, null, 2));
+      return new Response(JSON.stringify({ 
+        error: `Database error: ${error.message}`,
+        details: error.details || "No additional details",
+        hint: error.hint || "No hints available",
+        code: error.code || "Unknown code"
+      }), { status: 400, headers: corsHeaders });
     }
 
     return new Response(JSON.stringify({ id: data.id, status: data.status }), {
