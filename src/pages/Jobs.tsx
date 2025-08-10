@@ -5,7 +5,21 @@ import { JobCard } from "@/components/recruitment";
 import { getCommunes, listJobs, searchJobsAI, type JobPost } from "@/services/jobsService";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
+import { NavLink } from "react-router-dom";
+
+React.useEffect(() => {
+  document.title = "Nous recrutons | Offres d'emploi • Propm";
+  const content = "Offres d'emploi du secteur public. Filtrez par commune et profitez de la recherche IA.";
+  const meta = document.querySelector('meta[name="description"]');
+  if (meta) meta.setAttribute("content", content);
+  else {
+    const m = document.createElement("meta");
+    m.name = "description";
+    m.content = content;
+    document.head.appendChild(m);
+  }
+}, []);
 
 const PAGE_SIZE = 20;
 
@@ -69,10 +83,17 @@ const JobsPage: React.FC = () => {
   return (
     <div className="container mx-auto px-4 py-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Nous recrutons</h1>
-        <div className="text-sm text-muted-foreground">
-          {total} annonce{total > 1 ? "s" : ""}
+        <div>
+          <h1 className="text-2xl font-semibold">Nous recrutons</h1>
+          <div className="text-sm text-muted-foreground">
+            {total} annonce{total > 1 ? "s" : ""}
+          </div>
         </div>
+        <Button asChild>
+          <NavLink to="/jobs/new">
+            <Plus className="h-4 w-4 mr-2" /> Publier une annonce
+          </NavLink>
+        </Button>
       </div>
 
       <JobsFilterBar
