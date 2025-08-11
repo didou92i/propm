@@ -8,6 +8,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Loader2, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { logger } from "@/utils/logger";
+import { useAdmin } from "@/hooks/useAdmin";
 
 
 const PAGE_SIZE = 20;
@@ -22,6 +23,7 @@ const JobsPage: React.FC = () => {
   const [items, setItems] = React.useState<JobPost[]>([]);
   const [total, setTotal] = React.useState(0);
   const [page, setPage] = React.useState(1);
+  const { isAdmin, loading: adminLoading } = useAdmin();
 
   React.useEffect(() => {
     document.title = "Nous recrutons | Offres d'emploi • Propm";
@@ -98,7 +100,17 @@ const JobsPage: React.FC = () => {
           <div className="flex gap-2">
             <Button
               variant="outline"
+              disabled={adminLoading || !isAdmin}
+              title={!isAdmin ? "Accès restreint: réservé aux administrateurs" : undefined}
               onClick={() => {
+                if (adminLoading) {
+                  toast({ title: "Vérification en cours", description: "Merci de patienter..." });
+                  return;
+                }
+                if (!isAdmin) {
+                  toast({ title: "Accès refusé", description: "Fonction réservée aux administrateurs." , variant: "destructive"});
+                  return;
+                }
                 logger.info("navigate_manage_jobs", { from: "/jobs" }, "JobsPage");
                 navigate("/jobs/manage");
               }}
