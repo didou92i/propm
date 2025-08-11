@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarDays } from "lucide-react";
+import { logger } from "@/utils/logger";
 
 const schema = z.object({
   title: z.string().min(3).max(100),
@@ -74,7 +75,9 @@ export const JobForm: React.FC = () => {
         contact: values.contact,
         deadline: values.deadline ? values.deadline.toISOString().slice(0, 10) : null,
       };
+      logger.info('job_create_submit', { title: payload.title, commune: payload.commune }, 'JobForm');
       const res = await createJob(payload);
+      logger.info('job_create_success', { id: (res as any).id, status: res.status }, 'JobForm');
       toast({
         title: "Annonce soumise",
         description: res.status === "pending"
@@ -83,6 +86,7 @@ export const JobForm: React.FC = () => {
       });
       form.reset();
     } catch (e: any) {
+      logger.error('job_create_error', e, 'JobForm');
       toast({ title: "Erreur", description: e.message ?? "Impossible de publier l'annonce", variant: "destructive" });
     } finally {
       setLoading(false);

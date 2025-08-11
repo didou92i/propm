@@ -6,13 +6,15 @@ import { getCommunes, listJobs, searchJobsAI, type JobPost } from "@/services/jo
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2, Plus } from "lucide-react";
-import { NavLink } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { logger } from "@/utils/logger";
 
 
 const PAGE_SIZE = 20;
 
 const JobsPage: React.FC = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [communes, setCommunes] = React.useState<string[]>([]);
   const [filters, setFilters] = React.useState({ commune: "", dateRange: "" as any, keywords: "" });
   const [loading, setLoading] = React.useState(false);
@@ -41,6 +43,7 @@ const JobsPage: React.FC = () => {
   const fetchList = React.useCallback(async () => {
     setLoading(true);
     try {
+      logger.debug('jobs_list_fetch_start', { page, filters }, 'JobsPage');
       const res = await listJobs({
         page,
         pageSize: PAGE_SIZE,
@@ -50,7 +53,9 @@ const JobsPage: React.FC = () => {
       });
       setItems(res.items);
       setTotal(res.total);
+      logger.info('jobs_list_fetch_success', { count: res.items.length, total: res.total }, 'JobsPage');
     } catch (e: any) {
+      logger.error('jobs_list_fetch_error', e, 'JobsPage');
       toast({ title: "Erreur", description: e.message ?? "Chargement impossible", variant: "destructive" });
     } finally {
       setLoading(false);
@@ -90,16 +95,25 @@ const JobsPage: React.FC = () => {
             {total} annonce{total > 1 ? "s" : ""}
           </div>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" asChild>
-            <NavLink to="/jobs/manage">Gérer les annonces</NavLink>
-          </Button>
-          <Button asChild>
-            <NavLink to="/jobs/new">
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                logger.info("navigate_manage_jobs", { from: "/jobs" }, "JobsPage");
+                navigate("/jobs/manage");
+              }}
+            >
+              Gérer les annonces
+            </Button>
+            <Button
+              onClick={() => {
+                logger.info("navigate_new_job", { from: "/jobs" }, "JobsPage");
+                navigate("/jobs/new");
+              }}
+            >
               <Plus className="h-4 w-4 mr-2" /> Publier une annonce
-            </NavLink>
-          </Button>
-        </div>
+            </Button>
+          </div>
       </div>
 
       <JobsFilterBar
