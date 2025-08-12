@@ -58,6 +58,8 @@ const VirtualizedMessageList = forwardRef<VirtualizedMessageListRef, Virtualized
                         src={agent.avatar}
                         alt={`${agent.name} Avatar`} 
                         className="w-6 h-6 object-cover rounded-full"
+                        loading="lazy"
+                        decoding="async"
                       />
                     );
                   }

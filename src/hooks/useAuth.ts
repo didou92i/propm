@@ -27,14 +27,27 @@ export function useAuth() {
       }
     );
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setAuthState({
-        session,
-        user: session?.user ?? null,
-        loading: false,
-      });
-    });
+    // THEN check for existing session + validate refresh token health
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        setAuthState({
+          session,
+          user: session?.user ?? null,
+          loading: false,
+        });
+
+        // Validate user to catch invalid refresh token and clean up
+        const { data: userData, error: userError } = await supabase.auth.getUser();
+        if (userError && (userError.status === 400 || (userError as any).code === 'refresh_token_not_found')) {
+          await supabase.auth.signOut();
+          setAuthState({ user: null, session: null, loading: false });
+        }
+      } catch (e) {
+        await supabase.auth.signOut();
+        setAuthState({ user: null, session: null, loading: false });
+      }
+    })();
 
     return () => subscription.unsubscribe();
   }, []);

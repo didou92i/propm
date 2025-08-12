@@ -80,6 +80,8 @@ export const LogoUpload: React.FC<LogoUploadProps> = ({ onLogoChange, currentLog
                 src={currentLogo} 
                 alt="Logo de la commune" 
                 className="w-16 h-16 object-contain border border-border rounded"
+                loading="lazy"
+                decoding="async"
               />
             </div>
             <div className="flex-1">

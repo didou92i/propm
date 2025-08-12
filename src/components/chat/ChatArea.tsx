@@ -515,6 +515,8 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
                         src={agent.avatar}
                         alt={`${agent.name} Avatar`} 
                         className="w-16 h-16 object-cover rounded-full"
+                        loading="lazy"
+                        decoding="async"
                       />
                     ) : (
                       <Bot className="w-16 h-16 text-primary" />
@@ -580,6 +582,8 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
                         src={agent.avatar}
                         alt={`${agent.name} Avatar`} 
                         className="w-6 h-6 object-cover rounded-full"
+                        loading="lazy"
+                        decoding="async"
                       />
                     ) : (
                       <Bot className="w-6 h-6 text-primary" />

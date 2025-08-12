@@ -81,6 +81,8 @@ export function AppSidebar({ selectedAgent, onAgentSelect, onContextShare }: App
               src="/lovable-uploads/421ea4e9-730f-4336-9bcb-78a111f9c741.png" 
               alt="Propm.fr Logo" 
               className="w-6 h-6 object-contain"
+              loading="lazy"
+              decoding="async"
             />
           </div>
           <span className="font-semibold text-lg">Propm.fr</span>
@@ -127,6 +129,8 @@ export function AppSidebar({ selectedAgent, onAgentSelect, onContextShare }: App
                           className={`w-5 h-5 object-cover transition-all duration-300 ${
                             selectedAgent === agent.id ? 'scale-110' : ''
                           }`}
+                          loading="lazy"
+                          decoding="async"
                         />
                       </div>
                     ) : (
@@ -175,6 +179,7 @@ export function AppSidebar({ selectedAgent, onAgentSelect, onContextShare }: App
                           alt="Simulateur de salaire - avatar"
                           className="w-5 h-5 rounded-full object-cover transition-all duration-300"
                           loading="lazy"
+                          decoding="async"
                         />
                         <span className="font-medium">{tool.name}</span>
                       </NavLink>
@@ -196,6 +201,7 @@ export function AppSidebar({ selectedAgent, onAgentSelect, onContextShare }: App
                           alt="Pro NATINF - avatar"
                           className="w-5 h-5 rounded-full object-cover transition-all duration-300"
                           loading="lazy"
+                          decoding="async"
                         />
                         <span className="font-medium">{tool.name}</span>
                       </NavLink>
