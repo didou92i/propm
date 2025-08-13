@@ -4,9 +4,10 @@ import { JobCard } from "@/components/recruitment";
 import { getCommunes, listJobs, searchJobsAI, type JobPost } from "@/services/jobsService";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2, Plus } from "lucide-react";
+import { Loader2, Plus, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { logger } from "@/utils/logger";
+import { useAdmin } from "@/hooks/useAdmin";
 
 const PAGE_SIZE = 20;
 
@@ -20,6 +21,7 @@ const JobsPage: React.FC = () => {
   const [items, setItems] = React.useState<JobPost[]>([]);
   const [total, setTotal] = React.useState(0);
   const [page, setPage] = React.useState(1);
+  const { isAdmin, loading: adminLoading } = useAdmin();
 
   React.useEffect(() => {
     document.title = "Nous recrutons | Offres d'emploi • Propm";
@@ -96,11 +98,19 @@ const JobsPage: React.FC = () => {
         <div className="flex gap-2">
           <Button
             variant="outline"
+            disabled={adminLoading}
+            title={adminLoading ? "Vérification des droits..." : !isAdmin ? "Accès restreint aux administrateurs" : "Gérer les annonces"}
             onClick={() => {
-              logger.info("navigate_manage_jobs", { from: "/jobs" }, "JobsPage");
+              if (adminLoading) {
+                toast({ title: "Vérification en cours", description: "Merci de patienter..." });
+                return;
+              }
+              logger.info("navigate_manage_jobs", { from: "/jobs", isAdmin }, "JobsPage");
               navigate("/jobs/manage");
             }}
+            className={!isAdmin && !adminLoading ? "opacity-60" : ""}
           >
+            <Shield className="h-4 w-4 mr-2" />
             Gérer les annonces
           </Button>
           <Button
