@@ -19,38 +19,7 @@ const JobManagePage: React.FC = () => {
   const [page, setPage] = React.useState(1);
   const [statusFilter, setStatusFilter] = React.useState<"all" | "pending" | "approved" | "rejected">("pending");
 
-  // Afficher un loader pendant la vérification des droits
-  if (adminLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Loader2 className="h-6 w-6 animate-spin" />
-          Vérification des droits d'accès...
-        </div>
-      </div>
-    );
-  }
-
-  // Afficher message d'accès refusé si pas admin (mais connecté)
-  if (!isAdmin) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="flex items-center gap-2 text-destructive justify-center">
-            <Shield className="h-6 w-6" />
-            <h1 className="text-xl font-semibold">Accès refusé</h1>
-          </div>
-          <p className="text-muted-foreground">
-            Cette page est réservée aux administrateurs.
-          </p>
-          <Button variant="secondary" asChild>
-            <NavLink to="/jobs">Retour aux offres</NavLink>
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
+  // Tous les hooks doivent être appelés avant les retours conditionnels
   React.useEffect(() => {
     document.title = "Gestion des annonces | Admin • Propm";
     const content = "Interface d'administration pour modérer les offres d'emploi.";
@@ -128,6 +97,38 @@ const JobManagePage: React.FC = () => {
       toast({ title: "Erreur", description: e.message ?? "Impossible de supprimer", variant: "destructive" });
     }
   };
+
+  // Afficher un loader pendant la vérification des droits
+  if (adminLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          Vérification des droits d'accès...
+        </div>
+      </div>
+    );
+  }
+
+  // Afficher message d'accès refusé si pas admin (mais connecté)
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="flex items-center gap-2 text-destructive justify-center">
+            <Shield className="h-6 w-6" />
+            <h1 className="text-xl font-semibold">Accès refusé</h1>
+          </div>
+          <p className="text-muted-foreground">
+            Cette page est réservée aux administrateurs.
+          </p>
+          <Button variant="secondary" asChild>
+            <NavLink to="/jobs">Retour aux offres</NavLink>
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-6 space-y-6">
