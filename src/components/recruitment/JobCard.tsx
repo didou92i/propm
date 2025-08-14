@@ -25,36 +25,39 @@ export const JobCard: React.FC<Props> = ({ job, onDelete, canDelete = false }) =
       className="w-full"
     >
       <Card className="transition-colors">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0">
-          <div className="flex items-center gap-2">
-            <Briefcase className="h-5 w-5 text-primary" />
-            <CardTitle className="text-base">{job.title}</CardTitle>
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between space-y-2 sm:space-y-0 pb-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <Briefcase className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+            <CardTitle className="text-sm sm:text-base leading-tight truncate">{job.title}</CardTitle>
           </div>
-          <div className="flex items-center gap-1">
-            {job.status === "approved" && <Badge>Publié</Badge>}
-            {job.status === "pending" && <Badge variant="secondary">En attente</Badge>}
-            {job.status === "rejected" && <Badge variant="destructive">Refusé</Badge>}
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {job.status === "approved" && <Badge className="text-xs">Publié</Badge>}
+            {job.status === "pending" && <Badge variant="secondary" className="text-xs">En attente</Badge>}
+            {job.status === "rejected" && <Badge variant="destructive" className="text-xs">Refusé</Badge>}
           </div>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+        <CardContent className="space-y-3 pt-0">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
             <span className="inline-flex items-center gap-1">
-              <MapPin className="h-4 w-4" /> {job.commune}
+              <MapPin className="h-3 w-3 sm:h-4 sm:w-4" /> {job.commune}
             </span>
             <span className="inline-flex items-center gap-1">
-              <CalendarDays className="h-4 w-4" /> Publié le {created}
+              <CalendarDays className="h-3 w-3 sm:h-4 sm:w-4" /> Publié le {created}
             </span>
             {deadline && (
               <span className="inline-flex items-center gap-1">
-                <CalendarDays className="h-4 w-4" /> Limite {deadline}
+                <CalendarDays className="h-3 w-3 sm:h-4 sm:w-4" /> Limite {deadline}
               </span>
             )}
           </div>
-          <p className="text-sm leading-relaxed text-foreground/90 line-clamp-4">{job.description}</p>
-          <div className="flex flex-wrap gap-2">
-            {(job.skills ?? []).slice(0, 8).map((s, i) => (
-              <Badge key={i} variant="outline">{s}</Badge>
+          <p className="text-xs sm:text-sm leading-relaxed text-foreground/90 line-clamp-3 sm:line-clamp-4">{job.description}</p>
+          <div className="flex flex-wrap gap-1.5 sm:gap-2">
+            {(job.skills ?? []).slice(0, 6).map((s, i) => (
+              <Badge key={i} variant="outline" className="text-xs px-2 py-0.5">{s}</Badge>
             ))}
+            {(job.skills ?? []).length > 6 && (
+              <Badge variant="outline" className="text-xs px-2 py-0.5">+{(job.skills ?? []).length - 6}</Badge>
+            )}
           </div>
           {canDelete && onDelete && (
             <div className="pt-2">

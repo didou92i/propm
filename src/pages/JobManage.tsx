@@ -132,22 +132,22 @@ const JobManagePage: React.FC = () => {
 
   return (
     <div className="container mx-auto px-4 py-6 space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold flex items-center gap-2">
-            <Shield className="h-6 w-6 text-primary" />
+          <h1 className="text-xl sm:text-2xl font-semibold flex items-center gap-2">
+            <Shield className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
             Gestion des annonces
           </h1>
           <div className="text-sm text-muted-foreground">
             {total} annonce{total > 1 ? "s" : ""} ({statusFilter})
           </div>
         </div>
-        <Button variant="secondary" asChild>
+        <Button variant="secondary" asChild className="w-full sm:w-auto">
           <NavLink to="/jobs">Retour aux offres</NavLink>
         </Button>
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         {["all", "pending", "approved", "rejected"].map((status) => (
           <Button
             key={status}
@@ -156,6 +156,7 @@ const JobManagePage: React.FC = () => {
               setStatusFilter(status as any);
               setPage(1);
             }}
+            className="flex-1 sm:flex-none touch-manipulation"
           >
             {status === "all" && "Toutes"}
             {status === "pending" && "En attente"}
@@ -170,7 +171,7 @@ const JobManagePage: React.FC = () => {
           <Loader2 className="h-5 w-5 mr-2 animate-spin" /> Chargement...
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
           {items.map((job) => (
             <div key={job.id} className="relative">
               <JobCard job={job} onDelete={handleDelete} canDelete />
@@ -182,7 +183,8 @@ const JobManagePage: React.FC = () => {
                     size="sm"
                     variant="default"
                     onClick={() => moderateJob(job.id, "approved")}
-                    className="bg-green-600 hover:bg-green-700"
+                    className="bg-green-600 hover:bg-green-700 h-8 w-8 p-0 touch-manipulation"
+                    title="Approuver"
                   >
                     <CheckCircle className="h-3 w-3" />
                   </Button>
@@ -190,6 +192,8 @@ const JobManagePage: React.FC = () => {
                     size="sm"
                     variant="destructive"
                     onClick={() => moderateJob(job.id, "rejected")}
+                    className="h-8 w-8 p-0 touch-manipulation"
+                    title="Refuser"
                   >
                     <XCircle className="h-3 w-3" />
                   </Button>
@@ -201,12 +205,22 @@ const JobManagePage: React.FC = () => {
       )}
 
       {!loading && items.length > 0 && (
-        <div className="flex items-center justify-center gap-2 pt-4">
-          <Button variant="secondary" disabled={page === 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-2 pt-4">
+          <Button 
+            variant="secondary" 
+            disabled={page === 1} 
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            className="w-full sm:w-auto touch-manipulation"
+          >
             Précédent
           </Button>
-          <div className="text-sm text-muted-foreground">Page {page}</div>
-          <Button variant="secondary" disabled={items.length < PAGE_SIZE} onClick={() => setPage((p) => p + 1)}>
+          <div className="text-sm text-muted-foreground order-first sm:order-none">Page {page}</div>
+          <Button 
+            variant="secondary" 
+            disabled={items.length < PAGE_SIZE} 
+            onClick={() => setPage((p) => p + 1)}
+            className="w-full sm:w-auto touch-manipulation"
+          >
             Suivant
           </Button>
         </div>

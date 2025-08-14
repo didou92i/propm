@@ -632,7 +632,8 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
         </div>
       )}
 
-      <div ref={composerRef} className="fixed bottom-12 left-0 md:left-64 right-0 z-30 p-6 border-t border-border/40 bg-background/95 backdrop-blur-sm">
+      <div ref={composerRef} className="fixed bottom-12 left-0 right-0 z-30 p-3 sm:p-6 border-t border-border/40 bg-background/95 backdrop-blur-sm
+        md:left-64 transition-all duration-300">
         {attachmentError && (
           <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
             <p className="text-sm text-destructive">{attachmentError}</p>
@@ -667,9 +668,9 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
         
         {/* Zone de saisie unifiée avec actions intégrées */}
         <form onSubmit={handleSubmit} className="relative">
-          <div className="flex items-end gap-3 p-3 rounded-xl glass neomorphism-subtle border border-border/20 backdrop-blur-sm hover:border-border/40 transition-all duration-300">
+          <div className="flex items-end gap-2 sm:gap-3 p-2 sm:p-3 rounded-xl glass neomorphism-subtle border border-border/20 backdrop-blur-sm hover:border-border/40 transition-all duration-300">
             {/* Actions à gauche : Attachment et Export */}
-            <div className="flex items-center gap-2 pb-1">
+            <div className="flex items-center gap-1 sm:gap-2 pb-1">
               <ChatAttachment
                 attachments={[]}
                 onAttachmentsChange={setAttachments}
@@ -683,10 +684,10 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
                   <Button 
                     variant="ghost" 
                     size="sm" 
-                    className="h-8 w-8 p-0 hover:bg-accent/50 transition-all duration-200 hover:scale-105 group"
+                    className="h-7 w-7 sm:h-8 sm:w-8 p-0 hover:bg-accent/50 transition-all duration-200 hover:scale-105 group touch-manipulation"
                     title="Exporter la conversation"
                   >
-                    <Download className="w-4 h-4 group-hover:text-primary transition-colors" />
+                    <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:text-primary transition-colors" />
                   </Button>
                 </ConversationExport>
               )}
@@ -694,7 +695,7 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
                 variant="ghost"
                 size="sm"
                 type="button"
-                className="h-8 w-8 p-0 hover:bg-destructive/10 transition-all duration-200 hover:scale-105"
+                className="h-7 w-7 sm:h-8 sm:w-8 p-0 hover:bg-destructive/10 transition-all duration-200 hover:scale-105 touch-manipulation"
                 title="Réinitialiser le contexte (nouveau thread)"
                 onClick={() => {
                   try {
@@ -705,7 +706,7 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
                   toast({ title: "Contexte réinitialisé", description: "Le fil de discussion a été réinitialisé pour cet agent." });
                 }}
               >
-                <RotateCcw className="w-4 h-4" />
+                <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </Button>
             </div>
             
@@ -715,8 +716,10 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder={attachments.length > 0 ? "Posez votre question sur les documents..." : "Écrivez un message..."}
-                className="min-h-[60px] resize-none border-0 bg-transparent p-0 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60"
+                className="min-h-[40px] sm:min-h-[60px] resize-none border-0 bg-transparent p-0 text-sm sm:text-base
+                  focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60"
                 disabled={isLoading || processingAttachment}
+                style={{ fontSize: 'max(16px, 1rem)' }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
@@ -730,13 +733,15 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
             <Button 
               type="submit" 
               disabled={(!input.trim() && attachments.length === 0) || isLoading || processingAttachment}
-              className="h-10 w-10 p-0 rounded-lg gradient-agent-animated text-white hover-lift neomorphism-hover ripple-container transform-3d glass-hover shadow-glow transition-all duration-200 hover:scale-105"
+              className="h-9 w-9 sm:h-10 sm:w-10 p-0 rounded-lg gradient-agent-animated text-white 
+                hover-lift neomorphism-hover ripple-container transform-3d glass-hover shadow-glow 
+                transition-all duration-200 hover:scale-105 touch-manipulation"
               onClick={handleSendClick}
             >
               {isLoading ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <div className="animate-spin rounded-full h-3.5 w-3.5 sm:h-4 sm:w-4 border-b-2 border-white"></div>
               ) : (
-                <Send className="w-4 h-4" />
+                <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               )}
             </Button>
           </div>

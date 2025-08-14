@@ -88,14 +88,14 @@ const JobsPage: React.FC = () => {
 
   return (
     <div className="container mx-auto px-4 py-6 space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">Nous recrutons</h1>
+          <h1 className="text-xl sm:text-2xl font-semibold">Nous recrutons</h1>
           <div className="text-sm text-muted-foreground">
             {total} annonce{total > 1 ? "s" : ""}
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <Button
             variant="outline"
             disabled={adminLoading}
@@ -108,18 +108,22 @@ const JobsPage: React.FC = () => {
               logger.info("navigate_manage_jobs", { from: "/jobs", isAdmin }, "JobsPage");
               navigate("/jobs/manage");
             }}
-            className={!isAdmin && !adminLoading ? "opacity-60" : ""}
+            className={`w-full sm:w-auto ${!isAdmin && !adminLoading ? "opacity-60" : ""}`}
           >
             <Shield className="h-4 w-4 mr-2" />
-            Gérer les annonces
+            <span className="hidden sm:inline">Gérer les annonces</span>
+            <span className="sm:hidden">Gérer</span>
           </Button>
           <Button
             onClick={() => {
               logger.info("navigate_new_job", { from: "/jobs" }, "JobsPage");
               navigate("/jobs/new");
             }}
+            className="w-full sm:w-auto"
           >
-            <Plus className="h-4 w-4 mr-2" /> Publier une annonce
+            <Plus className="h-4 w-4 mr-2" /> 
+            <span className="hidden sm:inline">Publier une annonce</span>
+            <span className="sm:hidden">Publier</span>
           </Button>
         </div>
       </div>
@@ -140,7 +144,7 @@ const JobsPage: React.FC = () => {
           <Loader2 className="h-5 w-5 mr-2 animate-spin" /> Chargement...
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
           {items.map((job) => (
             <JobCard key={job.id} job={job} />
           ))}
@@ -148,14 +152,24 @@ const JobsPage: React.FC = () => {
       )}
 
       {!loading && totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 pt-4">
-          <Button variant="secondary" disabled={page === 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-2 pt-4">
+          <Button 
+            variant="secondary" 
+            disabled={page === 1} 
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            className="w-full sm:w-auto touch-manipulation"
+          >
             Précédent
           </Button>
-          <div className="text-sm text-muted-foreground">
+          <div className="text-sm text-muted-foreground order-first sm:order-none">
             Page {page} / {totalPages}
           </div>
-          <Button variant="secondary" disabled={page === totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>
+          <Button 
+            variant="secondary" 
+            disabled={page === totalPages} 
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            className="w-full sm:w-auto touch-manipulation"
+          >
             Suivant
           </Button>
         </div>
