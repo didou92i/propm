@@ -8,6 +8,7 @@ import { PlatformDiagnostics } from "@/components/PlatformDiagnostics";
 import { SemanticSearchDialog } from "@/components/search";
 import { MonitoringDashboard } from "@/components/MonitoringDashboard";
 import { useAgentTheme } from "@/hooks/useAgentTheme";
+import { useAdmin } from "@/hooks/useAdmin";
 import { LegalFooter } from "@/components/legal";
 import { Bot, Sparkles, Plus, Settings, FileSearch, Activity, BarChart3 } from "lucide-react";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
@@ -15,6 +16,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useNavigate } from "react-router-dom";
 const Index = () => {
   const navigate = useNavigate();
+  const { isAdmin } = useAdmin();
   const [selectedAgent, setSelectedAgent] = useState("redacpro");
   const [chatKey, setChatKey] = useState(0);
   const [isNewChatMode, setIsNewChatMode] = useState(false);
@@ -114,25 +116,39 @@ const Index = () => {
           {/* Enhanced Floating Action Buttons */}
           <FloatingActionButton icon={Plus} onClick={() => setShowConfirmNewChat(true)} position="bottom-right" variant="primary" size="md" tooltip="Nouvelle conversation (Ctrl/Cmd+N)" />
           
-          <FloatingActionButton icon={FileSearch} onClick={handleSemanticSearch} position="bottom-left" variant="secondary" size="sm" tooltip="Recherche sémantique" />
+          {isAdmin && (
+            <>
+              <FloatingActionButton icon={FileSearch} onClick={handleSemanticSearch} position="bottom-left" variant="secondary" size="sm" tooltip="Recherche sémantique" />
 
-          <div className="fixed bottom-6 left-20 z-40">
-            <FloatingActionButton icon={BarChart3} onClick={handleMonitoring} position="bottom-left" variant="accent" size="sm" tooltip="Monitoring & Analytics" />
-          </div>
+              <div className="fixed bottom-6 left-20 z-40">
+                <FloatingActionButton icon={BarChart3} onClick={handleMonitoring} position="bottom-left" variant="accent" size="sm" tooltip="Monitoring & Analytics" />
+              </div>
+            </>
+          )}
 
           {/* Dialogs */}
-          <Dialog open={showDiagnostics} onOpenChange={setShowDiagnostics}>
-            <DialogTrigger asChild>
-              <div className="fixed top-6 right-6 z-50">
-                <FloatingActionButton icon={Activity} onClick={handleDiagnostics} position="top-right" variant="accent" size="sm" tooltip="Diagnostics système" />
-              </div>
-            </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-              <PlatformDiagnostics />
-            </DialogContent>
-          </Dialog>
+          {isAdmin && (
+            <Dialog open={showDiagnostics} onOpenChange={setShowDiagnostics}>
+              <DialogTrigger asChild>
+                <div className="fixed top-6 right-6 z-50">
+                  <FloatingActionButton icon={Activity} onClick={handleDiagnostics} position="top-right" variant="accent" size="sm" tooltip="Diagnostics système" />
+                </div>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                <PlatformDiagnostics />
+              </DialogContent>
+            </Dialog>
+          )}
 
-          <SemanticSearchDialog open={showSemanticSearch} onOpenChange={setShowSemanticSearch} />
+          {isAdmin && <SemanticSearchDialog open={showSemanticSearch} onOpenChange={setShowSemanticSearch} />}
+
+          {isAdmin && (
+            <Dialog open={showMonitoring} onOpenChange={setShowMonitoring}>
+              <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+                <MonitoringDashboard />
+              </DialogContent>
+            </Dialog>
+          )}
 
           {/* Confirm new conversation */}
           <AlertDialog open={showConfirmNewChat} onOpenChange={setShowConfirmNewChat}>
@@ -151,12 +167,6 @@ const Index = () => {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-
-          <Dialog open={showMonitoring} onOpenChange={setShowMonitoring}>
-            <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-              <MonitoringDashboard />
-            </DialogContent>
-          </Dialog>
         </div>
       </SidebarProvider>
     </ParallaxBackground>;
