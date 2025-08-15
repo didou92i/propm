@@ -1,5 +1,4 @@
-
-import React from "react";
+import React, { memo } from "react";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,9 +11,22 @@ type Props = {
   canDelete?: boolean;
 };
 
-export const JobCard: React.FC<Props> = ({ job, onDelete, canDelete = false }) => {
-  const created = new Date(job.created_at).toLocaleDateString("fr-FR");
-  const deadline = job.deadline ? new Date(job.deadline).toLocaleDateString("fr-FR") : null;
+const JobCard: React.FC<Props> = memo(({ job, onDelete, canDelete = false }) => {
+  const created = React.useMemo(() => 
+    new Date(job.created_at).toLocaleDateString("fr-FR"), 
+    [job.created_at]
+  );
+  
+  const deadline = React.useMemo(() => 
+    job.deadline ? new Date(job.deadline).toLocaleDateString("fr-FR") : null,
+    [job.deadline]
+  );
+
+  const handleDelete = React.useCallback(() => {
+    if (onDelete) {
+      onDelete(job.id);
+    }
+  }, [onDelete, job.id]);
 
   return (
     <motion.div
@@ -62,7 +74,7 @@ export const JobCard: React.FC<Props> = ({ job, onDelete, canDelete = false }) =
           {canDelete && onDelete && (
             <div className="pt-2">
               <button
-                onClick={() => onDelete(job.id)}
+                onClick={handleDelete}
                 className="text-sm text-destructive hover:underline"
               >
                 Supprimer
@@ -73,4 +85,8 @@ export const JobCard: React.FC<Props> = ({ job, onDelete, canDelete = false }) =
       </Card>
     </motion.div>
   );
-};
+});
+
+JobCard.displayName = 'JobCard';
+
+export { JobCard };
