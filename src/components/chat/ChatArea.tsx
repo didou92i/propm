@@ -276,8 +276,36 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
 
     setAttachmentError(null);
 
-    // Process attachments first
-    const processedAttachments = await processAttachments();
+    // Block sending if currently processing attachments
+    if (processingAttachment) {
+      toast({
+        title: "Traitement en cours",
+        description: "Veuillez attendre que le traitement des documents soit terminé",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Process attachments first and wait for completion
+    let processedAttachments: MessageAttachment[] = [];
+    if (attachments.length > 0) {
+      // Set loading state early to prevent multiple sends
+      setIsLoading(true);
+      processedAttachments = await processAttachments();
+      
+      // Validate that attachments were processed successfully
+      const hasFailedAttachments = processedAttachments.some(att => att.error || att.content?.startsWith('[Erreur'));
+      
+      if (hasFailedAttachments && processedAttachments.every(att => att.error || att.content?.startsWith('[Erreur'))) {
+        setIsLoading(false);
+        toast({
+          title: "Erreur de traitement",
+          description: "Aucun document n'a pu être traité correctement. Veuillez réessayer.",
+          variant: "destructive"
+        });
+        return;
+      }
+    }
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -290,7 +318,11 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
     setMessages(prev => [...prev, userMessage]);
     setInput("");
     setAttachments([]);
-    setIsLoading(true);
+    
+    // Only set loading if not already set above
+    if (attachments.length === 0) {
+      setIsLoading(true);
+    }
 
     // Prepare optimized message history
     const optimizedMessages = optimizeMessages([...messages, userMessage]);
