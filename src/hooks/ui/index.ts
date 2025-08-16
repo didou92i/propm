@@ -5,3 +5,6 @@ export { useTypewriter } from '@/hooks/useTypewriter';
 export { useOptimizedTypewriter } from '@/hooks/useOptimizedTypewriter';
 export { useOptimizedInput } from '@/hooks/useOptimizedInput';
 export { useOptimizedCache } from '@/hooks/useOptimizedCache';
+export { useIncrementalSearch } from '@/hooks/useIncrementalSearch';
+export { useRealTimePerformanceMonitor } from '@/hooks/useRealTimePerformanceMonitor';
+export { useIntelligentPrefetch } from '@/hooks/useIntelligentPrefetch';
