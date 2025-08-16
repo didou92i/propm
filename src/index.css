@@ -391,4 +391,125 @@ All colors MUST be HSL.
       0 0 20px hsl(var(--agent-primary) / 0.1);
     transform: translateY(-1px);
   }
+
+  /* Performance optimizations avec will-change */
+  .will-change-transform {
+    will-change: transform;
+  }
+  
+  .will-change-scroll {
+    will-change: scroll-position;
+  }
+  
+  .will-change-contents {
+    will-change: contents;
+  }
+  
+  .will-change-opacity {
+    will-change: opacity;
+  }
+
+  /* Optimisations spécifiques pour les animations */
+  .animate-optimized {
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+    perspective: 1000px;
+  }
+
+  .animate-optimized.animate-complete {
+    will-change: auto;
+  }
+
+  /* Optimisations pour les listes virtualisées */
+  .virtualized-list {
+    will-change: scroll-position;
+    contain: layout style paint;
+    overflow-anchor: none;
+  }
+
+  .virtualized-item {
+    will-change: transform;
+    contain: layout style paint;
+  }
+
+  /* Optimisations pour les composants de chat */
+  .chat-message {
+    will-change: transform, opacity;
+    contain: layout style paint;
+  }
+
+  .chat-input {
+    will-change: contents;
+    contain: layout style;
+  }
+
+  /* Optimisations pour les modals et overlays */
+  .modal-overlay {
+    will-change: opacity;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  .modal-content {
+    will-change: transform, opacity;
+    contain: layout style paint;
+  }
+}
+
+@keyframes gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes gradient-move {
+  0% { background-position: 0% 0%; }
+  50% { background-position: 100% 100%; }
+  100% { background-position: 0% 0%; }
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes slide-in-right {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slide-in-left {
+  from { transform: translateX(-100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 5px hsl(var(--agent-primary) / 0.3); }
+  50% { box-shadow: 0 0 20px hsl(var(--agent-primary) / 0.6); }
+}
+
+@keyframes ripple-enhanced {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+@keyframes ripple-intense {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(6);
+    opacity: 0;
+  }
 }
