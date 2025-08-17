@@ -727,15 +727,46 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
                 variant="ghost"
                 size="sm"
                 type="button"
-                className="h-7 w-7 sm:h-8 sm:w-8 p-0 hover:bg-destructive/10 transition-all duration-200 hover:scale-105 touch-manipulation"
+                disabled={isLoading}
+                className="h-7 w-7 sm:h-8 sm:w-8 p-0 hover:bg-destructive/10 transition-all duration-200 hover:scale-105 touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Réinitialiser le contexte (nouveau thread)"
-                onClick={() => {
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  
+                  console.log('Réinitialisation du contexte pour:', selectedAgent);
+                  
                   try {
+                    // Supprimer les threads du localStorage
                     localStorage.removeItem(`openai.thread.${selectedAgent}`);
                     localStorage.removeItem(`threadId_${selectedAgent}`);
-                  } catch {}
-                  setUserSession(prev => ({ ...prev, threadId: undefined }));
-                  toast({ title: "Contexte réinitialisé", description: "Le fil de discussion a été réinitialisé pour cet agent." });
+                    console.log('LocalStorage nettoyé');
+                    
+                    // Réinitialiser la session utilisateur
+                    setUserSession(prev => ({ 
+                      ...prev, 
+                      threadId: undefined,
+                      id: `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+                    }));
+                    console.log('Session réinitialisée');
+                    
+                    // Afficher le toast de confirmation
+                    toast({ 
+                      title: "Contexte réinitialisé", 
+                      description: "Le fil de discussion a été réinitialisé pour cet agent.",
+                      duration: 3000
+                    });
+                    console.log('Toast affiché');
+                    
+                  } catch (error) {
+                    console.error('Erreur lors de la réinitialisation:', error);
+                    toast({
+                      title: "Erreur",
+                      description: "Impossible de réinitialiser le contexte. Veuillez réessayer.",
+                      variant: "destructive",
+                      duration: 3000
+                    });
+                  }
                 }}
               >
                 <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
