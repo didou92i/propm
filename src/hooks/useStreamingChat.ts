@@ -39,6 +39,9 @@ export function useStreamingChat() {
       }
       abortControllerRef.current = new AbortController();
 
+      // Immediate feedback
+      onMessageUpdate('L\'assistant réfléchit...', false);
+
       // Use streaming endpoint with loop detection
       const loopDetected = messages.filter(m => m.content === messages[messages.length - 1].content).length > 2;
       let storedThreadId: string | null = null;
@@ -47,6 +50,36 @@ export function useStreamingChat() {
       } catch {}
       const effectiveThreadId = loopDetected ? undefined : (userSession?.threadId ?? storedThreadId ?? undefined);
 
+      // Try SSE streaming first
+      try {
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const response = await fetch(`${supabaseUrl}/functions/v1/chat-openai-stream`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+            'Content-Type': 'application/json',
+            'Accept': 'text/event-stream',
+          },
+          body: JSON.stringify({
+            messages,
+            selectedAgent,
+            userSession: {
+              ...(typeof userSession === 'object' ? userSession : { id: String(userSession || '') }),
+              threadId: effectiveThreadId
+            }
+          }),
+          signal: abortControllerRef.current.signal
+        });
+
+        if (response.ok && response.headers.get('content-type')?.includes('text/event-stream')) {
+          await handleSSEStream(response, onMessageUpdate, onComplete, selectedAgent);
+          return;
+        }
+      } catch (sseError) {
+        console.log('SSE failed, falling back to regular streaming:', sseError);
+      }
+
+      // Fallback to regular API with ultra-fast simulated streaming
       const { data, error } = await supabase.functions.invoke('chat-openai-stream', {
         body: {
           messages,
@@ -62,16 +95,15 @@ export function useStreamingChat() {
         throw new Error(`Erreur: ${error.message}`);
       }
 
-      // Handle streaming response
+      // Handle streaming response with ultra-fast reveal
       if (data && data.content) {
-        // Simulate real-time streaming by revealing text progressively
         const content = data.content;
         let currentIndex = 0;
         
-          const revealNextChunk = () => {
-            if (currentIndex < content.length && !abortControllerRef.current?.signal.aborted) {
-              // Reveal 2-5 characters at a time for faster streaming
-              const chunkSize = Math.floor(Math.random() * 4) + 2;
+        const revealNextChunk = () => {
+          if (currentIndex < content.length && !abortControllerRef.current?.signal.aborted) {
+            // Ultra-fast streaming: 3-6 characters at a time
+            const chunkSize = Math.floor(Math.random() * 4) + 3;
             const nextChunk = content.slice(0, currentIndex + chunkSize);
             currentIndex += chunkSize;
             
@@ -84,8 +116,8 @@ export function useStreamingChat() {
             onMessageUpdate(nextChunk, currentIndex >= content.length);
             
             if (currentIndex < content.length) {
-              // Optimized delay for much faster typing rhythm
-              const delay = Math.random() * 3 + 2; // 2-5ms per character - ultra rapide
+              // Ultra-fast: 1-3ms per character
+              const delay = Math.random() * 2 + 1;
               setTimeout(revealNextChunk, delay);
             } else {
               // Finished streaming
@@ -104,8 +136,8 @@ export function useStreamingChat() {
           }
         };
         
-        // Start the streaming effect
-        setTimeout(revealNextChunk, 100);
+        // Start immediately
+        revealNextChunk();
       }
 
     } catch (error) {
@@ -118,6 +150,64 @@ export function useStreamingChat() {
       onError(error instanceof Error ? error.message : 'Erreur inconnue');
     }
   }, []);
+
+  // Handle Server-Sent Events streaming
+  const handleSSEStream = async (
+    response: Response,
+    onMessageUpdate: (content: string, isComplete: boolean) => void,
+    onComplete: (content: string, threadId?: string) => void,
+    selectedAgent: string
+  ) => {
+    const reader = response.body?.getReader();
+    const decoder = new TextDecoder();
+    
+    if (!reader) return;
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              
+              if (data.status) {
+                // Status update
+                onMessageUpdate(data.message || 'Traitement...', false);
+              } else if (data.content) {
+                // Complete response
+                setStreamingState(prev => ({
+                  ...prev,
+                  isStreaming: false,
+                  isTyping: false
+                }));
+                
+                if (data.threadId) {
+                  try {
+                    localStorage.setItem(`openai.thread.${selectedAgent}`, data.threadId);
+                  } catch {}
+                }
+                
+                onComplete(data.content, data.threadId);
+                return;
+              } else if (data.error) {
+                throw new Error(data.error);
+              }
+            } catch (parseError) {
+              // Ignore parse errors for SSE format lines
+            }
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+  };
 
   const cancelStream = useCallback(() => {
     if (abortControllerRef.current) {
