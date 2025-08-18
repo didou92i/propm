@@ -19,7 +19,7 @@ import { useStreamingChat } from "@/hooks/useStreamingChat";
 import { usePerformanceOptimization } from "@/hooks/usePerformanceOptimization";
 import { StreamingProgress } from "@/components/common";
 import { Message, MessageAttachment } from "@/types/chat";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { logger } from "@/utils/logger";
 import { usePrepaCdsChat } from "@/hooks/usePrepaCdsChat";
 import { usePrepaCdsConfig } from "@/hooks/chat/usePrepaCdsConfig";
@@ -97,17 +97,17 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
   const [typingMessageId, setTypingMessageId] = useState<string | null>(null);
   const [processingAttachment, setProcessingAttachment] = useState(false);
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
-  const [userSession, setUserSession] = useState<{ id: string; threadId?: string }>(() => ({
+  const [userSession, setUserSession] = useState<{ id: string; threadId?: string }>({
     id: `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-    threadId: (() => { try { return localStorage.getItem(`openai.thread.${selectedAgent}`) || localStorage.getItem(`threadId_${selectedAgent}`) || undefined; } catch { return undefined; } })()
-  }));
+    threadId: undefined
+  });
   const [contextShared, setContextShared] = useState(false);
+  const [resetButtonClicked, setResetButtonClicked] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const composerRef = useRef<HTMLDivElement>(null);
   const [bottomPadding, setBottomPadding] = useState<number>(200);
   const createRipple = useRipple('intense');
-  const { toast } = useToast();
   const { updateConversation, getConversation } = useConversationHistory();
   const { streamingState, sendStreamingMessage, cancelStream } = useStreamingChat();
   const { optimizeMessages } = usePerformanceOptimization();
@@ -178,8 +178,7 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
       setMessages(prev => [contextMessage]);
       setContextShared(true);
       
-      toast({
-        title: "Contexte partagé",
+      toast.success("Contexte partagé", {
         description: `Le contexte de votre conversation avec ${sharedContext.sourceAgent} a été importé.`,
       });
     }
@@ -230,8 +229,7 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
         
         
         // Store successful processing in documents table
-        toast({
-          title: "Document traité avec succès",
+        toast.success("Document traité avec succès", {
           description: `${attachment.file.name} est maintenant prêt pour l'analyse`,
         });
         
@@ -248,10 +246,8 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
         const errorMsg = `Erreur lors du traitement de ${attachment.file.name}: ${error.message}`;
         setAttachmentError(errorMsg);
         
-        toast({
-          title: "Erreur de traitement",
+        toast.error("Erreur de traitement", {
           description: errorMsg,
-          variant: "destructive"
         });
         
         // Still add the attachment but mark it as failed
@@ -278,10 +274,8 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
 
     // Block sending if currently processing attachments
     if (processingAttachment) {
-      toast({
-        title: "Traitement en cours",
+      toast.warning("Traitement en cours", {
         description: "Veuillez attendre que le traitement des documents soit terminé",
-        variant: "destructive"
       });
       return;
     }
@@ -298,10 +292,8 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
       
       if (hasFailedAttachments && processedAttachments.every(att => att.error || att.content?.startsWith('[Erreur'))) {
         setIsLoading(false);
-        toast({
-          title: "Erreur de traitement",
+        toast.error("Erreur de traitement", {
           description: "Aucun document n'a pu être traité correctement. Veuillez réessayer.",
-          variant: "destructive"
         });
         return;
       }
@@ -378,10 +370,8 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
           ));
           setTypingMessageId(null);
           setIsLoading(false);
-          toast({
-            title: "Erreur Prepa CDS",
+          toast.error("Erreur Prepa CDS", {
             description: err?.message || 'Erreur inconnue',
-            variant: "destructive"
           });
         }
         return;
@@ -408,7 +398,9 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
           let vecCtx = '';
           if (vec && vec.length > 0) {
             vecCtx = '\n\nRéférences (extraits):\n' + vec.slice(0, 3).map((r: any, i: number) => `[$${'{'}i+1${'}'}] ${'$'}{r.content?.slice(0, 280)}...`).join('\n');
-            toast({ title: 'Références juridiques incluses', description: `${Math.min(3, vec.length)} extraits ajoutés.`});
+            toast.success('Références juridiques incluses', { 
+              description: `${Math.min(3, vec.length)} extraits ajoutés.`
+            });
           }
           finalUserContent = enriched + vecCtx;
         }
@@ -459,10 +451,8 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
           setTypingMessageId(null);
           setIsLoading(false);
           
-          toast({
-            title: "Erreur de conversation",
+          toast.error("Erreur de conversation", {
             description: error,
-            variant: "destructive"
           });
         }
       );
@@ -477,10 +467,8 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
       setTypingMessageId(null);
       setIsLoading(false);
       
-      toast({
-        title: "Erreur de conversation",
+      toast.error("Erreur de conversation", {
         description: error.message || 'Erreur inconnue',
-        variant: "destructive"
       });
     }
   };
@@ -727,45 +715,82 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
                 variant="ghost"
                 size="sm"
                 type="button"
-                disabled={isLoading}
-                className="h-7 w-7 sm:h-8 sm:w-8 p-0 hover:bg-destructive/10 transition-all duration-200 hover:scale-105 touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isLoading || resetButtonClicked}
+                className={`h-7 w-7 sm:h-8 sm:w-8 p-0 transition-all duration-200 hover:scale-105 touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed ${
+                  resetButtonClicked 
+                    ? "bg-green-500/20 text-green-600 hover:bg-green-500/20" 
+                    : "hover:bg-destructive/10"
+                }`}
                 title="Réinitialiser le contexte (nouveau thread)"
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
                   
-                  console.log('Réinitialisation du contexte pour:', selectedAgent);
+                  // Debounce pour éviter les clics multiples
+                  if (resetButtonClicked) return;
+                  
+                  setResetButtonClicked(true);
+                  console.log('🔄 Début réinitialisation du contexte pour:', selectedAgent);
                   
                   try {
+                    // Vérifier la disponibilité de localStorage
+                    if (typeof Storage === "undefined") {
+                      throw new Error("LocalStorage non disponible");
+                    }
+                    
                     // Supprimer les threads du localStorage
-                    localStorage.removeItem(`openai.thread.${selectedAgent}`);
-                    localStorage.removeItem(`threadId_${selectedAgent}`);
-                    console.log('LocalStorage nettoyé');
+                    const threadsRemoved = [];
+                    const threadKey1 = `openai.thread.${selectedAgent}`;
+                    const threadKey2 = `threadId_${selectedAgent}`;
+                    
+                    if (localStorage.getItem(threadKey1)) {
+                      localStorage.removeItem(threadKey1);
+                      threadsRemoved.push(threadKey1);
+                    }
+                    if (localStorage.getItem(threadKey2)) {
+                      localStorage.removeItem(threadKey2);
+                      threadsRemoved.push(threadKey2);
+                    }
+                    
+                    console.log('🧹 LocalStorage nettoyé, clés supprimées:', threadsRemoved);
                     
                     // Réinitialiser la session utilisateur
-                    setUserSession(prev => ({ 
-                      ...prev, 
-                      threadId: undefined,
-                      id: `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-                    }));
-                    console.log('Session réinitialisée');
-                    
-                    // Afficher le toast de confirmation
-                    toast({ 
-                      title: "Contexte réinitialisé", 
-                      description: "Le fil de discussion a été réinitialisé pour cet agent.",
-                      duration: 3000
+                    const newSessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                    setUserSession({
+                      id: newSessionId,
+                      threadId: undefined
                     });
-                    console.log('Toast affiché');
+                    console.log('✅ Session réinitialisée avec nouvel ID:', newSessionId);
+                    
+                    // Réinitialiser les messages
+                    setMessages([]);
+                    console.log('🗑️ Messages supprimés');
+                    
+                    // Toast de succès avec Sonner
+                    toast.success("Contexte réinitialisé", {
+                      description: `Le fil de discussion a été réinitialisé pour ${currentAgent?.name || selectedAgent}.`,
+                      duration: 3000,
+                    });
+                    console.log('🎉 Toast de succès affiché');
+                    
+                    // Réinitialiser le bouton après un court délai
+                    setTimeout(() => {
+                      setResetButtonClicked(false);
+                    }, 2000);
                     
                   } catch (error) {
-                    console.error('Erreur lors de la réinitialisation:', error);
-                    toast({
-                      title: "Erreur",
-                      description: "Impossible de réinitialiser le contexte. Veuillez réessayer.",
-                      variant: "destructive",
-                      duration: 3000
+                    console.error('❌ Erreur lors de la réinitialisation:', error);
+                    
+                    // Toast d'erreur avec Sonner
+                    toast.error("Erreur de réinitialisation", {
+                      description: `Impossible de réinitialiser le contexte: ${error.message}`,
+                      duration: 5000,
                     });
+                    
+                    // Réinitialiser le bouton même en cas d'erreur
+                    setTimeout(() => {
+                      setResetButtonClicked(false);
+                    }, 1000);
                   }
                 }}
               >
