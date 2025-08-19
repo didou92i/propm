@@ -6,7 +6,7 @@ import { ParallaxBackground, MorphingIcon } from "@/components/common";
 import { FloatingActionButton } from "@/components/FloatingActionButton";
 import { PlatformDiagnostics } from "@/components/PlatformDiagnostics";
 import { SemanticSearchDialog } from "@/components/search";
-import { MonitoringDashboard } from "@/components/MonitoringDashboard";
+import { MonitoringDashboard } from "@/components/monitoring";
 import { useAgentTheme } from "@/hooks/useAgentTheme";
 import { useAdmin } from "@/hooks/useAdmin";
 import { LegalFooter } from "@/components/legal";
