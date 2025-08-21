@@ -1,0 +1,1 @@
+export { HTMLGenerator, createHTMLGenerator } from './htmlGenerator';
