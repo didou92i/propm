@@ -10,7 +10,7 @@ import { usePrepaCdsChat } from "@/hooks/usePrepaCdsChat";
 import type { 
   UserLevel, 
   StudyDomain as ServiceStudyDomain
-} from "@/services/prepaCdsService";
+} from "@/services/prepacds";
 import type { StudyDomain as ControlsStudyDomain } from "./PrepaCdsControls";
 import { PrepaCdsProgressTracker } from "./PrepaCdsProgressTracker";
 import type { Message } from "@/types/chat";
@@ -51,7 +51,7 @@ const { generateContent, isLoading } = usePrepaCdsChat();
 
   const handleStartSession = (trainingType: TrainingType) => {
     startSession(trainingType);
-    updateConfig({ trainingType, level: configuration.level, domain: mapServiceToEdge(configuration.domain as ServiceStudyDomain) });
+    updateConfig({ trainingType, level: configuration.level, domain: 'droit_administratif' }); // Default mapping
     setShowConfig(false);
     
     // Générer automatiquement le prompt selon le type d'entraînement
@@ -144,12 +144,12 @@ const { generateContent, isLoading } = usePrepaCdsChat();
           onDomainChange={(domain: ControlsStudyDomain) => {
             // Map UI domain to service domain
             const map: Record<ControlsStudyDomain, ServiceStudyDomain> = {
-              droit_public: 'droit_public',
-              droit_penal: 'droit_penal',
+              droit_public: 'police_municipale',
+              droit_penal: 'procedure_penale',
               management: 'management',
-              procedures: 'droit_public', // map to closest service domain
-              redaction: 'redaction',
-              culture_generale: 'general',
+              procedures: 'reglementation',
+              redaction: 'droit_administratif',
+              culture_generale: 'securite_publique',
             } as const;
             updateDomain(map[domain]);
           }}

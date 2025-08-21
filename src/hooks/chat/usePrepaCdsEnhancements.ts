@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { UserLevel, TrainingType } from '@/components/chat/PrepaCdsControls';
-import { PrepaCdsService, StudyDomain } from '@/services/prepaCdsService';
+import { prepaCdsService, type StudyDomain } from '@/services/prepacds';
 
 interface PrepaCdsConfiguration {
   level: UserLevel;
@@ -23,7 +23,7 @@ interface UserProgress {
 export function usePrepaCdsEnhancements() {
   const [configuration, setConfiguration] = useState<PrepaCdsConfiguration>({
     level: 'intermediaire',
-    domain: 'droit_public',
+    domain: 'police_municipale', // Use valid StudyDomain value
     trainingType: null,
     sessionState: 'idle',
     currentStep: 0,
@@ -137,8 +137,9 @@ export function usePrepaCdsEnhancements() {
   const generateQuestion = async (level: UserLevel, domain: StudyDomain, type: TrainingType = 'qcm') => {
     setIsGeneratingContent(true);
     try {
-      const prepaCdsService = PrepaCdsService.getInstance();
-      const result = await prepaCdsService.generateQuestion(level, domain, type, sessionId);
+      // Map controls TrainingType to service TrainingType
+      const mappedType = type === 'simulation_oral' ? 'simulation_orale' : type as any;
+      const result = await prepaCdsService.generateQuestion(level, domain, mappedType, sessionId);
       
       // Anti-boucle: marquer le contenu comme proposé
       const contentKey = `question_${result.question.substring(0, 50)}`;
@@ -168,7 +169,6 @@ export function usePrepaCdsEnhancements() {
   const correctAnswer = async (userAnswer: string, correctAnswer: string) => {
     setIsGeneratingContent(true);
     try {
-      const prepaCdsService = PrepaCdsService.getInstance();
       const result = await prepaCdsService.correctAnswer(userAnswer, correctAnswer, configuration.level, configuration.domain);
       
       // Mettre à jour les progrès
@@ -190,7 +190,6 @@ export function usePrepaCdsEnhancements() {
   const generateCaseStudy = async (level: UserLevel, domain: StudyDomain) => {
     setIsGeneratingContent(true);
     try {
-      const prepaCdsService = PrepaCdsService.getInstance();
       const result = await prepaCdsService.generateCaseStudy(level, domain, sessionId);
       
       // Anti-boucle: marquer le contenu comme proposé
@@ -221,7 +220,6 @@ export function usePrepaCdsEnhancements() {
   const generateRevisionPlan = useCallback(async (duration: number = 30): Promise<string> => {
     setIsGeneratingContent(true);
     try {
-      const prepaCdsService = PrepaCdsService.getInstance();
       return await prepaCdsService.generateRevisionPlan(configuration.level, configuration.domain, duration, userProgress.weakAreas);
     } finally {
       setIsGeneratingContent(false);
@@ -255,8 +253,15 @@ export function usePrepaCdsEnhancements() {
   }, [userProgress, configuration.level]);
 
   const suggestResources = useCallback((topic: string): string[] => {
-    const prepaCdsService = PrepaCdsService.getInstance();
-    return prepaCdsService.suggestResources(configuration.domain, configuration.level, topic);
+    const resources = prepaCdsService.suggestResources(configuration.domain, configuration.level, topic);
+    // Convert the resource object to array of strings
+    return [
+      ...resources.manuals,
+      ...resources.exercises,
+      ...resources.jurisprudence,
+      ...resources.videos,
+      ...resources.websites
+    ];
   }, [configuration]);
 
   // Fonction de validation anti-boucle
@@ -330,11 +335,13 @@ function getLevelInstructions(level: UserLevel): string {
 
 function getDomainInstructions(domain: StudyDomain): string {
   const instructions: Record<StudyDomain, string> = {
-    droit_public: 'CGCT, pouvoirs de police, contentieux administratif',
-    droit_penal: 'Code pénal, procédures, infractions spécifiques',
-    management: 'Gestion d\'équipe, organisation, planification',
-    redaction: 'Notes de service, rapports, correspondance officielle',
-    general: 'Culture générale sécuritaire, actualités, évolutions'
+    police_municipale: 'Police Municipale - Pouvoirs et missions du maire',
+    securite_publique: 'Sécurité Publique - Ordre public et prévention',
+    reglementation: 'Réglementation - Codes et textes applicables',
+    procedure_penale: 'Procédure Pénale - Investigation et poursuites',
+    droit_administratif: 'Droit Administratif - Fonctionnement de l\'administration',
+    management: 'Management - Leadership et gestion d\'équipe',
+    ethique_deontologie: 'Éthique et Déontologie - Principes professionnels'
   };
   return instructions[domain];
 }
