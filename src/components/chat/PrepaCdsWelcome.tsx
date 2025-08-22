@@ -4,7 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { PrepaCdsControls, TrainingType } from "./PrepaCdsControls";
+import { PrepaCdsControls } from "./PrepaCdsControls";
+import type { TrainingType } from "@/types/prepacds";
 import { usePrepaCdsEnhancements } from "@/hooks/chat/usePrepaCdsEnhancements";
 import { usePrepaCdsChat } from "@/hooks/usePrepaCdsChat";
 import type { 

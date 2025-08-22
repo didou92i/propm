@@ -79,3 +79,14 @@ export function mapEdgeToUi(domain: StudyDomain): UiStudyDomain {
   };
   return map[domain] ?? 'droit_public';
 }
+
+export interface TrainingSession {
+  id: string;
+  trainingType: TrainingType;
+  level: UserLevel;
+  domain: StudyDomain;
+  content?: any;
+  isActive: boolean;
+  progress: number;
+  score?: number;
+}

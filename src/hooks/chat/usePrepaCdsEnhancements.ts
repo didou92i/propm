@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { UserLevel, TrainingType } from '@/components/chat/PrepaCdsControls';
+import type { UserLevel, TrainingType } from '@/types/prepacds';
 import { prepaCdsService, type StudyDomain } from '@/services/prepacds';
 
 interface PrepaCdsConfiguration {

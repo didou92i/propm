@@ -7,16 +7,9 @@ import { BookOpen, Target, TrendingUp, FileText, CheckCircle, HelpCircle, Play, 
 import { usePrepaCdsConfig } from "@/hooks/chat/usePrepaCdsConfig";
 import { mapUiToEdge, mapEdgeToUi } from "@/types/prepacds";
 import { TrainingExperiencePlayer } from '@/components/training';
+import type { UserLevel, TrainingType, UiStudyDomain, TrainingSession } from "@/types/prepacds";
 
-export type UserLevel = 'debutant' | 'intermediaire' | 'avance';
-export type TrainingType = 
-  | 'qcm'
-  | 'vrai_faux'
-  | 'cas_pratique'
-  | 'question_ouverte'
-  | 'simulation_oral'
-  | 'plan_revision';
-export type StudyDomain = 'droit_public' | 'droit_penal' | 'management' | 'procedures' | 'redaction' | 'culture_generale';
+export type StudyDomain = UiStudyDomain;
 
 interface PrepaCdsControlsProps {
   onLevelChange: (level: UserLevel) => void;
@@ -25,14 +18,7 @@ interface PrepaCdsControlsProps {
   onStartSession: (trainingType: TrainingType) => void;
 }
 
-interface TrainingSession {
-  id: string;
-  trainingType: TrainingType;
-  level: UserLevel;
-  domain: StudyDomain;
-  progress: number;
-  score?: number;
-}
+
 
 const trainingTypeLabels: Record<TrainingType, { label: string; icon: React.ReactNode; description: string }> = {
   qcm: { 
@@ -129,7 +115,7 @@ const handleTrainingTypeSelect = (type: TrainingType) => {
       <TrainingExperiencePlayer
         trainingType={selectedTrainingType}
         level={selectedLevel}
-        domain={selectedDomain}
+        domain={mapUiToEdge(selectedDomain)}
         onComplete={handleTrainingComplete}
         onExit={handleTrainingExit}
       />

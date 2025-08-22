@@ -28,7 +28,7 @@ export const usePrepaCdsChat = () => {
     try {
       console.log('Generating PrepaCDS content:', { prompt, trainingType, level, domain });
       
-      const { data, error } = await supabase.functions.invoke('prepa-cds-chat', {
+      const { data, error } = await supabase.functions.invoke('generate-animated-training', {
         body: {
           prompt,
           trainingType,

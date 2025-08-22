@@ -5,6 +5,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, XCircle, Clock, Trophy, Target } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAnimationEngine } from '@/hooks/useAnimationEngine';
 
 interface QuizQuestion {
   id: string;
@@ -35,6 +36,9 @@ export function AnimatedQuizPlayer({
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(30);
   const [isActive, setIsActive] = useState(true);
+  
+  // Animation engine pour les effets visuels
+  const { flipCard, bounceScale, glowEffect, applyAnimation } = useAnimationEngine();
 
   const currentQuestion = questions[currentQuestionIndex];
   const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
@@ -70,15 +74,31 @@ export function AnimatedQuizPlayer({
     const newAnswers = [...userAnswers, answerIndex];
     setUserAnswers(newAnswers);
     
-    if (answerIndex === currentQuestion.correctAnswer) {
+    const isCorrect = answerIndex === currentQuestion.correctAnswer;
+    if (isCorrect) {
       setScore(prev => prev + 1);
+      // Animation de succès
+      const buttons = document.querySelectorAll('.answer-button');
+      if (buttons[answerIndex]) {
+        bounceScale(buttons[answerIndex] as HTMLElement);
+        glowEffect(buttons[answerIndex] as HTMLElement, 'hsl(var(--prepacds-primary))');
+      }
+    } else {
+      // Animation d'erreur
+      const buttons = document.querySelectorAll('.answer-button');
+      if (buttons[answerIndex]) {
+        applyAnimation(buttons[answerIndex] as HTMLElement, 'shake', {
+          duration: 500,
+          easing: 'ease-in-out'
+        });
+      }
     }
 
     setTimeout(() => {
       if (currentQuestionIndex < questions.length - 1) {
         nextQuestion();
       } else {
-        onComplete(score + (answerIndex === currentQuestion.correctAnswer ? 1 : 0), newAnswers);
+        onComplete(score + (isCorrect ? 1 : 0), newAnswers);
       }
     }, 2000);
   };
@@ -165,7 +185,7 @@ export function AnimatedQuizPlayer({
                         <Button
                           variant={isSelected ? "default" : "outline"}
                           className={`
-                            w-full p-4 h-auto text-left justify-start transition-all duration-300
+                            answer-button w-full p-4 h-auto text-left justify-start transition-all duration-300
                             ${showResult && isCorrect ? 'bg-green-500 hover:bg-green-600 text-white border-green-500' : ''}
                             ${isWrong ? 'bg-red-500 hover:bg-red-600 text-white border-red-500' : ''}
                           `}

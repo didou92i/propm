@@ -5,6 +5,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Play, Pause, Square, RotateCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { injectAnimationStyles } from '@/utils/animationTemplates';
 import { AnimatedQuizPlayer } from './AnimatedQuizPlayer';
 import { TrueFalseAnimated } from './TrueFalseAnimated';
 import { CasePracticeSimulator } from './CasePracticeSimulator';
@@ -202,6 +203,9 @@ export function TrainingExperiencePlayer({
 
   // Auto-start si pas encore démarré
   useEffect(() => {
+    // Injecter les styles d'animation au montage du composant
+    injectAnimationStyles();
+    
     if (!session.isActive && !content && !isLoading) {
       generateInteractiveContent();
     }
