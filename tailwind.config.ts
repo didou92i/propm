@@ -61,6 +61,11 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				prepacds: {
+					primary: 'hsl(var(--prepacds-primary))',
+					secondary: 'hsl(var(--prepacds-secondary))',
+					accent: 'hsl(var(--prepacds-accent))'
 				}
 			},
 			borderRadius: {

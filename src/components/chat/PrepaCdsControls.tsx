@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { BookOpen, Target, TrendingUp, FileText, CheckCircle, HelpCircle, Play, Zap } from 'lucide-react';
 import { usePrepaCdsConfig } from "@/hooks/chat/usePrepaCdsConfig";
 import { mapUiToEdge, mapEdgeToUi } from "@/types/prepacds";
+import { TrainingExperiencePlayer } from '@/components/training';
 
 export type UserLevel = 'debutant' | 'intermediaire' | 'avance';
 export type TrainingType = 
@@ -22,6 +23,15 @@ interface PrepaCdsControlsProps {
   onTrainingTypeSelect: (type: TrainingType) => void;
   onDomainChange: (domain: StudyDomain) => void;
   onStartSession: (trainingType: TrainingType) => void;
+}
+
+interface TrainingSession {
+  id: string;
+  trainingType: TrainingType;
+  level: UserLevel;
+  domain: StudyDomain;
+  progress: number;
+  score?: number;
 }
 
 const trainingTypeLabels: Record<TrainingType, { label: string; icon: React.ReactNode; description: string }> = {
@@ -77,6 +87,7 @@ export function PrepaCdsControls({ onLevelChange, onTrainingTypeSelect, onDomain
   const [selectedLevel, setSelectedLevel] = useState<UserLevel>(config.level);
   const [selectedDomain, setSelectedDomain] = useState<StudyDomain>(mapEdgeToUi(config.domain));
   const [selectedTrainingType, setSelectedTrainingType] = useState<TrainingType | null>(config.trainingType);
+  const [showTrainingPlayer, setShowTrainingPlayer] = useState(false);
 
 const handleLevelChange = (level: UserLevel) => {
   setSelectedLevel(level);
@@ -98,10 +109,32 @@ const handleTrainingTypeSelect = (type: TrainingType) => {
 
   const handleStartSession = () => {
     if (selectedTrainingType) {
-      // Passer le type d'entraînement sélectionné au parent
+      setShowTrainingPlayer(true);
       onStartSession(selectedTrainingType);
     }
   };
+
+  const handleTrainingComplete = (session: TrainingSession) => {
+    console.log('Session terminée:', session);
+    setShowTrainingPlayer(false);
+  };
+
+  const handleTrainingExit = () => {
+    setShowTrainingPlayer(false);
+  };
+
+  // Si le player d'entraînement est actif, l'afficher
+  if (showTrainingPlayer && selectedTrainingType) {
+    return (
+      <TrainingExperiencePlayer
+        trainingType={selectedTrainingType}
+        level={selectedLevel}
+        domain={selectedDomain}
+        onComplete={handleTrainingComplete}
+        onExit={handleTrainingExit}
+      />
+    );
+  }
 
   return (
     <Card className="w-full bg-gradient-to-br from-background to-muted/20 border-border/50">
@@ -198,11 +231,11 @@ const handleTrainingTypeSelect = (type: TrainingType) => {
         <Button 
           onClick={handleStartSession}
           disabled={!selectedTrainingType}
-          className="w-full gap-2"
+          className="w-full gap-2 bg-gradient-to-r from-prepacds-primary to-prepacds-accent hover:from-prepacds-accent hover:to-prepacds-primary transition-all duration-300"
           size="lg"
         >
-          <Play className="h-4 w-4" />
-          {selectedTrainingType ? 'Démarrer la session' : 'Sélectionnez un type d\'entraînement'}
+          <Zap className="h-4 w-4" />
+          {selectedTrainingType ? '🚀 Lancer l\'expérience interactive' : 'Sélectionnez un type d\'entraînement'}
         </Button>
       </CardContent>
     </Card>

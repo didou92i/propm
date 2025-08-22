@@ -129,6 +129,9 @@ All colors MUST be HSL.
     --agent-glow: 35 100% 60%;
     --agent-accent: 25 95% 50%;
     --gradient-direction: 135deg;
+    --prepacds-primary: 30 100% 55%;
+    --prepacds-secondary: 25 95% 45%;
+    --prepacds-accent: 35 100% 60%;
   }
 }
 
