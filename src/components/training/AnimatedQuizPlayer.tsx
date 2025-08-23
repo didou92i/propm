@@ -75,24 +75,22 @@ export function AnimatedQuizPlayer({
     setUserAnswers(newAnswers);
     
     const isCorrect = answerIndex === currentQuestion.correctAnswer;
-    if (isCorrect) {
-      setScore(prev => prev + 1);
-      // Animation de succès
+    
+    // Animations avec les classes CSS injectées
+    setTimeout(() => {
       const buttons = document.querySelectorAll('.answer-button');
-      if (buttons[answerIndex]) {
-        bounceScale(buttons[answerIndex] as HTMLElement);
-        glowEffect(buttons[answerIndex] as HTMLElement, 'hsl(var(--prepacds-primary))');
+      const selectedButton = buttons[answerIndex] as HTMLElement;
+      
+      if (selectedButton) {
+        if (isCorrect) {
+          setScore(prev => prev + 1);
+          selectedButton.classList.add('correct-reveal');
+          bounceScale(selectedButton);
+        } else {
+          selectedButton.classList.add('incorrect-shake');
+        }
       }
-    } else {
-      // Animation d'erreur
-      const buttons = document.querySelectorAll('.answer-button');
-      if (buttons[answerIndex]) {
-        applyAnimation(buttons[answerIndex] as HTMLElement, 'shake', {
-          duration: 500,
-          easing: 'ease-in-out'
-        });
-      }
-    }
+    }, 100);
 
     setTimeout(() => {
       if (currentQuestionIndex < questions.length - 1) {
@@ -185,7 +183,7 @@ export function AnimatedQuizPlayer({
                         <Button
                           variant={isSelected ? "default" : "outline"}
                           className={`
-                            answer-button w-full p-4 h-auto text-left justify-start transition-all duration-300
+                            answer-button interactive-hover w-full p-4 h-auto text-left justify-start transition-all duration-300
                             ${showResult && isCorrect ? 'bg-green-500 hover:bg-green-600 text-white border-green-500' : ''}
                             ${isWrong ? 'bg-red-500 hover:bg-red-600 text-white border-red-500' : ''}
                           `}

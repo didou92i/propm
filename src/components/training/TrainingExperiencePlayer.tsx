@@ -59,40 +59,21 @@ export function TrainingExperiencePlayer({
     setError(null);
     
     try {
-      let prompt = '';
+      console.log('Génération contenu pour:', { trainingType, level, domain });
       
-      switch (trainingType) {
-        case 'qcm':
-          prompt = `Génère un quiz interactif de 5 questions à choix multiples pour le niveau ${level} en ${domain}. 
-          Format JSON avec: {questions: [{id, question, options: [4 options], correctAnswer: index, explanation, difficulty}]}`;
-          break;
-          
-        case 'vrai_faux':
-          prompt = `Génère 3 affirmations de type vrai/faux pour le niveau ${level} en ${domain}.
-          Format JSON avec: {questions: [{id, statement, isTrue, explanation, domain}]}`;
-          break;
-          
-        case 'cas_pratique':
-          prompt = `Génère un cas pratique détaillé pour le niveau ${level} en ${domain}.
-          Format JSON avec: {title, context, steps: [{id, title, scenario, question, expectedPoints, timeLimit}], totalTime}`;
-          break;
-          
-        default:
-          throw new Error(`Type d'entraînement non supporté: ${trainingType}`);
-      }
-
-      const response = await generateContent(prompt, trainingType, level, domain);
+      const response = await generateContent(trainingType, level, domain);
       
-      // Parser la réponse JSON
-      try {
-        const parsedContent = JSON.parse(response.replace(/```json\n?|\n?```/g, ''));
-        setContent(parsedContent);
-        setSession(prev => ({ ...prev, content: parsedContent, isActive: true }));
-      } catch (parseError) {
-        console.error('Erreur de parsing JSON:', parseError);
-        // Fallback: contenu par défaut
-        setContent(generateFallbackContent());
-        setSession(prev => ({ ...prev, content: generateFallbackContent(), isActive: true }));
+      console.log('Réponse reçue:', response);
+      
+      // La réponse est déjà un objet structuré
+      if (response && typeof response === 'object') {
+        setContent(response);
+        setSession(prev => ({ ...prev, content: response, isActive: true }));
+      } else {
+        console.warn('Réponse invalide, utilisation du fallback');
+        const fallbackContent = generateFallbackContent();
+        setContent(fallbackContent);
+        setSession(prev => ({ ...prev, content: fallbackContent, isActive: true }));
       }
       
     } catch (err) {

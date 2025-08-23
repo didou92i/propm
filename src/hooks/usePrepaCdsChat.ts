@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import type { TrainingType, UserLevel, StudyDomain } from "@/types/prepacds";
 
 interface PrepaCdsResponse {
-  content: string;
+  content: any; // Objet structuré selon le type de training
   trainingType: TrainingType;
   level: UserLevel;
   domain: StudyDomain;
@@ -18,19 +18,17 @@ export const usePrepaCdsChat = () => {
   const [lastResponse, setLastResponse] = useState<string>('');
 
   const generateContent = async (
-    prompt: string,
     trainingType: TrainingType,
     level: UserLevel,
     domain: StudyDomain
-  ): Promise<string> => {
+  ): Promise<any> => {
     setIsLoading(true);
     
     try {
-      console.log('Generating PrepaCDS content:', { prompt, trainingType, level, domain });
+      console.log('Generating PrepaCDS content:', { trainingType, level, domain });
       
       const { data, error } = await supabase.functions.invoke('generate-animated-training', {
         body: {
-          prompt,
           trainingType,
           level,
           domain
@@ -49,7 +47,7 @@ export const usePrepaCdsChat = () => {
         throw new Error(response.error || 'Erreur inconnue');
       }
 
-      setLastResponse(response.content);
+      setLastResponse(JSON.stringify(response.content));
       return response.content;
 
     } catch (error) {

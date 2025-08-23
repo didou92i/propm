@@ -169,7 +169,6 @@ export function useChatLogic(selectedAgent: string) {
       if (selectedAgent === "prepacds") {
         try {
           const result = await generatePrepaContent(
-            messageContent,
             prepaConfig.trainingType ?? 'question_ouverte',
             prepaConfig.level ?? 'intermediaire',
             prepaConfig.domain ?? 'droit_administratif'

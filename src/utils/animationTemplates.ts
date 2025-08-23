@@ -229,10 +229,66 @@ export const ANIMATION_CLASSES = `
 export function injectAnimationStyles() {
   const styleId = 'prepacds-animations';
   
-  if (!document.getElementById(styleId)) {
-    const style = document.createElement('style');
-    style.id = styleId;
-    style.textContent = ANIMATION_CLASSES;
-    document.head.appendChild(style);
+  // Toujours injecter les styles pour forcer le rafraîchissement
+  let existingStyle = document.getElementById(styleId);
+  if (existingStyle) {
+    existingStyle.remove();
   }
+  
+  const style = document.createElement('style');
+  style.id = styleId;
+  style.textContent = `
+    @keyframes questionEntrance {
+      0% { opacity: 0; transform: translateY(30px) scale(0.95); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    
+    @keyframes answerSelect {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+    
+    @keyframes correctReveal {
+      0% { background-color: hsl(var(--background)); color: hsl(var(--foreground)); }
+      50% { background-color: hsl(142, 76%, 36%); color: white; transform: scale(1.02); }
+      100% { background-color: hsl(142, 76%, 36%); color: white; transform: scale(1); }
+    }
+    
+    @keyframes incorrectShake {
+      0% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      50% { transform: translateX(5px); }
+      75% { transform: translateX(-3px); }
+      100% { transform: translateX(0); }
+    }
+    
+    @keyframes flipHorizontal {
+      0% { transform: rotateY(0deg); }
+      100% { transform: rotateY(180deg); }
+    }
+    
+    @keyframes stepProgression {
+      0% { opacity: 0; transform: translateX(100px); filter: blur(5px); }
+      100% { opacity: 1; transform: translateX(0); filter: blur(0); }
+    }
+    
+    .quiz-entrance { animation: questionEntrance 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+    .answer-select { animation: answerSelect 0.2s ease-out; }
+    .correct-reveal { animation: correctReveal 0.6s ease-out forwards; }
+    .incorrect-shake { animation: incorrectShake 0.4s ease-in-out; }
+    .flip-card { transform-style: preserve-3d; perspective: 1000px; }
+    .step-progression { animation: stepProgression 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+    
+    .interactive-hover {
+      transition: all 0.2s ease-out;
+    }
+    .interactive-hover:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+  `;
+  
+  document.head.appendChild(style);
+  console.log('Styles d\'animation PrepaCDS injectés:', styleId);
 }
