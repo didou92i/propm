@@ -174,9 +174,14 @@ export function useChatLogic(selectedAgent: string) {
             prepaConfig.domain ?? 'droit_administratif'
           );
 
+          // Convert PrepaCDS object result to markdown string
+          const contentString = typeof result === 'object' 
+            ? `## Contenu d'entraînement généré\n\n\`\`\`json\n${JSON.stringify(result, null, 2)}\n\`\`\``
+            : result;
+
           onMessagesUpdate(prev => prev.map(msg => 
             msg.id === assistantMessageId 
-              ? { ...msg, content: result }
+              ? { ...msg, content: contentString }
               : msg
           ));
           setTypingMessageId(null);
