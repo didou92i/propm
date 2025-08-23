@@ -82,7 +82,8 @@ const Index = () => {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
-  return <ParallaxBackground className="min-h-screen">
+  return (
+    <ParallaxBackground className="min-h-screen">
       <SidebarProvider>
         <div className="min-h-screen flex w-full theme-transition">
           <AppSidebar selectedAgent={selectedAgent} onAgentSelect={handleAgentSelect} onContextShare={handleContextShare} />
@@ -169,6 +170,7 @@ const Index = () => {
           </AlertDialog>
         </div>
       </SidebarProvider>
-    </ParallaxBackground>;
+    </ParallaxBackground>
+  );
 };
 export default Index;
