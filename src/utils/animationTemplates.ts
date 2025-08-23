@@ -273,6 +273,13 @@ export function injectAnimationStyles() {
       100% { opacity: 1; transform: translateX(0); filter: blur(0); }
     }
     
+    /* Utility classes */
+    .perspective-1000 { perspective: 1000px; }
+    .preserve-3d { transform-style: preserve-3d; }
+    .backface-hidden { backface-visibility: hidden; }
+    .rotate-y-180 { transform: rotateY(180deg); }
+    
+    /* Animation classes */
     .quiz-entrance { animation: questionEntrance 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
     .answer-select { animation: answerSelect 0.2s ease-out; }
     .correct-reveal { animation: correctReveal 0.6s ease-out forwards; }
@@ -286,6 +293,11 @@ export function injectAnimationStyles() {
     .interactive-hover:hover {
       transform: translateY(-2px);
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    .focus-ring:focus {
+      outline: 2px solid hsl(39, 96%, 56%);
+      outline-offset: 2px;
     }
   `;
   

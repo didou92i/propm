@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, XCircle, Lightbulb, RotateCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { injectAnimationStyles } from '@/utils/animationTemplates';
+import { useAnimationEngine } from '@/hooks/useAnimationEngine';
 
 interface TrueFalseQuestion {
   id: string;
@@ -33,6 +35,14 @@ export function TrueFalseAnimated({
   const [userAnswers, setUserAnswers] = useState<boolean[]>([]);
   const [score, setScore] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
+
+  // Animation engine pour les effets visuels
+  const { flipCard, bounceScale, glowEffect } = useAnimationEngine();
+
+  // Injection des styles d'animation au montage
+  useEffect(() => {
+    injectAnimationStyles();
+  }, []);
 
   const currentQuestion = questions[currentQuestionIndex];
   const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
@@ -116,7 +126,7 @@ export function TrueFalseAnimated({
                     <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                       <Button
                         size="lg"
-                        className="bg-green-500 hover:bg-green-600 text-white px-8 py-4"
+                        className="interactive-hover bg-green-500 hover:bg-green-600 text-white px-8 py-4 focus-ring"
                         onClick={() => handleAnswer(true)}
                         disabled={showResult}
                       >
@@ -128,7 +138,7 @@ export function TrueFalseAnimated({
                     <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                       <Button
                         size="lg"
-                        className="bg-red-500 hover:bg-red-600 text-white px-8 py-4"
+                        className="interactive-hover bg-red-500 hover:bg-red-600 text-white px-8 py-4 focus-ring"
                         onClick={() => handleAnswer(false)}
                         disabled={showResult}
                       >
