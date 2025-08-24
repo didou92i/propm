@@ -117,6 +117,58 @@ Format de réponse STRICTEMENT JSON :
   }
 }`,
     questionCount: 4
+  },
+
+  question_ouverte: {
+    systemPrompt: `Tu es un expert en préparation aux concours de Chef de Service de Police Municipale.
+Génère des questions ouvertes nécessitant développement et argumentation.
+Format de réponse STRICTEMENT JSON :
+{
+  "questions": [
+    {
+      "id": "string",
+      "question": "string",
+      "context": "string optionnel",
+      "expectedLength": "court|moyen|long",
+      "keyPoints": ["point1", "point2", "point3"],
+      "evaluationCriteria": ["critère1", "critère2"],
+      "animationType": "typewriter|reveal|progressive"
+    }
+  ],
+  "metadata": {
+    "estimatedTime": number,
+    "difficulty": "facile|moyen|difficile",
+    "instructions": "string"
+  }
+}`,
+    questionCount: 3
+  },
+
+  plan_revision: {
+    systemPrompt: `Tu es un expert en préparation aux concours de Chef de Service de Police Municipale.
+Génère un plan de révision personnalisé et structuré.
+Format de réponse STRICTEMENT JSON :
+{
+  "title": "string",
+  "description": "string",
+  "phases": [
+    {
+      "id": "string",
+      "title": "string",
+      "duration": "string",
+      "objectives": ["objectif1", "objectif2"],
+      "activities": ["activité1", "activité2"],
+      "resources": ["ressource1", "ressource2"],
+      "animationType": "timeline|progress|interactive"
+    }
+  ],
+  "metadata": {
+    "totalDuration": "string",
+    "difficulty": "facile|moyen|difficile",
+    "checkpoints": ["checkpoint1", "checkpoint2"]
+  }
+}`,
+    phaseCount: 4
   }
 };
 
@@ -157,8 +209,14 @@ serve(async (req) => {
     // Récupérer le template approprié
     const template = TRAINING_TEMPLATES[trainingType as keyof typeof TRAINING_TEMPLATES];
     if (!template) {
-      throw new Error(`Type d'entraînement non supporté: ${trainingType}`);
+      console.error(`Type d'entraînement non supporté: ${trainingType}. Types disponibles:`, Object.keys(TRAINING_TEMPLATES));
+      throw new Error(`Type d'entraînement non supporté: ${trainingType}. Types disponibles: ${Object.keys(TRAINING_TEMPLATES).join(', ')}`);
     }
+    
+    console.log(`Template trouvé pour ${trainingType}:`, { 
+      systemPromptLength: template.systemPrompt.length,
+      questionCount: template.questionCount || template.stepCount || template.phaseCount || 'N/A'
+    });
 
     // Construire le prompt contextuel
     const contextualPrompt = `${template.systemPrompt}
@@ -171,8 +229,18 @@ Génère du contenu adapté au niveau ${level} en ${domain}.
 ${trainingType === 'qcm' ? `Crée exactement ${template.questionCount} questions variées.` : ''}
 ${trainingType === 'vrai_faux' ? `Crée exactement ${template.questionCount} affirmations équilibrées.` : ''}
 ${trainingType === 'cas_pratique' ? `Crée exactement ${template.stepCount} étapes progressives.` : ''}
+${trainingType === 'question_ouverte' ? `Crée exactement ${template.questionCount} questions ouvertes nécessitant développement.` : ''}
+${trainingType === 'simulation_oral' ? `Crée exactement ${template.questionCount} questions d'entretien oral.` : ''}
+${trainingType === 'plan_revision' ? `Crée exactement ${template.phaseCount} phases de révision.` : ''}
 
 IMPORTANT: Réponds UNIQUEMENT avec du JSON valide, sans texte additionnel.`;
+
+    console.log('Prompt contextuel généré:', {
+      trainingType,
+      promptLength: contextualPrompt.length,
+      level,
+      domain
+    });
 
     // Appel à l'API OpenAI
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -200,23 +268,54 @@ IMPORTANT: Réponds UNIQUEMENT avec du JSON valide, sans texte additionnel.`;
 
     if (!response.ok) {
       const errorData = await response.text();
-      console.error('OpenAI API error:', response.status, errorData);
-      throw new Error(`OpenAI API error: ${response.status}`);
+      console.error('OpenAI API error:', {
+        status: response.status,
+        statusText: response.statusText,
+        errorData,
+        trainingType,
+        level,
+        domain
+      });
+      throw new Error(`OpenAI API error: ${response.status} - ${response.statusText}`);
     }
 
     const data = await response.json();
+    console.log('OpenAI response received:', {
+      choices: data.choices?.length || 0,
+      usage: data.usage,
+      trainingType
+    });
+
     const content = data.choices[0]?.message?.content;
 
     if (!content) {
+      console.error('Aucun contenu dans la réponse OpenAI:', data);
       throw new Error('Aucun contenu généré par OpenAI');
     }
+
+    console.log('Contenu OpenAI reçu:', {
+      contentLength: content.length,
+      contentPreview: content.substring(0, 200),
+      trainingType
+    });
 
     let parsedContent;
     try {
       parsedContent = JSON.parse(content);
+      console.log('JSON parse réussi:', {
+        trainingType,
+        keysInParsedContent: Object.keys(parsedContent),
+        questionsCount: parsedContent.questions?.length || parsedContent.steps?.length || parsedContent.phases?.length || 'N/A'
+      });
     } catch (parseError) {
-      console.error('JSON parsing error:', parseError, 'Content:', content);
-      throw new Error('Format de réponse invalide de OpenAI');
+      console.error('JSON parsing error:', {
+        error: parseError,
+        content: content.substring(0, 500),
+        trainingType,
+        level,
+        domain
+      });
+      throw new Error(`Format de réponse invalide de OpenAI: ${parseError.message}`);
     }
 
     // Ajouter des métadonnées d'animation
@@ -233,20 +332,42 @@ IMPORTANT: Réponds UNIQUEMENT avec du JSON valide, sans texte additionnel.`;
       }
     };
 
-    console.log('Animated training content generated successfully');
+    console.log('Animated training content generated successfully:', {
+      trainingType,
+      level,
+      domain,
+      sessionId: enhancedContent.sessionInfo.id,
+      contentKeys: Object.keys(enhancedContent),
+      success: true
+    });
 
     return new Response(JSON.stringify({ 
       content: enhancedContent,
+      trainingType,
+      level,
+      domain,
       success: true
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
-    console.error('Generate animated training error:', error);
+    console.error('Generate animated training error:', {
+      errorMessage: error.message,
+      errorStack: error.stack,
+      trainingType,
+      level,
+      domain,
+      timestamp: new Date().toISOString()
+    });
+    
     return new Response(JSON.stringify({ 
       error: error.message,
-      success: false 
+      trainingType,
+      level,
+      domain,
+      success: false,
+      timestamp: new Date().toISOString()
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -168,11 +168,20 @@ export function useChatLogic(selectedAgent: string) {
       // Handle PrepaCDS agent
       if (selectedAgent === "prepacds") {
         try {
-          const result = await generatePrepaContent(
-            prepaConfig.trainingType ?? 'question_ouverte',
-            prepaConfig.level ?? 'intermediaire',
-            prepaConfig.domain ?? 'droit_administratif'
-          );
+          // Validation des paramètres
+          const trainingType = prepaConfig.trainingType ?? 'qcm'; // Défaut vers QCM au lieu de question_ouverte
+          const level = prepaConfig.level ?? 'intermediaire';
+          const domain = prepaConfig.domain ?? 'droit_administratif';
+          
+          console.log('Génération PrepaCDS:', { trainingType, level, domain });
+          
+          // Validation côté client
+          const supportedTypes = ['qcm', 'vrai_faux', 'cas_pratique', 'simulation_oral', 'question_ouverte', 'plan_revision'];
+          if (!supportedTypes.includes(trainingType)) {
+            throw new Error(`Type d'entraînement non supporté: ${trainingType}. Types supportés: ${supportedTypes.join(', ')}`);
+          }
+          
+          const result = await generatePrepaContent(trainingType, level, domain);
 
           // Convert PrepaCDS object result to markdown string
           const contentString = typeof result === 'object' 
@@ -187,15 +196,32 @@ export function useChatLogic(selectedAgent: string) {
           setTypingMessageId(null);
           setIsLoading(false);
         } catch (err: any) {
+          console.error('Erreur PrepaCDS:', {
+            error: err,
+            message: err?.message,
+            stack: err?.stack,
+            trainingType: prepaConfig.trainingType,
+            level: prepaConfig.level,
+            domain: prepaConfig.domain
+          });
+          
+          // Message d'erreur contextuel
+          let errorMessage = "Une erreur s'est produite lors de la génération du contenu.";
+          if (err?.message?.includes('non supporté')) {
+            errorMessage = `Type d'entraînement non supporté. Veuillez choisir parmi: QCM, Vrai/Faux, Cas pratique, Simulation oral.`;
+          } else if (err?.message?.includes('API')) {
+            errorMessage = "Erreur de communication avec le service. Veuillez réessayer dans quelques instants.";
+          }
+          
           onMessagesUpdate(prev => prev.map(msg => 
             msg.id === assistantMessageId 
-              ? { ...msg, content: `Désolé, une erreur s'est produite: ${err?.message || 'Erreur inconnue'}. Veuillez réessayer.` }
+              ? { ...msg, content: `❌ ${errorMessage}\n\n**Détails techniques:** ${err?.message || 'Erreur inconnue'}\n\n*Conseil:* Essayez de configurer votre préparation avec le bouton "Configurer ma préparation" ci-dessous.` }
               : msg
           ));
           setTypingMessageId(null);
           setIsLoading(false);
           toast.error("Erreur Prepa CDS", {
-            description: err?.message || 'Erreur inconnue',
+            description: errorMessage,
           });
         }
         return;
