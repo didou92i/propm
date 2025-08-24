@@ -67,13 +67,12 @@ export function TrainingExperiencePlayer({
       
       // La réponse est déjà un objet structuré
       if (response && typeof response === 'object') {
+        console.log('Contenu reçu et défini:', response);
         setContent(response);
-        setSession(prev => ({ ...prev, content: response, isActive: true }));
       } else {
         console.warn('Réponse invalide, utilisation du fallback');
         const fallbackContent = generateFallbackContent();
         setContent(fallbackContent);
-        setSession(prev => ({ ...prev, content: fallbackContent, isActive: true }));
       }
       
     } catch (err) {
@@ -182,15 +181,23 @@ export function TrainingExperiencePlayer({
     }
   };
 
-  // Auto-start si pas encore démarré
+  // Auto-start et gestion du contenu
   useEffect(() => {
     // Injecter les styles d'animation au montage du composant
     injectAnimationStyles();
     
-    if (!session.isActive && !content && !isLoading) {
+    if (!content && !isLoading) {
       generateInteractiveContent();
     }
   }, []);
+
+  // Auto-activer la session une fois le contenu prêt
+  useEffect(() => {
+    if (content && !session.isActive) {
+      console.log('Activation automatique de la session avec contenu:', content);
+      setSession(prev => ({ ...prev, content, isActive: true }));
+    }
+  }, [content]);
 
   if (isLoading) {
     return (
@@ -266,7 +273,10 @@ export function TrainingExperiencePlayer({
                 <Badge variant="outline">{domain}</Badge>
                 <Badge variant="default">{trainingType}</Badge>
               </div>
-              <Button onClick={() => setSession(prev => ({ ...prev, isActive: true }))} className="w-full gap-2">
+              <Button onClick={() => {
+                console.log('Démarrage manuel avec contenu:', content);
+                setSession(prev => ({ ...prev, isActive: true }));
+              }} className="w-full gap-2">
                 <Play className="h-4 w-4" />
                 Commencer l'entraînement
               </Button>
