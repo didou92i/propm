@@ -21,6 +21,8 @@ export function useChatLogic(selectedAgent: string) {
   const [processingAttachment, setProcessingAttachment] = useState(false);
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
   const [typingMessageId, setTypingMessageId] = useState<string | null>(null);
+  const [trainingContent, setTrainingContent] = useState<any>(null);
+  const [showTraining, setShowTraining] = useState(false);
 
   const { streamingState, sendStreamingMessage } = useStreamingChat();
   const { optimizeMessages } = usePerformanceOptimization();
@@ -183,14 +185,20 @@ export function useChatLogic(selectedAgent: string) {
           
           const result = await generatePrepaContent(trainingType, level, domain);
 
-          // Convert PrepaCDS object result to markdown string
-          const contentString = typeof result === 'object' 
-            ? `## Contenu d'entraînement généré\n\n\`\`\`json\n${JSON.stringify(result, null, 2)}\n\`\`\``
-            : result;
+          // Store the training content and show training interface
+          console.log('PrepaCDS content generated:', result);
+          setTrainingContent({
+            ...result,
+            trainingType,
+            level,
+            domain
+          });
+          setShowTraining(true);
 
+          // Show confirmation message in chat
           onMessagesUpdate(prev => prev.map(msg => 
             msg.id === assistantMessageId 
-              ? { ...msg, content: contentString }
+              ? { ...msg, content: `✨ **Contenu d'entraînement généré avec succès !**\n\n📚 **Type:** ${trainingType}\n🎯 **Niveau:** ${level}\n📖 **Domaine:** ${domain}\n\n*L'interface d'entraînement interactif va s'ouvrir...*` }
               : msg
           ));
           setTypingMessageId(null);
@@ -327,6 +335,9 @@ export function useChatLogic(selectedAgent: string) {
     typingMessageId,
     streamingState,
     sendMessage,
-    setAttachmentError
+    setAttachmentError,
+    trainingContent,
+    showTraining,
+    setShowTraining
   };
 }

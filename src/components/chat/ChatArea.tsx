@@ -11,6 +11,9 @@ import { CdsProControls } from "./CdsProControls";
 import { PrepaCdsWelcome } from "./PrepaCdsWelcome";
 import { ArreteGenerationPrompt } from "./ArreteGenerationPrompt";
 import { agentInfo } from "./utils/chatUtils";
+import { TrainingExperiencePlayer } from "@/components/training/TrainingExperiencePlayer";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
 
 interface ChatAreaProps {
   selectedAgent: string;
@@ -48,7 +51,10 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
     typingMessageId,
     streamingState,
     sendMessage,
-    setAttachmentError
+    setAttachmentError,
+    trainingContent,
+    showTraining,
+    setShowTraining
   } = useChatLogic(selectedAgent);
 
   // Calculate bottom padding for fixed composer
@@ -84,7 +90,9 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
       setMessages([]);
     }
     setContextShared(false);
-  }, [selectedAgent, getConversation]);
+    // Reset training state when switching agents
+    setShowTraining(false);
+  }, [selectedAgent, getConversation, setShowTraining]);
 
   // Sync threadId from localStorage when agent changes
   useEffect(() => {
@@ -159,6 +167,45 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
   };
 
   const currentAgent = agentInfo[selectedAgent as keyof typeof agentInfo];
+
+  // Show training interface for PrepaCDS
+  if (selectedAgent === "prepacds" && showTraining && trainingContent) {
+    return (
+      <div className="flex flex-col h-full">
+        <div className="px-6 pt-3 pb-3 border-b border-border/40">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowTraining(false)}
+              className="gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Retour au chat
+            </Button>
+            <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">
+              Mode Entraînement Actif
+            </span>
+          </div>
+        </div>
+        <div className="flex-1">
+          <TrainingExperiencePlayer
+            trainingType={trainingContent.trainingType}
+            level={trainingContent.level}
+            domain={trainingContent.domain}
+            initialContent={trainingContent}
+            onComplete={(session) => {
+              toast.success("Entraînement terminé !", {
+                description: `Score: ${session.score || 0}%`,
+              });
+              setShowTraining(false);
+            }}
+            onExit={() => setShowTraining(false)}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full">

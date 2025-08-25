@@ -29,6 +29,7 @@ interface TrainingExperiencePlayerProps {
   domain: StudyDomain;
   onComplete: (session: TrainingSession) => void;
   onExit: () => void;
+  initialContent?: any;
 }
 
 export function TrainingExperiencePlayer({
@@ -36,7 +37,8 @@ export function TrainingExperiencePlayer({
   level,
   domain,
   onComplete,
-  onExit
+  onExit,
+  initialContent
 }: TrainingExperiencePlayerProps) {
   const [session, setSession] = useState<TrainingSession>({
     id: `session-${Date.now()}`,
@@ -186,10 +188,14 @@ export function TrainingExperiencePlayer({
     // Injecter les styles d'animation au montage du composant
     injectAnimationStyles();
     
-    if (!content && !isLoading) {
+    // Use initial content if provided, otherwise generate
+    if (initialContent) {
+      console.log('Using provided initial content:', initialContent);
+      setContent(initialContent);
+    } else if (!content && !isLoading) {
       generateInteractiveContent();
     }
-  }, []);
+  }, [initialContent]);
 
   // Auto-activer la session une fois le contenu prêt
   useEffect(() => {
