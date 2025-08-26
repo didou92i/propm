@@ -15,6 +15,64 @@ export function useAnimationEngine() {
   const { optimizeForAnimation, cleanupAnimation, animateWithCleanup } = useAnimationOptimization();
   const activeAnimations = useRef<Set<string>>(new Set());
 
+  // Injecter les styles CSS spécifiques PrepaCDS
+  const injectPrepaCdsStyles = useCallback(() => {
+    const styleId = 'prepacds-animations';
+    
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement('style');
+      style.id = styleId;
+      style.textContent = `
+        /* PrepaCDS Animation Classes */
+        .quiz-entrance { 
+          animation: questionEntrance 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+        }
+        .answer-select { 
+          animation: answerSelect 0.2s ease-out; 
+        }
+        .correct-reveal { 
+          animation: correctReveal 0.6s ease-out forwards; 
+        }
+        .incorrect-shake { 
+          animation: incorrectShake 0.4s ease-in-out; 
+        }
+        .step-progression { 
+          animation: stepProgression 0.5s cubic-bezier(0.4, 0, 0.2, 1); 
+        }
+        .validation-pulse { 
+          animation: validation 0.6s ease-out; 
+        }
+        .flip-card { 
+          transform-style: preserve-3d; 
+          perspective: 1000px; 
+        }
+        .flip-card-front,
+        .flip-card-back {
+          backface-visibility: hidden;
+          position: absolute;
+          width: 100%;
+          height: 100%;
+        }
+        .flip-card-back {
+          transform: rotateY(180deg);
+        }
+        .interactive-hover {
+          transition: all 0.2s ease-out;
+        }
+        .interactive-hover:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        .focus-ring:focus {
+          outline: 2px solid hsl(39, 96%, 56%);
+          outline-offset: 2px;
+        }
+      `;
+      document.head.appendChild(style);
+      console.log('PrepaCDS animation styles injected');
+    }
+  }, []);
+
   // Créer une animation CSS personnalisée
   const createCSSAnimation = useCallback((
     name: string,
@@ -167,6 +225,7 @@ export function useAnimationEngine() {
     bounceScale,
     glowEffect,
     clearAllAnimations,
+    injectPrepaCdsStyles,
     activeAnimationsCount: activeAnimations.current.size
   };
 }

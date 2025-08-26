@@ -5,7 +5,6 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, XCircle, Lightbulb, RotateCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { injectAnimationStyles } from '@/utils/animationTemplates';
 import { useAnimationEngine } from '@/hooks/useAnimationEngine';
 
 interface TrueFalseQuestion {
@@ -37,12 +36,12 @@ export function TrueFalseAnimated({
   const [isFlipped, setIsFlipped] = useState(false);
 
   // Animation engine pour les effets visuels
-  const { flipCard, bounceScale, glowEffect } = useAnimationEngine();
+  const { flipCard, bounceScale, glowEffect, injectPrepaCdsStyles } = useAnimationEngine();
 
   // Injection des styles d'animation au montage
   useEffect(() => {
-    injectAnimationStyles();
-  }, []);
+    injectPrepaCdsStyles();
+  }, [injectPrepaCdsStyles]);
 
   const currentQuestion = questions[currentQuestionIndex];
   const progress = ((currentQuestionIndex + 1) / questions.length) * 100;

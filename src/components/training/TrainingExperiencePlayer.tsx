@@ -5,7 +5,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Play, Pause, Square, RotateCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { injectAnimationStyles } from '@/utils/animationTemplates';
+import { useAnimationEngine } from '@/hooks/useAnimationEngine';
 import { AnimatedQuizPlayer } from './AnimatedQuizPlayer';
 import { TrueFalseAnimated } from './TrueFalseAnimated';
 import { CasePracticeSimulator } from './CasePracticeSimulator';
@@ -54,6 +54,7 @@ export function TrainingExperiencePlayer({
   const [error, setError] = useState<string | null>(null);
   
   const { generateContent } = usePrepaCdsChat();
+  const { injectPrepaCdsStyles } = useAnimationEngine();
 
   // Génération du contenu interactif
   const generateInteractiveContent = async () => {
@@ -185,8 +186,8 @@ export function TrainingExperiencePlayer({
 
   // Auto-start et gestion du contenu
   useEffect(() => {
-    // Injecter les styles d'animation au montage du composant
-    injectAnimationStyles();
+    // Injecter les styles d'animation PrepaCDS optimisés
+    injectPrepaCdsStyles();
     
     // Use initial content if provided, otherwise generate
     if (initialContent) {
@@ -195,7 +196,7 @@ export function TrainingExperiencePlayer({
     } else if (!content && !isLoading) {
       generateInteractiveContent();
     }
-  }, [initialContent]);
+  }, [initialContent, injectPrepaCdsStyles]);
 
   // Auto-activer la session une fois le contenu prêt
   useEffect(() => {
