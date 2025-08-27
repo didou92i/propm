@@ -36,9 +36,18 @@ export function AnimatedQuizPlayer({
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(30);
   const [isActive, setIsActive] = useState(true);
+  const [animationInProgress, setAnimationInProgress] = useState(false);
   
   // Animation engine pour les effets visuels
-  const { flipCard, bounceScale, glowEffect, applyAnimation } = useAnimationEngine();
+  const { flipCard, bounceScale, glowEffect, applyAnimation, injectPrepaCdsStyles } = useAnimationEngine();
+  
+  // Refs pour manipulation directe du DOM
+  const answerButtonsRef = React.useRef<HTMLElement[]>([]);
+  
+  // Injecter les styles d'animation au montage
+  useEffect(() => {
+    injectPrepaCdsStyles();
+  }, [injectPrepaCdsStyles]);
 
   const currentQuestion = questions[currentQuestionIndex];
   const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
@@ -67,46 +76,85 @@ export function AnimatedQuizPlayer({
   };
 
   const handleAnswer = (answerIndex: number) => {
+    if (animationInProgress) return;
+    
     setSelectedAnswer(answerIndex);
     setShowResult(true);
     setIsActive(false);
+    setAnimationInProgress(true);
     
     const newAnswers = [...userAnswers, answerIndex];
     setUserAnswers(newAnswers);
     
     const isCorrect = answerIndex === currentQuestion.correctAnswer;
     
-    // Animations avec les classes CSS injectées
+    // Animation immédiate avec préservation des classes
     setTimeout(() => {
-      const buttons = document.querySelectorAll('.answer-button');
-      const selectedButton = buttons[answerIndex] as HTMLElement;
+      const selectedButton = answerButtonsRef.current[answerIndex];
+      const correctButton = answerButtonsRef.current[currentQuestion.correctAnswer];
       
       if (selectedButton) {
+        // Appliquer les animations avec persistance
         if (isCorrect) {
           setScore(prev => prev + 1);
           selectedButton.classList.add('correct-reveal');
+          selectedButton.style.cssText += `
+            background-color: hsl(142, 76%, 36%) !important;
+            border-color: hsl(142, 76%, 36%) !important;
+            color: white !important;
+            transform: scale(1.05);
+            box-shadow: 0 0 20px hsl(142, 76%, 36%, 0.5);
+          `;
           bounceScale(selectedButton);
         } else {
           selectedButton.classList.add('incorrect-shake');
+          selectedButton.style.cssText += `
+            background-color: hsl(0, 84%, 60%) !important;
+            border-color: hsl(0, 84%, 60%) !important;
+            color: white !important;
+            animation: incorrectShake 0.6s ease-in-out;
+          `;
+          
+          // Révéler la bonne réponse
+          if (correctButton) {
+            correctButton.style.cssText += `
+              background-color: hsl(142, 76%, 36%) !important;
+              border-color: hsl(142, 76%, 36%) !important;
+              color: white !important;
+              box-shadow: 0 0 15px hsl(142, 76%, 36%, 0.4);
+            `;
+          }
         }
       }
-    }, 100);
+    }, 200);
 
+    // Transition vers la question suivante avec délai prolongé
     setTimeout(() => {
+      setAnimationInProgress(false);
       if (currentQuestionIndex < questions.length - 1) {
         nextQuestion();
       } else {
         onComplete(score + (isCorrect ? 1 : 0), newAnswers);
       }
-    }, 2000);
+    }, 3500);
   };
 
   const nextQuestion = () => {
+    // Nettoyer les styles des boutons précédents
+    answerButtonsRef.current.forEach(button => {
+      if (button) {
+        button.classList.remove('correct-reveal', 'incorrect-shake');
+        button.style.cssText = '';
+      }
+    });
+    
     setCurrentQuestionIndex(prev => prev + 1);
     setSelectedAnswer(null);
     setShowResult(false);
     setTimeLeft(30);
     setIsActive(true);
+    setAnimationInProgress(false);
+    answerButtonsRef.current = [];
   };
 
   const getDifficultyColor = (difficulty: string) => {
@@ -181,14 +229,13 @@ export function AnimatedQuizPlayer({
                         whileTap={{ scale: 0.98 }}
                       >
                         <Button
+                          ref={(el: HTMLButtonElement | null) => {
+                            if (el) answerButtonsRef.current[index] = el;
+                          }}
                           variant={isSelected ? "default" : "outline"}
-                          className={`
-                            answer-button interactive-hover w-full p-4 h-auto text-left justify-start transition-all duration-300
-                            ${showResult && isCorrect ? 'bg-green-500 hover:bg-green-600 text-white border-green-500' : ''}
-                            ${isWrong ? 'bg-red-500 hover:bg-red-600 text-white border-red-500' : ''}
-                          `}
-                          onClick={() => !showResult && handleAnswer(index)}
-                          disabled={showResult}
+                          className="answer-button interactive-hover w-full p-4 h-auto text-left justify-start"
+                          onClick={() => !showResult && !animationInProgress && handleAnswer(index)}
+                          disabled={showResult || animationInProgress}
                         >
                           <div className="flex items-center gap-3 w-full">
                             <div className="flex-shrink-0">

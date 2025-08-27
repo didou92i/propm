@@ -31,10 +31,17 @@ export function useAnimationEngine() {
           animation: answerSelect 0.2s ease-out; 
         }
         .correct-reveal { 
-          animation: correctReveal 0.6s ease-out forwards; 
+          animation: correctReveal 1.2s ease-out forwards !important;
+          background-color: hsl(142, 76%, 36%) !important;
+          border-color: hsl(142, 76%, 36%) !important;
+          color: white !important;
+          box-shadow: 0 0 20px hsl(142, 76%, 36%, 0.5) !important;
         }
         .incorrect-shake { 
-          animation: incorrectShake 0.4s ease-in-out; 
+          animation: incorrectShake 0.8s ease-in-out forwards !important;
+          background-color: hsl(0, 84%, 60%) !important;
+          border-color: hsl(0, 84%, 60%) !important;
+          color: white !important;
         }
         .step-progression { 
           animation: stepProgression 0.5s cubic-bezier(0.4, 0, 0.2, 1); 
@@ -107,32 +114,33 @@ export function useAnimationEngine() {
     return `${name} ${duration}ms ${easing} ${delay}ms`;
   }, []);
 
-  // Appliquer une animation à un élément
+  // Appliquer une animation à un élément avec persistance optionnelle
   const applyAnimation = useCallback((
     element: HTMLElement,
     animationName: string,
-    config: AnimationConfig = {}
+    config: AnimationConfig & { persist?: boolean } = {}
   ): Promise<void> => {
     return new Promise((resolve) => {
-      const { duration = 300 } = config;
+      const { duration = 300, persist = false } = config;
       const animationId = `${animationName}-${Date.now()}`;
       
       activeAnimations.current.add(animationId);
-      optimizeForAnimation(element, ['transform', 'opacity']);
+      optimizeForAnimation(element, ['transform', 'opacity', 'background-color', 'border-color', 'box-shadow']);
 
       element.style.animation = createCSSAnimation(animationName, {}, config);
 
       const cleanup = () => {
-        element.style.animation = '';
-        cleanupAnimation(element);
+        if (!persist) {
+          element.style.animation = '';
+        }
         activeAnimations.current.delete(animationId);
         resolve();
       };
 
       element.addEventListener('animationend', cleanup, { once: true });
-      setTimeout(cleanup, duration + 100); // Fallback
+      setTimeout(cleanup, duration + 200); // Délai prolongé pour la visibilité
     });
-  }, [createCSSAnimation, optimizeForAnimation, cleanupAnimation]);
+  }, [createCSSAnimation, optimizeForAnimation]);
 
   // Créer une transition fluide
   const createTransition = useCallback((
