@@ -34,9 +34,14 @@ export function TrueFalseAnimated({
   const [userAnswers, setUserAnswers] = useState<boolean[]>([]);
   const [score, setScore] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
+  const [animationInProgress, setAnimationInProgress] = useState(false);
 
   // Animation engine pour les effets visuels
   const { flipCard, bounceScale, glowEffect, injectPrepaCdsStyles } = useAnimationEngine();
+  
+  // Refs pour manipulation directe des boutons
+  const trueBtnRef = React.useRef<HTMLButtonElement>(null);
+  const falseBtnRef = React.useRef<HTMLButtonElement>(null);
 
   // Injection des styles d'animation au montage
   useEffect(() => {
@@ -47,33 +52,93 @@ export function TrueFalseAnimated({
   const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
 
   const handleAnswer = (answer: boolean) => {
-    setSelectedAnswer(answer);
-    setIsFlipped(true);
+    if (animationInProgress) return;
     
-    setTimeout(() => {
-      setShowResult(true);
-      const newAnswers = [...userAnswers, answer];
-      setUserAnswers(newAnswers);
+    setSelectedAnswer(answer);
+    setAnimationInProgress(true);
+    
+    // Animation immédiate sur le bouton sélectionné
+    const selectedBtn = answer ? trueBtnRef.current : falseBtnRef.current;
+    const isCorrect = answer === currentQuestion.isTrue;
+    
+    if (selectedBtn) {
+      // Appliquer l'animation de sélection
+      selectedBtn.classList.add('answer-select');
       
-      if (answer === currentQuestion.isTrue) {
-        setScore(prev => prev + 1);
-      }
-
+      // Animation de feedback persistante
       setTimeout(() => {
-        if (currentQuestionIndex < questions.length - 1) {
-          nextQuestion();
+        if (isCorrect) {
+          selectedBtn.classList.add('correct-reveal');
+          selectedBtn.style.cssText += `
+            background-color: hsl(142, 76%, 36%) !important;
+            border-color: hsl(142, 76%, 36%) !important;
+            color: white !important;
+            transform: scale(1.1) !important;
+            box-shadow: 0 0 25px hsl(142, 76%, 36%, 0.6) !important;
+            animation: correctReveal 1.5s ease-out forwards !important;
+          `;
+          bounceScale(selectedBtn);
         } else {
-          onComplete(score + (answer === currentQuestion.isTrue ? 1 : 0), newAnswers);
+          selectedBtn.classList.add('incorrect-shake');
+          selectedBtn.style.cssText += `
+            background-color: hsl(0, 84%, 60%) !important;
+            border-color: hsl(0, 84%, 60%) !important;
+            color: white !important;
+            animation: incorrectShake 1s ease-in-out forwards !important;
+          `;
+          
+          // Montrer aussi la bonne réponse
+          const correctBtn = currentQuestion.isTrue ? trueBtnRef.current : falseBtnRef.current;
+          if (correctBtn && correctBtn !== selectedBtn) {
+            correctBtn.style.cssText += `
+              background-color: hsl(142, 76%, 36%) !important;
+              border-color: hsl(142, 76%, 36%) !important;
+              color: white !important;
+              box-shadow: 0 0 15px hsl(142, 76%, 36%, 0.4) !important;
+            `;
+          }
         }
-      }, 3000);
-    }, 600);
+      }, 200);
+    }
+    
+    // Flip de la carte après un délai
+    setTimeout(() => {
+      setIsFlipped(true);
+      setTimeout(() => {
+        setShowResult(true);
+        const newAnswers = [...userAnswers, answer];
+        setUserAnswers(newAnswers);
+        
+        if (answer === currentQuestion.isTrue) {
+          setScore(prev => prev + 1);
+        }
+
+        // Transition vers la question suivante avec délai prolongé
+        setTimeout(() => {
+          if (currentQuestionIndex < questions.length - 1) {
+            nextQuestion();
+          } else {
+            onComplete(score + (answer === currentQuestion.isTrue ? 1 : 0), newAnswers);
+          }
+        }, 4000);
+      }, 600);
+    }, 2500); // Délai prolongé pour voir l'animation du bouton
   };
 
   const nextQuestion = () => {
+    // Nettoyer les styles des boutons
+    [trueBtnRef.current, falseBtnRef.current].forEach(btn => {
+      if (btn) {
+        btn.classList.remove('answer-select', 'correct-reveal', 'incorrect-shake');
+        btn.style.cssText = '';
+      }
+    });
+    
     setCurrentQuestionIndex(prev => prev + 1);
     setSelectedAnswer(null);
     setShowResult(false);
     setIsFlipped(false);
+    setAnimationInProgress(false);
   };
 
   const isCorrect = selectedAnswer === currentQuestion.isTrue;
@@ -122,24 +187,26 @@ export function TrueFalseAnimated({
                   </div>
                   
                   <div className="flex gap-4 justify-center">
-                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                    <motion.div whileHover={{ scale: animationInProgress ? 1 : 1.05 }} whileTap={{ scale: 0.95 }}>
                       <Button
+                        ref={trueBtnRef}
                         size="lg"
                         className="interactive-hover bg-green-500 hover:bg-green-600 text-white px-8 py-4 focus-ring"
                         onClick={() => handleAnswer(true)}
-                        disabled={showResult}
+                        disabled={showResult || animationInProgress}
                       >
                         <CheckCircle className="h-5 w-5 mr-2" />
                         VRAI
                       </Button>
                     </motion.div>
                     
-                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                    <motion.div whileHover={{ scale: animationInProgress ? 1 : 1.05 }} whileTap={{ scale: 0.95 }}>
                       <Button
+                        ref={falseBtnRef}
                         size="lg"
                         className="interactive-hover bg-red-500 hover:bg-red-600 text-white px-8 py-4 focus-ring"
                         onClick={() => handleAnswer(false)}
-                        disabled={showResult}
+                        disabled={showResult || animationInProgress}
                       >
                         <XCircle className="h-5 w-5 mr-2" />
                         FAUX
