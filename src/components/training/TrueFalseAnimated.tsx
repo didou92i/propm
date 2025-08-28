@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { CheckCircle, XCircle, Lightbulb, RotateCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAnimationEngine } from '@/hooks/useAnimationEngine';
+import { logger } from '@/utils/logger';
 
 interface TrueFalseQuestion {
   id: string;
@@ -42,9 +43,11 @@ export function TrueFalseAnimated({
   // Refs pour manipulation directe des boutons
   const trueBtnRef = React.useRef<HTMLButtonElement>(null);
   const falseBtnRef = React.useRef<HTMLButtonElement>(null);
+  const cardRef = React.useRef<HTMLDivElement>(null);
 
   // Injection des styles d'animation au montage
   useEffect(() => {
+    logger.info("Initialisation TrueFalseAnimated", { questionCount: questions.length }, "TrueFalseAnimated");
     injectPrepaCdsStyles();
   }, [injectPrepaCdsStyles]);
 
@@ -52,58 +55,117 @@ export function TrueFalseAnimated({
   const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
 
   const handleAnswer = (answer: boolean) => {
-    if (animationInProgress) return;
+    if (animationInProgress) {
+      logger.warn("Animation en cours, clic ignoré", { answer }, "TrueFalseAnimated");
+      return;
+    }
+    
+    logger.info("Début handleAnswer", { 
+      answer, 
+      isCorrect: answer === currentQuestion.isTrue,
+      currentQuestionIndex,
+      questionId: currentQuestion.id 
+    }, "TrueFalseAnimated");
     
     setSelectedAnswer(answer);
     setAnimationInProgress(true);
     
     // Animation immédiate sur le bouton sélectionné
     const selectedBtn = answer ? trueBtnRef.current : falseBtnRef.current;
+    const otherBtn = answer ? falseBtnRef.current : trueBtnRef.current;
     const isCorrect = answer === currentQuestion.isTrue;
     
     if (selectedBtn) {
-      // Appliquer l'animation de sélection
-      selectedBtn.classList.add('answer-select');
+      logger.info("Application des styles d'animation", { 
+        buttonType: answer ? "VRAI" : "FAUX", 
+        isCorrect 
+      }, "TrueFalseAnimated");
       
-      // Animation de feedback persistante
+      // PHASE 1: Animation de sélection immédiate (persistante)
+      selectedBtn.classList.add('answer-select');
+      selectedBtn.setAttribute('data-animation-lock', 'true');
+      
+      // PHASE 2: Animation de feedback après 300ms (visible 3 secondes)
       setTimeout(() => {
+        logger.info("Début animation feedback", { isCorrect }, "TrueFalseAnimated");
+        
         if (isCorrect) {
+          // Animation réponse correcte
           selectedBtn.classList.add('correct-reveal');
-          selectedBtn.style.cssText += `
+          selectedBtn.setAttribute('data-correct', 'true');
+          selectedBtn.style.cssText = `
             background-color: hsl(142, 76%, 36%) !important;
             border-color: hsl(142, 76%, 36%) !important;
             color: white !important;
             transform: scale(1.1) !important;
             box-shadow: 0 0 25px hsl(142, 76%, 36%, 0.6) !important;
-            animation: correctReveal 1.5s ease-out forwards !important;
+            animation: correctReveal 3s ease-out forwards !important;
+            transition: none !important;
+            animation-fill-mode: forwards !important;
           `;
-          bounceScale(selectedBtn);
+          
+          logger.info("Animation correcte appliquée", { 
+            styles: selectedBtn.style.cssText,
+            classes: selectedBtn.className 
+          }, "TrueFalseAnimated");
+          
         } else {
+          // Animation réponse incorrecte
           selectedBtn.classList.add('incorrect-shake');
-          selectedBtn.style.cssText += `
+          selectedBtn.setAttribute('data-incorrect', 'true');
+          selectedBtn.style.cssText = `
             background-color: hsl(0, 84%, 60%) !important;
             border-color: hsl(0, 84%, 60%) !important;
             color: white !important;
-            animation: incorrectShake 1s ease-in-out forwards !important;
+            animation: incorrectShake 2s ease-in-out forwards !important;
+            transition: none !important;
+            animation-fill-mode: forwards !important;
           `;
           
-          // Montrer aussi la bonne réponse
+          // Révéler la bonne réponse
           const correctBtn = currentQuestion.isTrue ? trueBtnRef.current : falseBtnRef.current;
           if (correctBtn && correctBtn !== selectedBtn) {
-            correctBtn.style.cssText += `
+            correctBtn.setAttribute('data-correct-reveal', 'true');
+            correctBtn.style.cssText = `
               background-color: hsl(142, 76%, 36%) !important;
               border-color: hsl(142, 76%, 36%) !important;
               color: white !important;
               box-shadow: 0 0 15px hsl(142, 76%, 36%, 0.4) !important;
+              animation: correctReveal 3s ease-out forwards !important;
+              transition: none !important;
+              animation-fill-mode: forwards !important;
             `;
           }
+          
+          logger.info("Animation incorrecte appliquée", { 
+            incorrectStyles: selectedBtn.style.cssText,
+            correctRevealStyles: correctBtn?.style.cssText 
+          }, "TrueFalseAnimated");
         }
-      }, 200);
+        
+        // Log des styles toutes les 500ms pendant 3 secondes
+        const styleChecker = setInterval(() => {
+          logger.debug("Vérification persistance styles", {
+            selectedBtnStyles: selectedBtn.style.cssText,
+            selectedBtnClasses: selectedBtn.className,
+            otherBtnStyles: otherBtn?.style.cssText,
+            timestamp: Date.now()
+          }, "TrueFalseAnimated");
+        }, 500);
+        
+        setTimeout(() => {
+          clearInterval(styleChecker);
+          logger.info("Fin vérification styles", {}, "TrueFalseAnimated");
+        }, 3000);
+        
+      }, 300);
     }
     
-    // Flip de la carte après un délai
+    // PHASE 3: Flip de la carte après 3 secondes (laisser voir l'animation)
     setTimeout(() => {
+      logger.info("Début flip carte", {}, "TrueFalseAnimated");
       setIsFlipped(true);
+      
       setTimeout(() => {
         setShowResult(true);
         const newAnswers = [...userAnswers, answer];
@@ -113,24 +175,48 @@ export function TrueFalseAnimated({
           setScore(prev => prev + 1);
         }
 
-        // Transition vers la question suivante avec délai prolongé
+        // PHASE 4: Transition vers la question suivante après 2 secondes supplémentaires
         setTimeout(() => {
+          logger.info("Transition vers question suivante", { 
+            isLast: currentQuestionIndex >= questions.length - 1 
+          }, "TrueFalseAnimated");
+          
           if (currentQuestionIndex < questions.length - 1) {
             nextQuestion();
           } else {
-            onComplete(score + (answer === currentQuestion.isTrue ? 1 : 0), newAnswers);
+            const finalScore = score + (answer === currentQuestion.isTrue ? 1 : 0);
+            logger.info("Quiz terminé", { finalScore, totalQuestions: questions.length }, "TrueFalseAnimated");
+            onComplete(finalScore, newAnswers);
           }
-        }, 4000);
+        }, 2000);
       }, 600);
-    }, 2500); // Délai prolongé pour voir l'animation du bouton
+    }, 3000); // Délai pour voir l'animation complète
   };
 
   const nextQuestion = () => {
-    // Nettoyer les styles des boutons
-    [trueBtnRef.current, falseBtnRef.current].forEach(btn => {
+    logger.info("Nettoyage avant question suivante", { 
+      currentIndex: currentQuestionIndex 
+    }, "TrueFalseAnimated");
+    
+    // Nettoyer les styles et attributs des boutons
+    [trueBtnRef.current, falseBtnRef.current].forEach((btn, index) => {
       if (btn) {
+        const buttonType = index === 0 ? "VRAI" : "FAUX";
+        logger.debug("Nettoyage bouton", { 
+          buttonType,
+          previousClasses: btn.className,
+          previousStyles: btn.style.cssText 
+        }, "TrueFalseAnimated");
+        
+        // Nettoyage complet
         btn.classList.remove('answer-select', 'correct-reveal', 'incorrect-shake');
+        btn.removeAttribute('data-animation-lock');
+        btn.removeAttribute('data-correct');
+        btn.removeAttribute('data-incorrect');
+        btn.removeAttribute('data-correct-reveal');
         btn.style.cssText = '';
+        btn.style.animation = '';
+        btn.style.transition = '';
       }
     });
     
@@ -139,6 +225,10 @@ export function TrueFalseAnimated({
     setShowResult(false);
     setIsFlipped(false);
     setAnimationInProgress(false);
+    
+    logger.info("Question suivante préparée", { 
+      newIndex: currentQuestionIndex + 1 
+    }, "TrueFalseAnimated");
   };
 
   const isCorrect = selectedAnswer === currentQuestion.isTrue;
