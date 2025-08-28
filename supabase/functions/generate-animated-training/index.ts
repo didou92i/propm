@@ -177,6 +177,10 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let trainingType = 'qcm';
+  let level = 'intermediaire';
+  let domain = 'droit_administratif';
+
   try {
     // Utiliser la clé API dédiée aux animations pour optimiser les prompts
     const openAIApiKey = Deno.env.get('OPENAI_ANIMATIONS_API_KEY') || Deno.env.get('OPENAI_API_KEY');
@@ -198,12 +202,11 @@ serve(async (req) => {
       throw new Error('User not authenticated');
     }
 
-    const { 
-      trainingType = 'qcm',
-      level = 'intermediaire',
-      domain = 'droit_administratif',
-      options = {}
-    } = await req.json();
+    const requestBody = await req.json();
+    trainingType = requestBody.trainingType || 'qcm';
+    level = requestBody.level || 'intermediaire';
+    domain = requestBody.domain || 'droit_administratif';
+    const options = requestBody.options || {};
 
     console.log('Generating animated training:', { trainingType, level, domain, options });
 
@@ -219,12 +222,11 @@ serve(async (req) => {
       questionCount: template.questionCount || template.stepCount || template.phaseCount || 'N/A'
     });
 
-    // Construire le prompt contextuel
+    // Construire le prompt contextuel avec tokens réduits
     const contextualPrompt = `${template.systemPrompt}
 
 NIVEAU: ${level}
 DOMAINE: ${domain}
-OPTIONS: ${JSON.stringify(options)}
 
 Génère du contenu adapté au niveau ${level} en ${domain}.
 ${trainingType === 'qcm' ? `Crée exactement ${template.questionCount} questions variées.` : ''}
@@ -243,7 +245,7 @@ IMPORTANT: Réponds UNIQUEMENT avec du JSON valide, sans texte additionnel.`;
       domain
     });
 
-    // Appel à l'API OpenAI
+    // Appel à l'API OpenAI avec tokens réduits
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -251,7 +253,7 @@ IMPORTANT: Réponds UNIQUEMENT avec du JSON valide, sans texte additionnel.`;
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5-2025-08-07',
+        model: 'gpt-4-turbo',
         messages: [
           { 
             role: 'system', 
@@ -262,7 +264,8 @@ IMPORTANT: Réponds UNIQUEMENT avec du JSON valide, sans texte additionnel.`;
             content: `Génère maintenant le contenu pour un entraînement ${trainingType} de niveau ${level} en ${domain}.` 
           }
         ],
-        max_completion_tokens: 3000,
+        max_completion_tokens: 1500,
+        temperature: 0.7,
         response_format: { type: "json_object" }
       }),
     });
@@ -284,13 +287,18 @@ IMPORTANT: Réponds UNIQUEMENT avec du JSON valide, sans texte additionnel.`;
     console.log('OpenAI response received:', {
       choices: data.choices?.length || 0,
       usage: data.usage,
-      trainingType
+      trainingType,
+      finishReason: data.choices[0]?.finish_reason
     });
 
     const content = data.choices[0]?.message?.content;
 
-    if (!content) {
-      console.error('Aucun contenu dans la réponse OpenAI:', data);
+    if (!content || content.trim() === '') {
+      console.error('Aucun contenu dans la réponse OpenAI:', {
+        fullResponse: data,
+        finishReason: data.choices[0]?.finish_reason,
+        trainingType
+      });
       throw new Error('Aucun contenu généré par OpenAI');
     }
 
@@ -310,7 +318,7 @@ IMPORTANT: Réponds UNIQUEMENT avec du JSON valide, sans texte additionnel.`;
       });
     } catch (parseError) {
       console.error('JSON parsing error:', {
-        error: parseError,
+        error: parseError.message,
         content: content.substring(0, 500),
         trainingType,
         level,
