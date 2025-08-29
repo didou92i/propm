@@ -253,7 +253,7 @@ IMPORTANT: Réponds UNIQUEMENT avec du JSON valide, sans texte additionnel.`;
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4-turbo',
+        model: 'gpt-4o',
         messages: [
           { 
             role: 'system', 
@@ -264,7 +264,7 @@ IMPORTANT: Réponds UNIQUEMENT avec du JSON valide, sans texte additionnel.`;
             content: `Génère maintenant le contenu pour un entraînement ${trainingType} de niveau ${level} en ${domain}.` 
           }
         ],
-        max_completion_tokens: 1500,
+        max_tokens: 2500,
         temperature: 0.7,
         response_format: { type: "json_object" }
       }),

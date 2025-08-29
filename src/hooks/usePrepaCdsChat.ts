@@ -19,7 +19,7 @@ export const usePrepaCdsChat = () => {
 
   // Fallback content generator when Edge Function fails
   const generateFallbackContent = (trainingType: TrainingType, level: UserLevel, domain: StudyDomain) => {
-    console.log('Generating fallback content:', { trainingType, level, domain });
+    console.log('🔄 [PrepaCDS] Génération de contenu fallback pour:', { trainingType, level, domain });
     
     if (trainingType === 'qcm') {
       return {

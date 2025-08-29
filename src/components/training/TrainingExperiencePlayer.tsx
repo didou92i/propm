@@ -198,11 +198,16 @@ export function TrainingExperiencePlayer({
     }
   }, [initialContent, injectPrepaCdsStyles]);
 
-  // Auto-activer la session une fois le contenu prêt
+  // Auto-activer la session une fois le contenu prêt avec délai
   useEffect(() => {
     if (content && !session.isActive) {
-      console.log('Activation automatique de la session avec contenu:', content);
-      setSession(prev => ({ ...prev, content, isActive: true }));
+      console.log('Préparation de l\'activation de la session avec contenu:', content);
+      // Ajouter un délai de 3 secondes pour permettre à l'utilisateur de voir l'animation
+      const timer = setTimeout(() => {
+        console.log('Activation automatique de la session après délai');
+        setSession(prev => ({ ...prev, content, isActive: true }));
+      }, 3000);
+      return () => clearTimeout(timer);
     }
   }, [content]);
 
@@ -272,20 +277,57 @@ export function TrainingExperiencePlayer({
         >
           <Card className="p-8 border-prepacds-primary/20">
             <CardHeader className="text-center">
-              <CardTitle className="text-xl text-prepacds-primary">Session Prête</CardTitle>
+              <CardTitle className="text-xl text-prepacds-primary">
+                {content ? 'Préparation de votre entraînement...' : 'Configuration de la session'}
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
               <div className="flex flex-wrap gap-2 justify-center">
                 <Badge variant="outline">{level}</Badge>
                 <Badge variant="outline">{domain}</Badge>
                 <Badge variant="default">{trainingType}</Badge>
               </div>
-              <Button onClick={() => {
-                console.log('Démarrage manuel avec contenu:', content);
-                setSession(prev => ({ ...prev, isActive: true }));
-              }} className="w-full gap-2">
-                <Play className="h-4 w-4" />
-                Commencer l'entraînement
+
+              {content && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="bg-prepacds-primary/10 p-4 rounded-lg border border-prepacds-primary/20"
+                >
+                  <div className="flex items-center justify-center space-x-2 mb-3">
+                    <div className="animate-pulse w-2 h-2 bg-prepacds-primary rounded-full"></div>
+                    <div className="animate-pulse w-2 h-2 bg-prepacds-primary rounded-full" style={{animationDelay: '0.2s'}}></div>
+                    <div className="animate-pulse w-2 h-2 bg-prepacds-primary rounded-full" style={{animationDelay: '0.4s'}}></div>
+                  </div>
+                  <p className="text-sm text-prepacds-primary text-center font-medium">
+                    Interface d'animation en cours de préparation...
+                  </p>
+                  <p className="text-xs text-muted-foreground text-center mt-2">
+                    Lancement automatique dans 3 secondes
+                  </p>
+                  <Progress value={66.67} className="mt-3 h-2" />
+                </motion.div>
+              )}
+
+              <Button 
+                onClick={() => {
+                  console.log('Démarrage manuel avec contenu:', content);
+                  setSession(prev => ({ ...prev, isActive: true }));
+                }} 
+                className="w-full gap-2"
+                disabled={!content}
+              >
+                {content ? (
+                  <>
+                    <Play className="h-4 w-4" />
+                    Commencer maintenant
+                  </>
+                ) : (
+                  <>
+                    <Play className="h-4 w-4" />
+                    Commencer l'entraînement
+                  </>
+                )}
               </Button>
             </CardContent>
           </Card>
