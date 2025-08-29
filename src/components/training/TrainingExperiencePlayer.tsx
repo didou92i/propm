@@ -1,16 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Play, Pause, Square, RotateCcw } from 'lucide-react';
+import { Loader2, Play, Pause, Square, RotateCcw, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAnimationEngine } from '@/hooks/useAnimationEngine';
 import { AnimatedQuizPlayer } from './AnimatedQuizPlayer';
 import { TrueFalseAnimated } from './TrueFalseAnimated';
 import { CasePracticeSimulator } from './CasePracticeSimulator';
 import { usePrepaCdsChat } from '@/hooks/usePrepaCdsChat';
+import { logger } from '@/utils/logger';
 import type { TrainingType, UserLevel, StudyDomain } from '@/types/prepacds';
+
+type DisplayState = 'loading' | 'preparing' | 'countdown' | 'active';
 
 interface TrainingSession {
   id: string;
@@ -49,40 +52,57 @@ export function TrainingExperiencePlayer({
     progress: 0
   });
   
-  const [isLoading, setIsLoading] = useState(false);
+  const [displayState, setDisplayState] = useState<DisplayState>('loading');
   const [content, setContent] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [countdown, setCountdown] = useState(5);
+  
+  // Refs pour éviter les conflits React
+  const countdownTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const activationTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const sessionIdRef = useRef(session.id);
   
   const { generateContent } = usePrepaCdsChat();
   const { injectPrepaCdsStyles } = useAnimationEngine();
 
-  // Génération du contenu interactif
+  // Génération du contenu interactif avec logs détaillés
   const generateInteractiveContent = async () => {
-    setIsLoading(true);
+    const timestamp = new Date().toISOString();
+    logger.info('🚀 Début génération contenu', { 
+      trainingType, level, domain, sessionId: sessionIdRef.current, timestamp 
+    }, 'TrainingExperiencePlayer');
+    
+    setDisplayState('loading');
     setError(null);
     
     try {
-      console.log('Génération contenu pour:', { trainingType, level, domain });
+      logger.debug('📤 Appel API generateContent', { trainingType, level, domain }, 'TrainingExperiencePlayer');
       
       const response = await generateContent(trainingType, level, domain);
       
-      console.log('Réponse reçue:', response);
+      logger.info('📥 Réponse API reçue', { 
+        hasResponse: !!response, 
+        responseType: typeof response,
+        responseKeys: response ? Object.keys(response) : [],
+        timestamp: new Date().toISOString()
+      }, 'TrainingExperiencePlayer');
       
       // La réponse est déjà un objet structuré
       if (response && typeof response === 'object') {
-        console.log('Contenu reçu et défini:', response);
+        logger.info('✅ Contenu valide reçu - transition vers preparing', response, 'TrainingExperiencePlayer');
         setContent(response);
+        setDisplayState('preparing');
       } else {
-        console.warn('Réponse invalide, utilisation du fallback');
+        logger.warn('⚠️ Réponse invalide - utilisation fallback', { response }, 'TrainingExperiencePlayer');
         const fallbackContent = generateFallbackContent();
         setContent(fallbackContent);
+        setDisplayState('preparing');
       }
       
     } catch (err) {
-      console.error('Erreur génération contenu:', err);
+      logger.error('❌ Erreur génération contenu', err, 'TrainingExperiencePlayer');
       setError('Impossible de générer le contenu. Veuillez réessayer.');
-    } finally {
-      setIsLoading(false);
+      setDisplayState('loading');
     }
   };
 
@@ -147,7 +167,21 @@ export function TrainingExperiencePlayer({
   };
 
   const renderTrainingComponent = () => {
-    if (!content || !session.isActive) return null;
+    logger.debug('🎯 renderTrainingComponent appelé', { 
+      hasContent: !!content, 
+      sessionActive: session.isActive,
+      displayState,
+      timestamp: new Date().toISOString()
+    }, 'TrainingExperiencePlayer');
+    
+    if (!content || displayState !== 'active') {
+      logger.debug('🚫 Conditions non remplies pour affichage composant', { 
+        hasContent: !!content, 
+        displayState,
+        expectedState: 'active'
+      }, 'TrainingExperiencePlayer');
+      return null;
+    }
 
     switch (trainingType) {
       case 'qcm':
@@ -184,34 +218,88 @@ export function TrainingExperiencePlayer({
     }
   };
 
-  // Auto-start et gestion du contenu
+  // Auto-start et gestion du contenu avec logs détaillés
   useEffect(() => {
+    logger.info('🎬 Initialisation TrainingExperiencePlayer', { 
+      sessionId: sessionIdRef.current,
+      trainingType, level, domain,
+      hasInitialContent: !!initialContent,
+      timestamp: new Date().toISOString()
+    }, 'TrainingExperiencePlayer');
+    
     // Injecter les styles d'animation PrepaCDS optimisés
     injectPrepaCdsStyles();
     
     // Use initial content if provided, otherwise generate
     if (initialContent) {
-      console.log('Using provided initial content:', initialContent);
+      logger.info('📋 Utilisation du contenu initial fourni', initialContent, 'TrainingExperiencePlayer');
       setContent(initialContent);
-    } else if (!content && !isLoading) {
+      setDisplayState('preparing');
+    } else if (!content && displayState === 'loading') {
+      logger.info('🔄 Lancement génération de contenu', { displayState }, 'TrainingExperiencePlayer');
       generateInteractiveContent();
     }
   }, [initialContent, injectPrepaCdsStyles]);
 
-  // Auto-activer la session une fois le contenu prêt avec délai
+  // Système de transition d'état contrôlé avec compteur
   useEffect(() => {
-    if (content && !session.isActive) {
-      console.log('Préparation de l\'activation de la session avec contenu:', content);
-      // Ajouter un délai de 3 secondes pour permettre à l'utilisateur de voir l'animation
-      const timer = setTimeout(() => {
-        console.log('Activation automatique de la session après délai');
-        setSession(prev => ({ ...prev, content, isActive: true }));
-      }, 3000);
-      return () => clearTimeout(timer);
+    if (displayState === 'preparing' && content) {
+      logger.info('⏳ Début phase preparing - lancement compteur 5s', { 
+        content: !!content,
+        displayState,
+        timestamp: new Date().toISOString()
+      }, 'TrainingExperiencePlayer');
+      
+      // Nettoyer les timers précédents
+      if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
+      if (activationTimerRef.current) clearTimeout(activationTimerRef.current);
+      
+      // Démarrer le compteur visuel
+      setCountdown(5);
+      setDisplayState('countdown');
+      
+      let currentCount = 5;
+      countdownTimerRef.current = setInterval(() => {
+        currentCount--;
+        logger.debug('⏰ Compteur', { secondesRestantes: currentCount }, 'TrainingExperiencePlayer');
+        setCountdown(currentCount);
+        
+        if (currentCount <= 0) {
+          logger.info('🎯 Fin compteur - activation session', { 
+            finalDisplayState: 'active',
+            timestamp: new Date().toISOString()
+          }, 'TrainingExperiencePlayer');
+          
+          clearInterval(countdownTimerRef.current!);
+          setDisplayState('active');
+          setSession(prev => ({ ...prev, content, isActive: true }));
+        }
+      }, 1000);
     }
-  }, [content]);
+    
+    // Cleanup à la destruction
+    return () => {
+      if (countdownTimerRef.current) {
+        logger.debug('🧹 Nettoyage timer compteur', {}, 'TrainingExperiencePlayer');
+        clearInterval(countdownTimerRef.current);
+      }
+      if (activationTimerRef.current) {
+        logger.debug('🧹 Nettoyage timer activation', {}, 'TrainingExperiencePlayer');
+        clearTimeout(activationTimerRef.current);
+      }
+    };
+  }, [displayState, content]);
 
-  if (isLoading) {
+  // Logs des changements d'état de rendu
+  logger.debug('🖼️ Rendu état', { 
+    displayState, 
+    hasContent: !!content, 
+    hasError: !!error,
+    sessionActive: session.isActive,
+    countdown
+  }, 'TrainingExperiencePlayer');
+
+  if (displayState === 'loading') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-prepacds-primary/5 to-prepacds-secondary/10 flex items-center justify-center">
         <motion.div
@@ -258,27 +346,30 @@ export function TrainingExperiencePlayer({
   }
 
   return (
-    <AnimatePresence mode="wait">
-      {session.isActive && content ? (
+    <div className="min-h-screen">
+      {displayState === 'active' ? (
         <motion.div
           key="training-active"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3 }}
         >
           {renderTrainingComponent()}
         </motion.div>
       ) : (
         <motion.div
-          key="training-setup"
+          key={`training-${displayState}`}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="min-h-screen bg-gradient-to-br from-prepacds-primary/5 to-prepacds-secondary/10 flex items-center justify-center"
         >
-          <Card className="p-8 border-prepacds-primary/20">
+          <Card className="p-8 border-prepacds-primary/20 min-w-[400px]">
             <CardHeader className="text-center">
               <CardTitle className="text-xl text-prepacds-primary">
-                {content ? 'Préparation de votre entraînement...' : 'Configuration de la session'}
+                {displayState === 'preparing' || displayState === 'countdown' 
+                  ? 'Préparation de votre entraînement...' 
+                  : 'Configuration de la session'
+                }
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -288,30 +379,61 @@ export function TrainingExperiencePlayer({
                 <Badge variant="default">{trainingType}</Badge>
               </div>
 
-              {content && (
+              {(displayState === 'preparing' || displayState === 'countdown') && content && (
                 <motion.div
+                  key="preparing-animation"
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="bg-prepacds-primary/10 p-4 rounded-lg border border-prepacds-primary/20"
+                  className="bg-prepacds-primary/10 p-6 rounded-lg border border-prepacds-primary/20"
                 >
-                  <div className="flex items-center justify-center space-x-2 mb-3">
-                    <div className="animate-pulse w-2 h-2 bg-prepacds-primary rounded-full"></div>
-                    <div className="animate-pulse w-2 h-2 bg-prepacds-primary rounded-full" style={{animationDelay: '0.2s'}}></div>
-                    <div className="animate-pulse w-2 h-2 bg-prepacds-primary rounded-full" style={{animationDelay: '0.4s'}}></div>
+                  <div className="flex items-center justify-center space-x-2 mb-4">
+                    <div className="animate-pulse w-3 h-3 bg-prepacds-primary rounded-full"></div>
+                    <div className="animate-pulse w-3 h-3 bg-prepacds-primary rounded-full" style={{animationDelay: '0.2s'}}></div>
+                    <div className="animate-pulse w-3 h-3 bg-prepacds-primary rounded-full" style={{animationDelay: '0.4s'}}></div>
                   </div>
+                  
+                  {displayState === 'countdown' && (
+                    <motion.div
+                      initial={{ scale: 1.2 }}
+                      animate={{ scale: 1 }}
+                      className="text-center mb-4"
+                    >
+                      <div className="flex items-center justify-center gap-2 text-2xl font-bold text-prepacds-primary">
+                        <Clock className="h-6 w-6" />
+                        {countdown}
+                      </div>
+                    </motion.div>
+                  )}
+                  
                   <p className="text-sm text-prepacds-primary text-center font-medium">
                     Interface d'animation en cours de préparation...
                   </p>
                   <p className="text-xs text-muted-foreground text-center mt-2">
-                    Lancement automatique dans 3 secondes
+                    {displayState === 'countdown' 
+                      ? `Lancement automatique dans ${countdown} seconde${countdown > 1 ? 's' : ''}`
+                      : 'Initialisation du compteur...'
+                    }
                   </p>
-                  <Progress value={66.67} className="mt-3 h-2" />
+                  <Progress 
+                    value={displayState === 'countdown' ? ((5 - countdown) / 5) * 100 : 20} 
+                    className="mt-3 h-2" 
+                  />
                 </motion.div>
               )}
 
               <Button 
                 onClick={() => {
-                  console.log('Démarrage manuel avec contenu:', content);
+                  logger.info('🎮 Démarrage manuel forcé', { 
+                    displayState, 
+                    hasContent: !!content,
+                    timestamp: new Date().toISOString()
+                  }, 'TrainingExperiencePlayer');
+                  
+                  // Nettoyer les timers
+                  if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
+                  if (activationTimerRef.current) clearTimeout(activationTimerRef.current);
+                  
+                  setDisplayState('active');
                   setSession(prev => ({ ...prev, isActive: true }));
                 }} 
                 className="w-full gap-2"
@@ -333,6 +455,6 @@ export function TrainingExperiencePlayer({
           </Card>
         </motion.div>
       )}
-    </AnimatePresence>
+    </div>
   );
 }
