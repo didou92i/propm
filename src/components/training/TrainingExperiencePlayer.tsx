@@ -55,20 +55,29 @@ export function TrainingExperiencePlayer({
   const [displayState, setDisplayState] = useState<DisplayState>('loading');
   const [content, setContent] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
-  const [countdown, setCountdown] = useState(5);
+  const [preparingTimeLeft, setPreparingTimeLeft] = useState(8); // Temps verrouillé à 8 secondes
+  const [countdown, setCountdown] = useState(3);
   
-  // Refs pour éviter les conflits React
+  // Refs pour éviter les conflits React et verrouillage des transitions
+  const preparingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const countdownTimerRef = useRef<NodeJS.Timeout | null>(null);
   const activationTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const transitionLockRef = useRef<boolean>(false);
   const sessionIdRef = useRef(session.id);
   
   const { generateContent } = usePrepaCdsChat();
   const { injectPrepaCdsStyles } = useAnimationEngine();
 
-  // Génération du contenu interactif avec logs détaillés
+  // Génération du contenu interactif avec logs détaillés et verrouillage
   const generateInteractiveContent = async () => {
+    if (transitionLockRef.current) {
+      logger.warn('🔒 Génération bloquée - transition en cours', { trainingType }, 'TrainingExperiencePlayer');
+      return;
+    }
+    
+    transitionLockRef.current = true;
     const timestamp = new Date().toISOString();
-    logger.info('🚀 Début génération contenu', { 
+    logger.info('🚀 Début génération contenu avec verrouillage', { 
       trainingType, level, domain, sessionId: sessionIdRef.current, timestamp 
     }, 'TrainingExperiencePlayer');
     
@@ -89,20 +98,34 @@ export function TrainingExperiencePlayer({
       
       // La réponse est déjà un objet structuré
       if (response && typeof response === 'object') {
-        logger.info('✅ Contenu valide reçu - transition vers preparing', response, 'TrainingExperiencePlayer');
+        logger.info('✅ Contenu valide reçu - transition VERROUILLÉE vers preparing', { 
+          content: response,
+          preparingTimeLeft: 8,
+          timestamp: new Date().toISOString()
+        }, 'TrainingExperiencePlayer');
         setContent(response);
         setDisplayState('preparing');
+        setPreparingTimeLeft(8); // Verrouillage de 8 secondes
       } else {
         logger.warn('⚠️ Réponse invalide - utilisation fallback', { response }, 'TrainingExperiencePlayer');
         const fallbackContent = generateFallbackContent();
         setContent(fallbackContent);
         setDisplayState('preparing');
+        setPreparingTimeLeft(8);
       }
       
     } catch (err) {
       logger.error('❌ Erreur génération contenu', err, 'TrainingExperiencePlayer');
       setError('Impossible de générer le contenu. Veuillez réessayer.');
       setDisplayState('loading');
+    } finally {
+      // Libérer le verrou après un délai minimal
+      setTimeout(() => {
+        transitionLockRef.current = false;
+        logger.info('🔓 Verrou de transition libéré', { 
+          timestamp: new Date().toISOString()
+        }, 'TrainingExperiencePlayer');
+      }, 1000);
     }
   };
 
@@ -241,54 +264,92 @@ export function TrainingExperiencePlayer({
     }
   }, [initialContent, injectPrepaCdsStyles]);
 
-  // Système de transition d'état contrôlé avec compteur
+  // Système de transition d'état contrôlé avec verrouillage de 8 secondes
   useEffect(() => {
-    if (displayState === 'preparing' && content) {
-      logger.info('⏳ Début phase preparing - lancement compteur 5s', { 
-        content: !!content,
-        displayState,
+    logger.info('🔄 useEffect pour gestion des timers', { 
+      displayState, 
+      preparingTimeLeft, 
+      countdown,
+      transitionLocked: transitionLockRef.current,
+      timestamp: new Date().toISOString()
+    }, 'TrainingExperiencePlayer');
+    
+    // Phase de préparation verrouillée (8 secondes)
+    if (displayState === 'preparing' && preparingTimeLeft > 0) {
+      logger.info('⏳ Début phase preparing - VERROUILLÉ 8 secondes', { 
+        preparingTimeLeft,
         timestamp: new Date().toISOString()
       }, 'TrainingExperiencePlayer');
       
-      // Nettoyer les timers précédents
-      if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
-      if (activationTimerRef.current) clearTimeout(activationTimerRef.current);
-      
-      // Démarrer le compteur visuel
-      setCountdown(5);
-      setDisplayState('countdown');
-      
-      let currentCount = 5;
-      countdownTimerRef.current = setInterval(() => {
-        currentCount--;
-        logger.debug('⏰ Compteur', { secondesRestantes: currentCount }, 'TrainingExperiencePlayer');
-        setCountdown(currentCount);
-        
-        if (currentCount <= 0) {
-          logger.info('🎯 Fin compteur - activation session', { 
-            finalDisplayState: 'active',
+      preparingTimerRef.current = setInterval(() => {
+        setPreparingTimeLeft(prev => {
+          const newTime = prev - 1;
+          logger.info('⏱️ Tick preparing timer', { 
+            previousTime: prev, 
+            newTime,
+            willTransition: newTime <= 0,
             timestamp: new Date().toISOString()
           }, 'TrainingExperiencePlayer');
           
-          clearInterval(countdownTimerRef.current!);
-          setDisplayState('active');
-          setSession(prev => ({ ...prev, content, isActive: true }));
-        }
+          if (newTime <= 0) {
+            logger.info('🔄 Fin phase preparing (8s écoulées), transition vers countdown', {
+              timestamp: new Date().toISOString()
+            }, 'TrainingExperiencePlayer');
+            setDisplayState('countdown');
+            setCountdown(3);
+            return 0;
+          }
+          return newTime;
+        });
+      }, 1000);
+    }
+    
+    // Phase de compte à rebours (3 secondes)
+    if (displayState === 'countdown' && countdown > 0) {
+      logger.info('⏰ Démarrage timer countdown', { 
+        countdown,
+        timestamp: new Date().toISOString()
+      }, 'TrainingExperiencePlayer');
+      
+      countdownTimerRef.current = setInterval(() => {
+        setCountdown(prev => {
+          const newTime = prev - 1;
+          logger.info('⏱️ Tick countdown timer', { 
+            previousTime: prev, 
+            newTime,
+            willActivate: newTime <= 0,
+            timestamp: new Date().toISOString()
+          }, 'TrainingExperiencePlayer');
+          
+          if (newTime <= 0) {
+            logger.info('🎯 Fin compteur - activation session', {
+              timestamp: new Date().toISOString()
+            }, 'TrainingExperiencePlayer');
+            setDisplayState('active');
+            setSession(prev => ({ ...prev, content, isActive: true }));
+            return 0;
+          }
+          return newTime;
+        });
       }, 1000);
     }
     
     // Cleanup à la destruction
     return () => {
+      if (preparingTimerRef.current) {
+        clearInterval(preparingTimerRef.current);
+        preparingTimerRef.current = null;
+      }
       if (countdownTimerRef.current) {
-        logger.debug('🧹 Nettoyage timer compteur', {}, 'TrainingExperiencePlayer');
         clearInterval(countdownTimerRef.current);
+        countdownTimerRef.current = null;
       }
       if (activationTimerRef.current) {
-        logger.debug('🧹 Nettoyage timer activation', {}, 'TrainingExperiencePlayer');
         clearTimeout(activationTimerRef.current);
+        activationTimerRef.current = null;
       }
     };
-  }, [displayState, content]);
+  }, [displayState, preparingTimeLeft, countdown, content]);
 
   // Logs des changements d'état de rendu
   logger.debug('🖼️ Rendu état', { 
@@ -392,31 +453,56 @@ export function TrainingExperiencePlayer({
                     <div className="animate-pulse w-3 h-3 bg-prepacds-primary rounded-full" style={{animationDelay: '0.4s'}}></div>
                   </div>
                   
+                  {displayState === 'preparing' && (
+                    <motion.div
+                      initial={{ scale: 1.2 }}
+                      animate={{ scale: 1 }}
+                      className="text-center mb-4"
+                    >
+                      <div className="flex items-center justify-center gap-2 text-3xl font-bold text-prepacds-primary">
+                        <Clock className="h-8 w-8" />
+                        {preparingTimeLeft}
+                      </div>
+                      <p className="text-lg text-prepacds-primary mt-2">
+                        Interface VERROUILLÉE
+                      </p>
+                    </motion.div>
+                  )}
+                  
                   {displayState === 'countdown' && (
                     <motion.div
                       initial={{ scale: 1.2 }}
                       animate={{ scale: 1 }}
                       className="text-center mb-4"
                     >
-                      <div className="flex items-center justify-center gap-2 text-2xl font-bold text-prepacds-primary">
-                        <Clock className="h-6 w-6" />
+                      <div className="flex items-center justify-center gap-2 text-3xl font-bold text-green-600">
+                        <Clock className="h-8 w-8" />
                         {countdown}
                       </div>
+                      <p className="text-lg text-green-600 mt-2">
+                        Démarrage imminent
+                      </p>
                     </motion.div>
                   )}
                   
                   <p className="text-sm text-prepacds-primary text-center font-medium">
-                    Interface d'animation en cours de préparation...
+                    {displayState === 'preparing' 
+                      ? 'Préparation du contenu PrepaCDS...'
+                      : 'Interface d\'animation prête !'
+                    }
                   </p>
                   <p className="text-xs text-muted-foreground text-center mt-2">
-                    {displayState === 'countdown' 
-                      ? `Lancement automatique dans ${countdown} seconde${countdown > 1 ? 's' : ''}`
-                      : 'Initialisation du compteur...'
+                    {displayState === 'preparing' 
+                      ? `Interface verrouillée pendant ${preparingTimeLeft} seconde${preparingTimeLeft > 1 ? 's' : ''}`
+                      : `Lancement automatique dans ${countdown} seconde${countdown > 1 ? 's' : ''}`
                     }
                   </p>
                   <Progress 
-                    value={displayState === 'countdown' ? ((5 - countdown) / 5) * 100 : 20} 
-                    className="mt-3 h-2" 
+                    value={displayState === 'preparing' 
+                      ? ((8 - preparingTimeLeft) / 8) * 100 
+                      : ((3 - countdown) / 3) * 100 + 100
+                    } 
+                    className="mt-3 h-3" 
                   />
                 </motion.div>
               )}
@@ -426,10 +512,12 @@ export function TrainingExperiencePlayer({
                   logger.info('🎮 Démarrage manuel forcé', { 
                     displayState, 
                     hasContent: !!content,
+                    preparingTimeLeft,
                     timestamp: new Date().toISOString()
                   }, 'TrainingExperiencePlayer');
                   
-                  // Nettoyer les timers
+                  // Nettoyer tous les timers
+                  if (preparingTimerRef.current) clearInterval(preparingTimerRef.current);
                   if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
                   if (activationTimerRef.current) clearTimeout(activationTimerRef.current);
                   
@@ -437,9 +525,14 @@ export function TrainingExperiencePlayer({
                   setSession(prev => ({ ...prev, isActive: true }));
                 }} 
                 className="w-full gap-2"
-                disabled={!content}
+                disabled={!content || displayState === 'preparing'}
               >
-                {content ? (
+                {displayState === 'preparing' ? (
+                  <>
+                    <Clock className="h-4 w-4" />
+                    Attendre {preparingTimeLeft}s...
+                  </>
+                ) : content ? (
                   <>
                     <Play className="h-4 w-4" />
                     Commencer maintenant

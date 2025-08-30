@@ -182,8 +182,18 @@ serve(async (req) => {
   let domain = 'droit_administratif';
 
   try {
+    console.log('🚀 Début génération contenu animé PrepaCDS:', { timestamp: new Date().toISOString() });
+    
     // Utiliser la clé API dédiée aux animations pour optimiser les prompts
     const openAIApiKey = Deno.env.get('OPENAI_ANIMATIONS_API_KEY') || Deno.env.get('OPENAI_API_KEY');
+    const prepaCdsAssistantId = Deno.env.get('PREPACDS_ASSISTANT_ID');
+    
+    console.log('🔧 Configuration API:', { 
+      hasOpenAIKey: !!openAIApiKey,
+      hasPrepaCdsAssistantId: !!prepaCdsAssistantId,
+      timestamp: new Date().toISOString()
+    });
+    
     if (!openAIApiKey) {
       throw new Error('OpenAI Animations API key not configured');
     }
@@ -208,7 +218,14 @@ serve(async (req) => {
     domain = requestBody.domain || 'droit_administratif';
     const options = requestBody.options || {};
 
-    console.log('Generating animated training:', { trainingType, level, domain, options });
+    console.log('📝 Paramètres génération:', { 
+      trainingType, 
+      level, 
+      domain, 
+      options,
+      userId: user?.id,
+      timestamp: new Date().toISOString()
+    });
 
     // Récupérer le template approprié
     const template = TRAINING_TEMPLATES[trainingType as keyof typeof TRAINING_TEMPLATES];
@@ -245,30 +262,60 @@ IMPORTANT: Réponds UNIQUEMENT avec du JSON valide, sans texte additionnel.`;
       domain
     });
 
-    // Appel à l'API OpenAI avec tokens réduits
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [
-          { 
-            role: 'system', 
-            content: contextualPrompt
-          },
-          { 
-            role: 'user', 
-            content: `Génère maintenant le contenu pour un entraînement ${trainingType} de niveau ${level} en ${domain}.` 
-          }
-        ],
-        max_tokens: 2500,
-        temperature: 0.7,
-        response_format: { type: "json_object" }
-      }),
+    console.log('🤖 Appel OpenAI avec assistant PrepaCDS:', {
+      model: prepaCdsAssistantId ? 'assistant' : 'gpt-4o',
+      assistantId: prepaCdsAssistantId,
+      trainingType,
+      timestamp: new Date().toISOString()
     });
+
+    // Utiliser l'assistant PrepaCDS si configuré, sinon utiliser le modèle standard
+    let response;
+    if (prepaCdsAssistantId) {
+      // Utiliser l'assistant spécialisé PrepaCDS
+      response = await fetch('https://api.openai.com/v1/threads/runs', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'Content-Type': 'application/json',
+          'OpenAI-Beta': 'assistants=v2',
+        },
+        body: JSON.stringify({
+          assistant_id: prepaCdsAssistantId,
+          thread: {
+            messages: [{
+              role: 'user',
+              content: `Génère du contenu d'entraînement ${trainingType} de niveau ${level} en ${domain}. ${contextualPrompt}`
+            }]
+          }
+        }),
+      });
+    } else {
+      // Utiliser le modèle standard
+      response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o',
+          messages: [
+            { 
+              role: 'system', 
+              content: contextualPrompt
+            },
+            { 
+              role: 'user', 
+              content: `Génère maintenant le contenu pour un entraînement ${trainingType} de niveau ${level} en ${domain}.` 
+            }
+          ],
+          max_tokens: 2500,
+          temperature: 0.7,
+          response_format: { type: "json_object" }
+        }),
+      });
+    }
 
     if (!response.ok) {
       const errorData = await response.text();
@@ -284,11 +331,14 @@ IMPORTANT: Réponds UNIQUEMENT avec du JSON valide, sans texte additionnel.`;
     }
 
     const data = await response.json();
-    console.log('OpenAI response received:', {
+    console.log('📥 Réponse API reçue:', {
+      apiType: prepaCdsAssistantId ? 'assistant' : 'completion',
       choices: data.choices?.length || 0,
       usage: data.usage,
       trainingType,
-      finishReason: data.choices[0]?.finish_reason
+      finishReason: data.choices[0]?.finish_reason,
+      assistantUsed: !!prepaCdsAssistantId,
+      timestamp: new Date().toISOString()
     });
 
     const content = data.choices[0]?.message?.content;
@@ -341,13 +391,16 @@ IMPORTANT: Réponds UNIQUEMENT avec du JSON valide, sans texte additionnel.`;
       }
     };
 
-    console.log('Animated training content generated successfully:', {
+    console.log('✅ Contenu d\'entraînement animé généré avec succès:', {
       trainingType,
       level,
       domain,
       sessionId: enhancedContent.sessionInfo.id,
       contentKeys: Object.keys(enhancedContent),
-      success: true
+      assistantUsed: !!prepaCdsAssistantId,
+      contentLength: JSON.stringify(enhancedContent).length,
+      success: true,
+      timestamp: new Date().toISOString()
     });
 
     return new Response(JSON.stringify({ 
@@ -361,13 +414,15 @@ IMPORTANT: Réponds UNIQUEMENT avec du JSON valide, sans texte additionnel.`;
     });
 
   } catch (error) {
-    console.error('Generate animated training error:', {
+    console.error('❌ Erreur génération contenu animé:', {
       errorMessage: error.message,
       errorStack: error.stack,
       trainingType,
       level,
       domain,
-      timestamp: new Date().toISOString()
+      userId: 'unknown',
+      timestamp: new Date().toISOString(),
+      phase: 'generation'
     });
     
     return new Response(JSON.stringify({ 
