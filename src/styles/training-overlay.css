@@ -1,0 +1,122 @@
+/* Styles pour overlay permanent avec data-attributes */
+.training-overlay {
+  position: relative;
+  min-height: 100vh;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* États basés sur data-attributes */
+.training-overlay[data-state="loading"] {
+  opacity: 1;
+  visibility: visible;
+  background: linear-gradient(135deg, 
+    hsl(var(--prepacds-primary) / 0.05), 
+    hsl(var(--prepacds-secondary) / 0.1)
+  );
+}
+
+.training-overlay[data-state="preparing"] {
+  opacity: 1;
+  visibility: visible;
+  background: linear-gradient(135deg, 
+    hsl(var(--prepacds-primary) / 0.05), 
+    hsl(var(--prepacds-secondary) / 0.1)
+  );
+  backdrop-filter: blur(16px);
+}
+
+.training-overlay[data-state="countdown"] {
+  opacity: 1;
+  visibility: visible;
+  background: linear-gradient(135deg, 
+    hsl(var(--prepacds-primary) / 0.08), 
+    hsl(var(--prepacds-secondary) / 0.15)
+  );
+  backdrop-filter: blur(20px);
+}
+
+.training-overlay[data-state="active"] {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  background: transparent;
+  backdrop-filter: none;
+}
+
+/* Animations pour les transitions d'état */
+.training-overlay[data-state="preparing"] .preparing-content {
+  animation: prepareAnimation 0.5s ease-out;
+}
+
+.training-overlay[data-state="countdown"] .countdown-content {
+  animation: countdownPulse 1s ease-in-out infinite;
+}
+
+@keyframes prepareAnimation {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes countdownPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+}
+
+/* Styles pour les indicateurs de session */
+.training-overlay::before {
+  content: attr(data-session-id);
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 10px;
+  color: hsl(var(--muted-foreground));
+  font-family: monospace;
+  opacity: 0.3;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+/* Mode debug pour développement */
+.training-overlay[data-debug="true"]::after {
+  content: "State: " attr(data-state);
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  font-size: 12px;
+  color: hsl(var(--primary));
+  background: hsl(var(--background) / 0.8);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-family: monospace;
+  z-index: 1000;
+}
+
+/* Optimisations performance */
+.training-overlay {
+  will-change: opacity, visibility, background, backdrop-filter;
+  contain: layout style paint;
+}
+
+.training-overlay * {
+  will-change: auto;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .training-overlay[data-state="preparing"],
+  .training-overlay[data-state="countdown"] {
+    backdrop-filter: blur(12px);
+  }
+}

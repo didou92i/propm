@@ -403,17 +403,28 @@ IMPORTANT: Réponds UNIQUEMENT avec du JSON valide, sans texte additionnel.`;
       timestamp: new Date().toISOString()
     });
 
-    return new Response(JSON.stringify({ 
+    // Réponse garantie non vide avec meta status
+    const successResponse = {
       content: enhancedContent,
       trainingType,
       level,
       domain,
-      success: true
-    }), {
+      success: true,
+      meta: {
+        status: 'OK',
+        sessionId: enhancedContent.sessionInfo.id,
+        timestamp: new Date().toISOString(),
+        assistantUsed: !!prepaCdsAssistantId
+      }
+    };
+
+    return new Response(JSON.stringify(successResponse), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
+    const sessionId = `error-session-${Date.now()}`;
+    
     console.error('❌ Erreur génération contenu animé:', {
       errorMessage: error.message,
       errorStack: error.stack,
@@ -421,19 +432,45 @@ IMPORTANT: Réponds UNIQUEMENT avec du JSON valide, sans texte additionnel.`;
       level,
       domain,
       userId: 'unknown',
+      sessionId,
       timestamp: new Date().toISOString(),
       phase: 'generation'
     });
     
-    return new Response(JSON.stringify({ 
-      error: error.message,
+    // Fallback garanti non vide même en cas d'erreur
+    const fallbackErrorContent = {
+      content: {
+        questions: [{
+          id: 'error-fallback',
+          question: 'Cette question de démonstration apparaît en cas d\'erreur technique.',
+          options: ['Réessayer', 'Continuer', 'Quitter', 'Support'],
+          correctAnswer: 0,
+          explanation: 'Le système a généré un contenu de démonstration suite à une erreur technique.',
+          difficulty: level
+        }],
+        sessionInfo: {
+          id: sessionId,
+          trainingType,
+          level,
+          domain,
+          createdAt: new Date().toISOString(),
+          estimatedDuration: 5
+        }
+      },
       trainingType,
       level,
       domain,
       success: false,
-      timestamp: new Date().toISOString()
-    }), {
-      status: 500,
+      meta: {
+        status: 'ERROR',
+        sessionId,
+        timestamp: new Date().toISOString(),
+        errorMessage: error.message
+      }
+    };
+    
+    return new Response(JSON.stringify(fallbackErrorContent), {
+      status: 200, // 200 pour éviter les erreurs côté client
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

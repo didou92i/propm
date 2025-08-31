@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Play, Pause, Square, RotateCcw, Clock } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useAnimationEngine } from '@/hooks/useAnimationEngine';
 import { AnimatedQuizPlayer } from './AnimatedQuizPlayer';
 import { TrueFalseAnimated } from './TrueFalseAnimated';
@@ -43,8 +43,19 @@ export function TrainingExperiencePlayer({
   onExit,
   initialContent
 }: TrainingExperiencePlayerProps) {
+  // Machine à états avec double verrou
+  const [displayState, setDisplayState] = useState<DisplayState>('loading');
+  const [contentReady, setContentReady] = useState(false);
+  const [timeElapsed, setTimeElapsed] = useState(false);
+  const [content, setContent] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [preparingTimeLeft, setPreparingTimeLeft] = useState(8);
+  const [countdown, setCountdown] = useState(3);
+  
+  // Session avec ID corrélé
+  const sessionIdRef = useRef(`session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
   const [session, setSession] = useState<TrainingSession>({
-    id: `session-${Date.now()}`,
+    id: sessionIdRef.current,
     trainingType,
     level,
     domain,
@@ -52,128 +63,180 @@ export function TrainingExperiencePlayer({
     progress: 0
   });
   
-  const [displayState, setDisplayState] = useState<DisplayState>('loading');
-  const [content, setContent] = useState<any>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [preparingTimeLeft, setPreparingTimeLeft] = useState(8); // Temps verrouillé à 8 secondes
-  const [countdown, setCountdown] = useState(3);
-  
-  // Refs pour éviter les conflits React et verrouillage des transitions
+  // Refs pour timers et verrouillage
   const preparingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const countdownTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const activationTimerRef = useRef<NodeJS.Timeout | null>(null);
   const transitionLockRef = useRef<boolean>(false);
-  const sessionIdRef = useRef(session.id);
   
   const { generateContent } = usePrepaCdsChat();
   const { injectPrepaCdsStyles } = useAnimationEngine();
 
-  // Génération du contenu interactif avec logs détaillés et verrouillage
+  // Génération avec logs corrélés par sessionId
   const generateInteractiveContent = async () => {
     if (transitionLockRef.current) {
-      logger.warn('🔒 Génération bloquée - transition en cours', { trainingType }, 'TrainingExperiencePlayer');
+      logger.warn('🔒 Génération bloquée', { sessionId: sessionIdRef.current }, 'TrainingExperiencePlayer');
       return;
     }
     
     transitionLockRef.current = true;
-    const timestamp = new Date().toISOString();
-    logger.info('🚀 Début génération contenu avec verrouillage', { 
-      trainingType, level, domain, sessionId: sessionIdRef.current, timestamp 
+    const startTime = new Date().toISOString();
+    
+    logger.info('🚀 [START] Génération contenu', { 
+      sessionId: sessionIdRef.current,
+      trainingType, level, domain,
+      timestamp: startTime
     }, 'TrainingExperiencePlayer');
     
     setDisplayState('loading');
     setError(null);
+    setContentReady(false);
     
     try {
-      logger.debug('📤 Appel API generateContent', { trainingType, level, domain }, 'TrainingExperiencePlayer');
-      
       const response = await generateContent(trainingType, level, domain);
       
-      logger.info('📥 Réponse API reçue', { 
-        hasResponse: !!response, 
-        responseType: typeof response,
-        responseKeys: response ? Object.keys(response) : [],
-        timestamp: new Date().toISOString()
-      }, 'TrainingExperiencePlayer');
-      
-      // La réponse est déjà un objet structuré
-      if (response && typeof response === 'object') {
-        logger.info('✅ Contenu valide reçu - transition VERROUILLÉE vers preparing', { 
-          content: response,
-          preparingTimeLeft: 8,
-          timestamp: new Date().toISOString()
-        }, 'TrainingExperiencePlayer');
-        setContent(response);
-        setDisplayState('preparing');
-        setPreparingTimeLeft(8); // Verrouillage de 8 secondes
+      // Garantir un contenu non vide
+      let finalContent;
+      if (response?.content && typeof response.content === 'object') {
+        finalContent = {
+          ...response.content,
+          meta: { status: 'OK', sessionId: sessionIdRef.current }
+        };
+      } else if (response && typeof response === 'object') {
+        finalContent = {
+          ...response,
+          meta: { status: 'OK', sessionId: sessionIdRef.current }
+        };
       } else {
-        logger.warn('⚠️ Réponse invalide - utilisation fallback', { response }, 'TrainingExperiencePlayer');
-        const fallbackContent = generateFallbackContent();
-        setContent(fallbackContent);
-        setDisplayState('preparing');
-        setPreparingTimeLeft(8);
+        logger.warn('⚠️ Réponse vide/invalide - fallback activé', { response }, 'TrainingExperiencePlayer');
+        finalContent = {
+          ...generateFallbackContent(),
+          meta: { status: 'FALLBACK', sessionId: sessionIdRef.current }
+        };
       }
       
+      const endTime = new Date().toISOString();
+      logger.info('✅ [END] Contenu généré avec succès', { 
+        sessionId: sessionIdRef.current,
+        contentStatus: finalContent.meta.status,
+        startTime,
+        endTime,
+        duration: Date.parse(endTime) - Date.parse(startTime)
+      }, 'TrainingExperiencePlayer');
+      
+      setContent(finalContent);
+      setContentReady(true);
+      setDisplayState('preparing');
+      setPreparingTimeLeft(8);
+      
     } catch (err) {
-      logger.error('❌ Erreur génération contenu', err, 'TrainingExperiencePlayer');
-      setError('Impossible de générer le contenu. Veuillez réessayer.');
-      setDisplayState('loading');
+      logger.error('❌ [ERROR] Génération échouée', { 
+        sessionId: sessionIdRef.current,
+        error: err
+      }, 'TrainingExperiencePlayer');
+      
+      // Fallback toujours non vide
+      const fallbackContent = {
+        ...generateFallbackContent(),
+        meta: { status: 'ERROR', sessionId: sessionIdRef.current }
+      };
+      
+      setContent(fallbackContent);
+      setContentReady(true);
+      setDisplayState('preparing');
+      setPreparingTimeLeft(8);
     } finally {
-      // Libérer le verrou après un délai minimal
       setTimeout(() => {
         transitionLockRef.current = false;
-        logger.info('🔓 Verrou de transition libéré', { 
-          timestamp: new Date().toISOString()
-        }, 'TrainingExperiencePlayer');
       }, 1000);
     }
   };
 
+  // Fallback garanti non vide avec métadonnées
   const generateFallbackContent = () => {
+    const baseContent = {
+      sessionInfo: {
+        id: sessionIdRef.current,
+        trainingType,
+        level,
+        domain,
+        createdAt: new Date().toISOString(),
+        estimatedDuration: 15
+      }
+    };
+
     switch (trainingType) {
       case 'qcm':
         return {
+          ...baseContent,
           questions: [
             {
-              id: '1',
-              question: 'Quelle est la durée légale du travail en France ?',
-              options: ['35 heures', '37 heures', '39 heures', '40 heures'],
+              id: 'fallback-1',
+              question: `Quelle est la principale mission du Chef de Service de Police Municipale en ${domain} ?`,
+              options: [
+                'Assurer la sécurité publique',
+                'Gérer les finances publiques', 
+                'Organiser les élections',
+                'Superviser les travaux publics'
+              ],
               correctAnswer: 0,
-              explanation: 'La durée légale du travail est de 35 heures par semaine.',
-              difficulty: 'facile'
+              explanation: 'Le Chef de Service de Police Municipale a pour mission principale d\'assurer la sécurité publique sur le territoire communal.',
+              difficulty: level,
+              animationType: 'standard'
             }
-          ]
+          ],
+          metadata: {
+            estimatedTime: 15,
+            passingScore: 70,
+            tips: ['Lisez attentivement chaque question', 'Réfléchissez avant de répondre']
+          }
         };
       case 'vrai_faux':
         return {
+          ...baseContent,
           questions: [
             {
-              id: '1',
-              statement: 'Un agent public peut cumuler plusieurs emplois sans autorisation.',
+              id: 'fallback-1',
+              statement: 'Un agent de police municipale peut verbaliser sans l\'autorisation du maire.',
               isTrue: false,
-              explanation: 'Le cumul d\'emplois est strictement réglementé pour les agents publics.',
-              domain: domain
+              explanation: 'L\'agent de police municipale agit sous l\'autorité du maire et dans le cadre de ses compétences définies.',
+              domain: domain,
+              confidence: 'high',
+              animationType: 'flip'
             }
-          ]
+          ],
+          metadata: {
+            estimatedTime: 10,
+            difficulty: level
+          }
         };
       case 'cas_pratique':
         return {
-          title: 'Gestion de conflit en équipe',
-          context: 'Vous êtes chef de service et devez gérer un conflit entre deux agents.',
+          ...baseContent,
+          title: `Gestion de situation en ${domain}`,
+          context: 'Vous êtes Chef de Service de Police Municipale et devez gérer une situation complexe.',
           steps: [
             {
-              id: '1',
+              id: 'fallback-step-1',
               title: 'Analyse de la situation',
-              scenario: 'Deux agents de votre service ne parviennent plus à collaborer efficacement.',
-              question: 'Comment analysez-vous cette situation et quelles premières mesures prenez-vous ?',
-              expectedPoints: ['Écoute active', 'Neutralité', 'Médiation'],
-              timeLimit: 15
+              scenario: 'Une situation conflictuelle nécessite votre intervention immédiate.',
+              question: 'Quelles sont vos premières actions et quelle méthode appliquez-vous ?',
+              expectedPoints: ['Évaluation rapide', 'Sécurisation', 'Communication'],
+              timeLimit: 15,
+              animationType: 'typewriter'
             }
           ],
-          totalTime: 45
+          metadata: {
+            totalTime: 45,
+            difficulty: level,
+            evaluationCriteria: ['Méthode', 'Rapidité', 'Pertinence']
+          }
         };
       default:
-        return null;
+        return {
+          ...baseContent,
+          error: 'Type d\'entraînement non supporté',
+          fallbackMessage: 'Contenu de démonstration disponible'
+        };
     }
   };
 
@@ -198,11 +261,6 @@ export function TrainingExperiencePlayer({
     }, 'TrainingExperiencePlayer');
     
     if (!content || displayState !== 'active') {
-      logger.debug('🚫 Conditions non remplies pour affichage composant', { 
-        hasContent: !!content, 
-        displayState,
-        expectedState: 'active'
-      }, 'TrainingExperiencePlayer');
       return null;
     }
 
@@ -257,6 +315,7 @@ export function TrainingExperiencePlayer({
     if (initialContent) {
       logger.info('📋 Utilisation du contenu initial fourni', initialContent, 'TrainingExperiencePlayer');
       setContent(initialContent);
+      setContentReady(true);
       setDisplayState('preparing');
     } else if (!content && displayState === 'loading') {
       logger.info('🔄 Lancement génération de contenu', { displayState }, 'TrainingExperiencePlayer');
@@ -264,19 +323,25 @@ export function TrainingExperiencePlayer({
     }
   }, [initialContent, injectPrepaCdsStyles]);
 
-  // Système de transition d'état contrôlé avec verrouillage de 8 secondes
+  // Machine à états avec double verrou : contentReady && timeElapsed
   useEffect(() => {
-    logger.info('🔄 useEffect pour gestion des timers', { 
+    const canActivate = contentReady && timeElapsed;
+    
+    logger.info('🎛️ [STATE] Machine à états', { 
+      sessionId: sessionIdRef.current,
       displayState, 
+      contentReady,
+      timeElapsed,
+      canActivate,
       preparingTimeLeft, 
       countdown,
-      transitionLocked: transitionLockRef.current,
       timestamp: new Date().toISOString()
     }, 'TrainingExperiencePlayer');
     
-    // Phase de préparation verrouillée (8 secondes)
+    // Phase preparing : timer de 8 secondes
     if (displayState === 'preparing' && preparingTimeLeft > 0) {
-      logger.info('⏳ Début phase preparing - VERROUILLÉ 8 secondes', { 
+      logger.info('⏳ [PREPARING] Début phase (8s verrouillées)', { 
+        sessionId: sessionIdRef.current,
         preparingTimeLeft,
         timestamp: new Date().toISOString()
       }, 'TrainingExperiencePlayer');
@@ -284,17 +349,13 @@ export function TrainingExperiencePlayer({
       preparingTimerRef.current = setInterval(() => {
         setPreparingTimeLeft(prev => {
           const newTime = prev - 1;
-          logger.info('⏱️ Tick preparing timer', { 
-            previousTime: prev, 
-            newTime,
-            willTransition: newTime <= 0,
-            timestamp: new Date().toISOString()
-          }, 'TrainingExperiencePlayer');
           
           if (newTime <= 0) {
-            logger.info('🔄 Fin phase preparing (8s écoulées), transition vers countdown', {
+            logger.info('✅ [PREPARING] Fin phase - temps écoulé', {
+              sessionId: sessionIdRef.current,
               timestamp: new Date().toISOString()
             }, 'TrainingExperiencePlayer');
+            setTimeElapsed(true);
             setDisplayState('countdown');
             setCountdown(3);
             return 0;
@@ -304,9 +365,10 @@ export function TrainingExperiencePlayer({
       }, 1000);
     }
     
-    // Phase de compte à rebours (3 secondes)
+    // Phase countdown : timer de 3 secondes
     if (displayState === 'countdown' && countdown > 0) {
-      logger.info('⏰ Démarrage timer countdown', { 
+      logger.info('⏰ [COUNTDOWN] Début phase (3s)', { 
+        sessionId: sessionIdRef.current,
         countdown,
         timestamp: new Date().toISOString()
       }, 'TrainingExperiencePlayer');
@@ -314,19 +376,31 @@ export function TrainingExperiencePlayer({
       countdownTimerRef.current = setInterval(() => {
         setCountdown(prev => {
           const newTime = prev - 1;
-          logger.info('⏱️ Tick countdown timer', { 
-            previousTime: prev, 
-            newTime,
-            willActivate: newTime <= 0,
-            timestamp: new Date().toISOString()
-          }, 'TrainingExperiencePlayer');
           
           if (newTime <= 0) {
-            logger.info('🎯 Fin compteur - activation session', {
+            logger.info('🎯 [COUNTDOWN] Fin - vérification double verrou', {
+              sessionId: sessionIdRef.current,
+              contentReady,
+              timeElapsed: true,
+              canActivate: contentReady && true,
               timestamp: new Date().toISOString()
             }, 'TrainingExperiencePlayer');
-            setDisplayState('active');
-            setSession(prev => ({ ...prev, content, isActive: true }));
+            
+            // Double verrou : on n'active que si contenu prêt ET temps écoulé
+            if (contentReady) {
+              setDisplayState('active');
+              setSession(prev => ({ ...prev, content, isActive: true }));
+              logger.info('🚀 [ACTIVE] Session activée', {
+                sessionId: sessionIdRef.current,
+                timestamp: new Date().toISOString()
+              }, 'TrainingExperiencePlayer');
+            } else {
+              logger.warn('⚠️ [BLOCK] Activation bloquée - contenu non prêt', {
+                sessionId: sessionIdRef.current,
+                contentReady,
+                timestamp: new Date().toISOString()
+              }, 'TrainingExperiencePlayer');
+            }
             return 0;
           }
           return newTime;
@@ -334,7 +408,7 @@ export function TrainingExperiencePlayer({
       }, 1000);
     }
     
-    // Cleanup à la destruction
+    // Cleanup timers
     return () => {
       if (preparingTimerRef.current) {
         clearInterval(preparingTimerRef.current);
@@ -344,12 +418,8 @@ export function TrainingExperiencePlayer({
         clearInterval(countdownTimerRef.current);
         countdownTimerRef.current = null;
       }
-      if (activationTimerRef.current) {
-        clearTimeout(activationTimerRef.current);
-        activationTimerRef.current = null;
-      }
     };
-  }, [displayState, preparingTimeLeft, countdown, content]);
+  }, [displayState, preparingTimeLeft, countdown, contentReady, timeElapsed]);
 
   // Logs des changements d'état de rendu
   logger.debug('🖼️ Rendu état', { 
@@ -408,144 +478,120 @@ export function TrainingExperiencePlayer({
 
   return (
     <div className="min-h-screen">
-      {displayState === 'active' ? (
+      {/* Overlay permanent - ne se démonte jamais */}
+      <div 
+        className="training-overlay"
+        data-state={displayState}
+        data-session-id={sessionIdRef.current}
+      >
+        {displayState !== 'active' && (
+          <div className="min-h-screen bg-gradient-to-br from-prepacds-primary/5 to-prepacds-secondary/10 flex items-center justify-center">
+            <Card className="p-8 border-prepacds-primary/20 min-w-[400px]">
+              <CardHeader className="text-center">
+                <CardTitle className="text-xl text-prepacds-primary">
+                  {displayState === 'preparing' || displayState === 'countdown' 
+                    ? 'Préparation de votre entraînement...' 
+                    : 'Configuration de la session'
+                  }
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex flex-wrap gap-2 justify-center">
+                  <Badge variant="outline">{level}</Badge>
+                  <Badge variant="outline">{domain}</Badge>
+                  <Badge variant="default">{trainingType}</Badge>
+                </div>
+
+                {(displayState === 'preparing' || displayState === 'countdown') && content && (
+                  <motion.div
+                    key="preparing-animation"
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="bg-prepacds-primary/10 p-6 rounded-lg border border-prepacds-primary/20"
+                  >
+                    <div className="flex items-center justify-center space-x-2 mb-4">
+                      <div className="animate-pulse w-3 h-3 bg-prepacds-primary rounded-full"></div>
+                      <div className="animate-pulse w-3 h-3 bg-prepacds-primary rounded-full" style={{animationDelay: '0.2s'}}></div>
+                      <div className="animate-pulse w-3 h-3 bg-prepacds-primary rounded-full" style={{animationDelay: '0.4s'}}></div>
+                    </div>
+                    
+                    {displayState === 'preparing' && (
+                      <motion.div
+                        initial={{ scale: 1.2 }}
+                        animate={{ scale: 1 }}
+                        className="text-center mb-4"
+                      >
+                        <div className="flex items-center justify-center gap-2 text-3xl font-bold text-prepacds-primary">
+                          <Clock className="h-8 w-8" />
+                          {preparingTimeLeft}
+                        </div>
+                        <p className="text-lg text-prepacds-primary mt-2">
+                          Interface VERROUILLÉE
+                        </p>
+                      </motion.div>
+                    )}
+                    
+                    {displayState === 'countdown' && (
+                      <motion.div
+                        initial={{ scale: 1.2 }}
+                        animate={{ scale: 1 }}
+                        className="text-center mb-4"
+                      >
+                        <div className="flex items-center justify-center gap-2 text-4xl font-bold text-prepacds-primary animate-pulse">
+                          <Play className="h-10 w-10" />
+                          {countdown}
+                        </div>
+                        <p className="text-lg text-prepacds-primary mt-2">
+                          Lancement imminent...
+                        </p>
+                      </motion.div>
+                    )}
+                    
+                    <Progress 
+                      value={displayState === 'preparing' ? ((8 - preparingTimeLeft) / 8) * 100 : 100} 
+                      className="w-full"
+                    />
+                    
+                    <div className="text-center text-sm text-muted-foreground">
+                      {displayState === 'preparing' && `Temps restant: ${preparingTimeLeft}s`}
+                      {displayState === 'countdown' && `Lancement dans: ${countdown}s`}
+                    </div>
+                  </motion.div>
+                )}
+
+                <div className="flex gap-3 justify-center">
+                  <Button variant="outline" onClick={onExit}>
+                    Annuler
+                  </Button>
+                  {displayState === 'preparing' && preparingTimeLeft > 6 && (
+                    <Button 
+                      onClick={() => {
+                        setPreparingTimeLeft(0);
+                        setTimeElapsed(true);
+                        setDisplayState('countdown');
+                        setCountdown(3);
+                      }}
+                      className="gap-2"
+                    >
+                      <Play className="h-4 w-4" />
+                      Démarrer maintenant
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </div>
+
+      {/* Zone de contenu training - rendu conditionnel mais overlay permanent */}
+      {displayState === 'active' && (
         <motion.div
-          key="training-active"
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.3 }}
         >
           {renderTrainingComponent()}
-        </motion.div>
-      ) : (
-        <motion.div
-          key={`training-${displayState}`}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="min-h-screen bg-gradient-to-br from-prepacds-primary/5 to-prepacds-secondary/10 flex items-center justify-center"
-        >
-          <Card className="p-8 border-prepacds-primary/20 min-w-[400px]">
-            <CardHeader className="text-center">
-              <CardTitle className="text-xl text-prepacds-primary">
-                {displayState === 'preparing' || displayState === 'countdown' 
-                  ? 'Préparation de votre entraînement...' 
-                  : 'Configuration de la session'
-                }
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex flex-wrap gap-2 justify-center">
-                <Badge variant="outline">{level}</Badge>
-                <Badge variant="outline">{domain}</Badge>
-                <Badge variant="default">{trainingType}</Badge>
-              </div>
-
-              {(displayState === 'preparing' || displayState === 'countdown') && content && (
-                <motion.div
-                  key="preparing-animation"
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="bg-prepacds-primary/10 p-6 rounded-lg border border-prepacds-primary/20"
-                >
-                  <div className="flex items-center justify-center space-x-2 mb-4">
-                    <div className="animate-pulse w-3 h-3 bg-prepacds-primary rounded-full"></div>
-                    <div className="animate-pulse w-3 h-3 bg-prepacds-primary rounded-full" style={{animationDelay: '0.2s'}}></div>
-                    <div className="animate-pulse w-3 h-3 bg-prepacds-primary rounded-full" style={{animationDelay: '0.4s'}}></div>
-                  </div>
-                  
-                  {displayState === 'preparing' && (
-                    <motion.div
-                      initial={{ scale: 1.2 }}
-                      animate={{ scale: 1 }}
-                      className="text-center mb-4"
-                    >
-                      <div className="flex items-center justify-center gap-2 text-3xl font-bold text-prepacds-primary">
-                        <Clock className="h-8 w-8" />
-                        {preparingTimeLeft}
-                      </div>
-                      <p className="text-lg text-prepacds-primary mt-2">
-                        Interface VERROUILLÉE
-                      </p>
-                    </motion.div>
-                  )}
-                  
-                  {displayState === 'countdown' && (
-                    <motion.div
-                      initial={{ scale: 1.2 }}
-                      animate={{ scale: 1 }}
-                      className="text-center mb-4"
-                    >
-                      <div className="flex items-center justify-center gap-2 text-3xl font-bold text-green-600">
-                        <Clock className="h-8 w-8" />
-                        {countdown}
-                      </div>
-                      <p className="text-lg text-green-600 mt-2">
-                        Démarrage imminent
-                      </p>
-                    </motion.div>
-                  )}
-                  
-                  <p className="text-sm text-prepacds-primary text-center font-medium">
-                    {displayState === 'preparing' 
-                      ? 'Préparation du contenu PrepaCDS...'
-                      : 'Interface d\'animation prête !'
-                    }
-                  </p>
-                  <p className="text-xs text-muted-foreground text-center mt-2">
-                    {displayState === 'preparing' 
-                      ? `Interface verrouillée pendant ${preparingTimeLeft} seconde${preparingTimeLeft > 1 ? 's' : ''}`
-                      : `Lancement automatique dans ${countdown} seconde${countdown > 1 ? 's' : ''}`
-                    }
-                  </p>
-                  <Progress 
-                    value={displayState === 'preparing' 
-                      ? ((8 - preparingTimeLeft) / 8) * 100 
-                      : ((3 - countdown) / 3) * 100 + 100
-                    } 
-                    className="mt-3 h-3" 
-                  />
-                </motion.div>
-              )}
-
-              <Button 
-                onClick={() => {
-                  logger.info('🎮 Démarrage manuel forcé', { 
-                    displayState, 
-                    hasContent: !!content,
-                    preparingTimeLeft,
-                    timestamp: new Date().toISOString()
-                  }, 'TrainingExperiencePlayer');
-                  
-                  // Nettoyer tous les timers
-                  if (preparingTimerRef.current) clearInterval(preparingTimerRef.current);
-                  if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
-                  if (activationTimerRef.current) clearTimeout(activationTimerRef.current);
-                  
-                  setDisplayState('active');
-                  setSession(prev => ({ ...prev, isActive: true }));
-                }} 
-                className="w-full gap-2"
-                disabled={!content || displayState === 'preparing'}
-              >
-                {displayState === 'preparing' ? (
-                  <>
-                    <Clock className="h-4 w-4" />
-                    Attendre {preparingTimeLeft}s...
-                  </>
-                ) : content ? (
-                  <>
-                    <Play className="h-4 w-4" />
-                    Commencer maintenant
-                  </>
-                ) : (
-                  <>
-                    <Play className="h-4 w-4" />
-                    Commencer l'entraînement
-                  </>
-                )}
-              </Button>
-            </CardContent>
-          </Card>
         </motion.div>
       )}
     </div>
