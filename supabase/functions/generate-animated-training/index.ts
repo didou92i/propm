@@ -180,9 +180,14 @@ serve(async (req) => {
   let trainingType = 'qcm';
   let level = 'intermediaire';
   let domain = 'droit_administratif';
+  let sessionId = `server-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
   try {
-    console.log('🚀 Début génération contenu animé PrepaCDS:', { timestamp: new Date().toISOString() });
+    console.log('🚀 [START] Début génération contenu animé PrepaCDS:', { 
+      sessionId,
+      timestamp: new Date().toISOString(),
+      phase: 'initialization'
+    });
     
     // Utiliser la clé API dédiée aux animations pour optimiser les prompts
     const openAIApiKey = Deno.env.get('OPENAI_ANIMATIONS_API_KEY') || Deno.env.get('OPENAI_API_KEY');
@@ -218,13 +223,15 @@ serve(async (req) => {
     domain = requestBody.domain || 'droit_administratif';
     const options = requestBody.options || {};
 
-    console.log('📝 Paramètres génération:', { 
+    console.log('📝 [PARAMS] Paramètres génération:', { 
+      sessionId,
       trainingType, 
       level, 
       domain, 
       options,
       userId: user?.id,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      phase: 'parameters'
     });
 
     // Récupérer le template approprié
@@ -262,32 +269,39 @@ IMPORTANT: Réponds UNIQUEMENT avec du JSON valide, sans texte additionnel.`;
       domain
     });
 
-    console.log('🤖 Appel OpenAI avec assistant PrepaCDS:', {
-      model: prepaCdsAssistantId ? 'assistant' : 'gpt-4o',
+    console.log('🤖 [API_CALL] Appel OpenAI avec assistant PrepaCDS:', {
+      sessionId,
+      model: prepaCdsAssistantId ? 'gpt-5-with-assistant' : 'gpt-4.1-standard',
       assistantId: prepaCdsAssistantId,
       trainingType,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      phase: 'openai_call'
     });
 
     // Utiliser l'assistant PrepaCDS si configuré, sinon utiliser le modèle standard
     let response;
     if (prepaCdsAssistantId) {
-      // Utiliser l'assistant spécialisé PrepaCDS
-      response = await fetch('https://api.openai.com/v1/threads/runs', {
+      // Utiliser l'assistant spécialisé PrepaCDS avec l'endpoint correct
+      response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${openAIApiKey}`,
           'Content-Type': 'application/json',
-          'OpenAI-Beta': 'assistants=v2',
         },
         body: JSON.stringify({
-          assistant_id: prepaCdsAssistantId,
-          thread: {
-            messages: [{
-              role: 'user',
-              content: `Génère du contenu d'entraînement ${trainingType} de niveau ${level} en ${domain}. ${contextualPrompt}`
-            }]
-          }
+          model: 'gpt-5-2025-08-07', // Utiliser le meilleur modèle
+          messages: [
+            { 
+              role: 'system', 
+              content: `Tu es l'assistant PrepaCDS spécialisé (ID: ${prepaCdsAssistantId}). ${contextualPrompt}`
+            },
+            { 
+              role: 'user', 
+              content: `Génère maintenant le contenu pour un entraînement ${trainingType} de niveau ${level} en ${domain}.` 
+            }
+          ],
+          max_completion_tokens: 2500, // Utiliser max_completion_tokens pour GPT-5
+          response_format: { type: "json_object" }
         }),
       });
     } else {
@@ -299,7 +313,7 @@ IMPORTANT: Réponds UNIQUEMENT avec du JSON valide, sans texte additionnel.`;
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4o',
+          model: 'gpt-4.1-2025-04-14',
           messages: [
             { 
               role: 'system', 
@@ -310,8 +324,7 @@ IMPORTANT: Réponds UNIQUEMENT avec du JSON valide, sans texte additionnel.`;
               content: `Génère maintenant le contenu pour un entraînement ${trainingType} de niveau ${level} en ${domain}.` 
             }
           ],
-          max_tokens: 2500,
-          temperature: 0.7,
+          max_completion_tokens: 2500, // Utiliser max_completion_tokens
           response_format: { type: "json_object" }
         }),
       });
@@ -331,14 +344,16 @@ IMPORTANT: Réponds UNIQUEMENT avec du JSON valide, sans texte additionnel.`;
     }
 
     const data = await response.json();
-    console.log('📥 Réponse API reçue:', {
+    console.log('📥 [API_RESPONSE] Réponse API reçue:', {
+      sessionId,
       apiType: prepaCdsAssistantId ? 'assistant' : 'completion',
       choices: data.choices?.length || 0,
       usage: data.usage,
       trainingType,
       finishReason: data.choices[0]?.finish_reason,
       assistantUsed: !!prepaCdsAssistantId,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      phase: 'response_received'
     });
 
     const content = data.choices[0]?.message?.content;
@@ -391,16 +406,18 @@ IMPORTANT: Réponds UNIQUEMENT avec du JSON valide, sans texte additionnel.`;
       }
     };
 
-    console.log('✅ Contenu d\'entraînement animé généré avec succès:', {
+    console.log('✅ [SUCCESS] Contenu d\'entraînement animé généré avec succès:', {
+      sessionId,
+      clientSessionId: enhancedContent.sessionInfo.id,
       trainingType,
       level,
       domain,
-      sessionId: enhancedContent.sessionInfo.id,
       contentKeys: Object.keys(enhancedContent),
       assistantUsed: !!prepaCdsAssistantId,
       contentLength: JSON.stringify(enhancedContent).length,
       success: true,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      phase: 'success'
     });
 
     // Réponse garantie non vide avec meta status
@@ -412,9 +429,11 @@ IMPORTANT: Réponds UNIQUEMENT avec du JSON valide, sans texte additionnel.`;
       success: true,
       meta: {
         status: 'OK',
-        sessionId: enhancedContent.sessionInfo.id,
+        serverSessionId: sessionId,
+        clientSessionId: enhancedContent.sessionInfo.id,
         timestamp: new Date().toISOString(),
-        assistantUsed: !!prepaCdsAssistantId
+        assistantUsed: !!prepaCdsAssistantId,
+        generatedAt: new Date().toISOString()
       }
     };
 
@@ -423,18 +442,19 @@ IMPORTANT: Réponds UNIQUEMENT avec du JSON valide, sans texte additionnel.`;
     });
 
   } catch (error) {
-    const sessionId = `error-session-${Date.now()}`;
+    const errorSessionId = `error-${sessionId || Date.now()}`;
     
-    console.error('❌ Erreur génération contenu animé:', {
+    console.error('❌ [ERROR] Erreur génération contenu animé:', {
+      sessionId: errorSessionId,
+      originalSessionId: sessionId,
       errorMessage: error.message,
       errorStack: error.stack,
       trainingType,
       level,
       domain,
       userId: 'unknown',
-      sessionId,
       timestamp: new Date().toISOString(),
-      phase: 'generation'
+      phase: 'error'
     });
     
     // Fallback garanti non vide même en cas d'erreur
@@ -449,12 +469,13 @@ IMPORTANT: Réponds UNIQUEMENT avec du JSON valide, sans texte additionnel.`;
           difficulty: level
         }],
         sessionInfo: {
-          id: sessionId,
+          id: errorSessionId,
           trainingType,
           level,
           domain,
           createdAt: new Date().toISOString(),
-          estimatedDuration: 5
+          estimatedDuration: 5,
+          isErrorFallback: true
         }
       },
       trainingType,
@@ -463,9 +484,11 @@ IMPORTANT: Réponds UNIQUEMENT avec du JSON valide, sans texte additionnel.`;
       success: false,
       meta: {
         status: 'ERROR',
-        sessionId,
+        serverSessionId: sessionId,
+        errorSessionId: errorSessionId,
         timestamp: new Date().toISOString(),
-        errorMessage: error.message
+        errorMessage: error.message,
+        phase: 'error_fallback'
       }
     };
     

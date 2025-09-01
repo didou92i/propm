@@ -148,7 +148,14 @@ export const usePrepaCdsChat = () => {
     setIsLoading(true);
     
     try {
-      console.log('Generating PrepaCDS content:', { trainingType, level, domain });
+      const clientSessionId = `client-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      console.log('🚀 [CLIENT] Generating PrepaCDS content:', { 
+        clientSessionId,
+        trainingType, 
+        level, 
+        domain,
+        timestamp: new Date().toISOString()
+      });
       
       // Validation côté client avant appel
       const supportedTypes = ['qcm', 'vrai_faux', 'cas_pratique', 'simulation_oral', 'question_ouverte', 'plan_revision'];
@@ -170,15 +177,40 @@ export const usePrepaCdsChat = () => {
           }
         });
         
-        console.log('Supabase function response:', { data, error, trainingType });
+        const sessionId = `client-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        
+        console.log('📡 [CLIENT] Réponse Supabase function:', { 
+          sessionId,
+          data, 
+          error, 
+          trainingType,
+          hasData: !!data,
+          hasContent: !!(data?.content),
+          dataSuccess: data?.success,
+          metaStatus: data?.meta?.status,
+          timestamp: new Date().toISOString()
+        });
 
-        if (!error && data && data.success) {
-          console.log('Edge Function succeeded:', data);
+        // Vérification stricte du succès : data ET success ET contenu valide
+        if (!error && data && data.success === true && data.content && Object.keys(data.content).length > 0) {
+          console.log('✅ [CLIENT] Edge Function succeeded:', { 
+            sessionId,
+            serverSessionId: data.meta?.serverSessionId,
+            contentKeys: Object.keys(data.content),
+            metaStatus: data.meta?.status
+          });
           setLastResponse(JSON.stringify(data.content || data));
           return data.content || data;
         }
         
-        console.warn('Edge Function failed, using fallback:', { error, data });
+        console.warn('⚠️ [CLIENT] Edge Function failed ou contenu vide, using fallback:', { 
+          sessionId,
+          error, 
+          data,
+          hasContent: !!(data?.content),
+          contentKeys: data?.content ? Object.keys(data.content) : [],
+          metaStatus: data?.meta?.status
+        });
       } catch (networkError) {
         console.warn('Network error calling Edge Function, using fallback:', networkError);
       }
@@ -191,10 +223,12 @@ export const usePrepaCdsChat = () => {
         throw new Error(fallbackContent.error);
       }
 
-      console.log('Fallback content generated successfully:', {
+      console.log('✅ [CLIENT] Fallback content generated successfully:', {
+        sessionId: `fallback-${Date.now()}`,
         trainingType,
         contentKeys: Object.keys(fallbackContent),
-        hasQuestions: !!(fallbackContent.questions || fallbackContent.steps)
+        hasQuestions: !!(fallbackContent.questions || fallbackContent.steps),
+        timestamp: new Date().toISOString()
       });
 
       setLastResponse(JSON.stringify(fallbackContent));
