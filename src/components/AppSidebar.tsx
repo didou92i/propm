@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Calculator, Search, Settings, Plus, User, Moon, Sun, LogOut, MessageSquare, Activity } from "lucide-react";
+import { Calculator, Search, Settings, Plus, User, Moon, Sun, LogOut, MessageSquare, Activity, Brain } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
@@ -250,6 +250,16 @@ export function AppSidebar({ selectedAgent, onAgentSelect, onContextShare }: App
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <NavLink to="/training" className={({ isActive }) =>
+                    `flex items-center gap-3 p-3 rounded-lg hover:bg-sidebar-accent/50 transition-colors ${isActive ? 'glass-intense border-l-2 border-primary' : 'glass-subtle'}`
+                  }>
+                    <Brain className="w-5 h-5 text-emerald-500" />
+                    <span className="font-medium">Entraînement</span>
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
                   <NavLink to="/diagnostics" className={({ isActive }) =>

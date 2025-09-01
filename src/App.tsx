@@ -21,6 +21,7 @@ const ProNatinf = lazy(() => import("./pages/ProNatinf"));
 const JobsPage = lazy(() => import("./pages/Jobs"));
 const JobCreatePage = lazy(() => import("./pages/JobCreate"));
 const JobManagePage = lazy(() => import("./pages/JobManage"));
+const Training = lazy(() => import("./pages/Training"));
 
 const queryClient = new QueryClient();
 
@@ -76,6 +77,11 @@ const App = () => (
             <Route path="/diagnostics" element={
               <ProtectedRoute>
                 <Diagnostics />
+              </ProtectedRoute>
+            } />
+            <Route path="/training" element={
+              <ProtectedRoute>
+                <Training />
               </ProtectedRoute>
             } />
 
