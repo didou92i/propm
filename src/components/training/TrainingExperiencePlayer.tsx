@@ -6,9 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, Play, Pause, Square, RotateCcw, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAnimationEngine } from '@/hooks/useAnimationEngine';
-import { AnimatedQuizPlayer } from './AnimatedQuizPlayer';
-import { TrueFalseAnimated } from './TrueFalseAnimated';
-import { CasePracticeSimulator } from './CasePracticeSimulator';
+import { AnimatedQuizPlayer, TrueFalseAnimated, CasePracticeSimulator, TestTrainingComponent } from './index';
 import { usePrepaCdsChat } from '@/hooks/usePrepaCdsChat';
 import { logger } from '@/utils/logger';
 import type { TrainingType, UserLevel, StudyDomain } from '@/types/prepacds';
@@ -43,12 +41,13 @@ export function TrainingExperiencePlayer({
   onExit,
   initialContent
 }: TrainingExperiencePlayerProps) {
-  // Machine à états avec double verrou
+  // États de session - VERSION SIMPLIFIÉE
   const [displayState, setDisplayState] = useState<DisplayState>('loading');
   const [contentReady, setContentReady] = useState(false);
   const [timeElapsed, setTimeElapsed] = useState(false);
   const [content, setContent] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [debugMode, setDebugMode] = useState<boolean>(true);
   const [preparingTimeLeft, setPreparingTimeLeft] = useState(8);
   const [countdown, setCountdown] = useState(3);
   
@@ -267,6 +266,20 @@ export function TrainingExperiencePlayer({
       return <div className="flex items-center justify-center h-full text-white text-xl">Aucun contenu généré</div>;
     }
     
+    // MODE DEBUG - Affichage du contenu même si pas en mode 'active'
+    if (debugMode && displayState !== 'active') {
+      return (
+        <div className="flex flex-col items-center justify-center h-full text-white space-y-4">
+          <div className="text-xl">🔧 MODE DEBUG</div>
+          <div className="text-sm">État: {displayState}</div>
+          <div className="text-sm">Type: {trainingType}</div>
+          <div className="max-w-md text-xs overflow-auto">
+            <pre>{JSON.stringify(content, null, 2)}</pre>
+          </div>
+        </div>
+      );
+    }
+
     if (displayState !== 'active') {
       console.log('❌ DisplayState pas actif:', displayState);
       return null;
@@ -314,8 +327,14 @@ export function TrainingExperiencePlayer({
         );
         
       default:
-        console.log('❓ Type d\'entraînement non supporté:', trainingType);
-        return <div className="flex items-center justify-center h-full text-white text-xl">Type d'entraînement non supporté: {trainingType}</div>;
+        console.log('🔧 Utilisation du composant de test pour:', trainingType);
+        return (
+          <TestTrainingComponent
+            trainingType={trainingType}
+            onComplete={handleSessionComplete}
+            onExit={onExit}
+          />
+        );
     }
   };
 
