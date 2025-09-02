@@ -4,6 +4,7 @@ import { VirtualizedMessageList } from "@/components/common";
 import type { VirtualizedMessageListRef } from "@/components/common/VirtualizedMessageList";
 import { EditableMessage, MessageWithAttachments } from "@/components/chat";
 import { StreamingProgress } from "@/components/common";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Message } from "@/types/chat";
 import { formatTime } from "./utils/chatUtils";
 
@@ -40,21 +41,19 @@ export function ChatMessageList({
                 <div className={`flex gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}>
                   {message.role === "assistant" && (
                     <div className="flex-shrink-0">
-                      {(() => {
-                        const agent = getAgentById(selectedAgent);
-                        if (agent?.icon) {
-                          return (
-                            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center">
-                              <agent.icon className="w-5 h-5 text-primary" />
-                            </div>
-                          );
-                        }
-                        return (
-                          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center">
+                      <Avatar className="w-8 h-8">
+                        <AvatarImage 
+                          src={(currentAgent as any)?.avatar} 
+                          alt={currentAgent?.name || "Assistant"}
+                        />
+                        <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/40">
+                          {currentAgent?.icon ? (
+                            <currentAgent.icon className="w-5 h-5 text-primary" />
+                          ) : (
                             <Bot className="w-5 h-5 text-primary" />
-                          </div>
-                        );
-                      })()}
+                          )}
+                        </AvatarFallback>
+                      </Avatar>
                     </div>
                   )}
                   
