@@ -4,10 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Play, Pause, RotateCcw, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Play, Pause, RotateCcw, CheckCircle, Bot, Wifi, WifiOff } from 'lucide-react';
 import { AnimatedQuizPlayer } from './AnimatedQuizPlayer';
 import { TrueFalseAnimated } from './TrueFalseAnimated';
 import { CasePracticeSimulator } from './CasePracticeSimulator';
+import { usePrepaCdsChat } from '@/hooks/usePrepaCdsChat';
 import { getStaticContent } from '@/data/trainingData';
 import type { TrainingType, UserLevel, StudyDomain } from '@/types/prepacds';
 
@@ -30,22 +31,45 @@ export function SimpleTrainingPlayer({
   const [content, setContent] = useState<any>(null);
   const [isActive, setIsActive] = useState(false);
   const [timeElapsed, setTimeElapsed] = useState(0);
+  const [contentSource, setContentSource] = useState<'ai' | 'fallback'>('ai');
+  
+  const { generateContent, isLoading: isPrepaCdsLoading } = usePrepaCdsChat();
 
-  // Charger le contenu statique immédiatement
+  // Charger le contenu via l'assistant PrepaCDS
   useEffect(() => {
-    console.log('📚 SimpleTrainingPlayer - Chargement contenu statique:', { trainingType, domain, level });
+    console.log('🤖 SimpleTrainingPlayer - Chargement contenu PrepaCDS:', { trainingType, domain, level });
     
-    const staticContent = getStaticContent(trainingType, domain, level);
-    console.log('✅ Contenu statique chargé:', staticContent);
-    
-    setContent(staticContent);
-    
-    // Simulation d'un court temps de chargement pour l'UX
-    setTimeout(() => {
-      setIsLoading(false);
-      setIsActive(true);
-    }, 1000);
-  }, [trainingType, domain, level]);
+    const loadContent = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Essayer d'abord l'assistant PrepaCDS
+        const aiContent = await generateContent(trainingType, level, domain);
+        
+        if (aiContent && Object.keys(aiContent).length > 0) {
+          console.log('✅ Contenu PrepaCDS chargé:', aiContent);
+          setContent(aiContent);
+          setContentSource('ai');
+        } else {
+          throw new Error('Contenu PrepaCDS vide');
+        }
+        
+      } catch (error) {
+        console.warn('⚠️ Fallback vers contenu statique:', error);
+        
+        // Fallback vers contenu statique
+        const staticContent = getStaticContent(trainingType, domain, level);
+        console.log('📚 Contenu statique chargé:', staticContent);
+        setContent(staticContent);
+        setContentSource('fallback');
+      } finally {
+        setIsLoading(false);
+        setIsActive(true);
+      }
+    };
+
+    loadContent();
+  }, [trainingType, domain, level, generateContent]);
 
   // Timer pour mesurer le temps d'entraînement
   useEffect(() => {
@@ -86,9 +110,15 @@ export function SimpleTrainingPlayer({
         >
           <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
           <div className="space-y-2">
-            <h3 className="text-lg font-semibold">Préparation de l'entraînement</h3>
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <Bot className="w-5 h-5 text-primary" />
+              Génération du contenu PrepaCDS
+            </h3>
             <p className="text-muted-foreground">
               {trainingType} • {level} • {domain}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Connexion à l'assistant spécialisé...
             </p>
           </div>
         </motion.div>
@@ -142,9 +172,22 @@ export function SimpleTrainingPlayer({
               Quitter
             </Button>
             <div className="flex items-center gap-3">
-              <Badge variant="secondary">{trainingType}</Badge>
+              <Badge variant="secondary" className="flex items-center gap-1">
+                {contentSource === 'ai' ? <Bot className="w-3 h-3" /> : <Wifi className="w-3 h-3" />}
+                {trainingType}
+              </Badge>
               <Badge variant="outline">{level}</Badge>
               <Badge variant="outline">{domain}</Badge>
+              {contentSource === 'ai' && (
+                <Badge variant="default" className="text-xs bg-primary/10 text-primary border-primary/20">
+                  PrepaCDS AI
+                </Badge>
+              )}
+              {contentSource === 'fallback' && (
+                <Badge variant="secondary" className="text-xs bg-muted text-muted-foreground">
+                  Mode hors ligne
+                </Badge>
+              )}
             </div>
           </div>
           
