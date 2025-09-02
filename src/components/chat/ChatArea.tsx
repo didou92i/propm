@@ -214,73 +214,81 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
         </div>
       )}
 
-      {messages.length === 0 ? (
-        <div className="flex-1 flex items-center justify-center p-8 animate-fade-in" style={{ paddingBottom: bottomPadding }}>
-          <div className="text-center max-w-4xl w-full">
-            <>
-              <div className="w-16 h-16 rounded-full gradient-agent-animated flex items-center justify-center mx-auto mb-6 float pulse-glow neomorphism overflow-hidden">
-                {(() => {
-                  const agent = getAgentById(selectedAgent);
-                  return agent?.icon ? (
-                    <agent.icon className="w-8 h-8 text-primary" />
-                  ) : null;
-                })()}
-              </div>
-              <h1 className="text-2xl font-bold mb-2 animate-scale-in">
-                {currentAgent?.name || "Assistant IA"}
-              </h1>
-              <p className="text-muted-foreground mb-6 animate-fade-in" style={{ animationDelay: '0.2s' }}>
-                {currentAgent?.description || "Comment puis-je vous aider ?"}
-              </p>
-
-              {currentAgent?.suggestions && currentAgent.suggestions.length > 0 && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {currentAgent.suggestions.map((suggestion, index) => (
-                    <button
-                      key={index}
-                      onClick={() => {
-                        sendMessage(suggestion, [], messages, userSession, setMessages);
-                      }}
-                      className="p-4 rounded-xl glass neomorphism-subtle hover-lift ripple-container text-left group animate-fade-in transform-3d hover-tilt glass-hover"
-                      style={{ animationDelay: `${(index + 1) * 0.1}s` }}
-                    >
-                      <div className="font-medium text-sm group-hover:text-primary transition-colors">
-                        {suggestion}
-                      </div>
-                    </button>
-                  ))}
+      {/* Messages Area */}
+      <div className="flex-1 overflow-hidden">
+        {messages.length === 0 ? (
+          <div className="h-full flex items-center justify-center p-8 animate-fade-in">
+            <div className="text-center max-w-4xl w-full">
+              <>
+                <div className="w-16 h-16 rounded-full gradient-agent-animated flex items-center justify-center mx-auto mb-6 float pulse-glow neomorphism overflow-hidden">
+                  {(() => {
+                    const agent = getAgentById(selectedAgent);
+                    return agent?.icon ? (
+                      <agent.icon className="w-8 h-8 text-primary" />
+                    ) : null;
+                  })()}
                 </div>
-              )}
-            </>
+                <h1 className="text-2xl font-bold mb-2 animate-scale-in">
+                  {currentAgent?.name || "Assistant IA"}
+                </h1>
+                <p className="text-muted-foreground mb-6 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+                  {currentAgent?.description || "Comment puis-je vous aider ?"}
+                </p>
+
+                {currentAgent?.suggestions && currentAgent.suggestions.length > 0 && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {currentAgent.suggestions.map((suggestion, index) => (
+                      <button
+                        key={index}
+                        onClick={() => {
+                          sendMessage(suggestion, [], messages, userSession, setMessages);
+                        }}
+                        className="p-4 rounded-xl glass neomorphism-subtle hover-lift ripple-container text-left group animate-fade-in transform-3d hover-tilt glass-hover"
+                        style={{ animationDelay: `${(index + 1) * 0.1}s` }}
+                      >
+                        <div className="font-medium text-sm group-hover:text-primary transition-colors">
+                          {suggestion}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
+            </div>
           </div>
-        </div>
-      ) : (
-        <ChatMessageList
+        ) : (
+          <div className="h-full overflow-y-auto">
+            <ChatMessageList
+              messages={messages}
+              selectedAgent={selectedAgent}
+              typingMessageId={typingMessageId}
+              streamingContent={streamingState.currentContent}
+              isStreaming={streamingState.isStreaming}
+              bottomPadding={0}
+              onMessageEdit={handleMessageEdit}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Sticky Composer */}
+      <div className="sticky bottom-0 bg-background/95 backdrop-blur-md border-t border-border/30">
+        <ChatComposer
+          ref={composerRef}
+          input={input}
+          setInput={setInput}
+          attachments={attachments}
+          setAttachments={setAttachments}
           messages={messages}
           selectedAgent={selectedAgent}
-          typingMessageId={typingMessageId}
-          streamingContent={streamingState.currentContent}
-          isStreaming={streamingState.isStreaming}
-          bottomPadding={bottomPadding}
-          onMessageEdit={handleMessageEdit}
+          isLoading={isLoading}
+          processingAttachment={processingAttachment}
+          attachmentError={attachmentError}
+          onSubmit={handleSubmit}
+          onResetContext={handleResetContext}
+          setAttachmentError={setAttachmentError}
         />
-      )}
-
-      <ChatComposer
-        ref={composerRef}
-        input={input}
-        setInput={setInput}
-        attachments={attachments}
-        setAttachments={setAttachments}
-        messages={messages}
-        selectedAgent={selectedAgent}
-        isLoading={isLoading}
-        processingAttachment={processingAttachment}
-        attachmentError={attachmentError}
-        onSubmit={handleSubmit}
-        onResetContext={handleResetContext}
-        setAttachmentError={setAttachmentError}
-      />
+      </div>
     </div>
   );
 }
