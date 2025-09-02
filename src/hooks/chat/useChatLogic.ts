@@ -4,8 +4,6 @@ import { useStreamingChat } from "@/hooks/useStreamingChat";
 import { usePerformanceOptimization } from "@/hooks/usePerformanceOptimization";
 import { usePrepaCdsChat } from "@/hooks/usePrepaCdsChat";
 import { usePrepaCdsConfig } from "@/hooks/chat/usePrepaCdsConfig";
-import { useCdsProEnhancements } from "@/hooks/chat/useCdsProEnhancements";
-import { cdsProService } from "@/services/cdsProService";
 import { Message, MessageAttachment } from "@/types/chat";
 import { toast } from "sonner";
 import { logger } from "@/utils/logger";
@@ -28,7 +26,6 @@ export function useChatLogic(selectedAgent: string) {
   const { optimizeMessages } = usePerformanceOptimization();
   const { generateContent: generatePrepaContent } = usePrepaCdsChat();
   const { config: prepaConfig } = usePrepaCdsConfig();
-  const cdsPro = useCdsProEnhancements();
 
   const processAttachments = useCallback(async (attachments: AttachedFile[]): Promise<MessageAttachment[]> => {
     const processedAttachments: MessageAttachment[] = [];
@@ -235,38 +232,7 @@ export function useChatLogic(selectedAgent: string) {
         return;
       }
 
-      // Handle CDS Pro enrichment
-      const buildMessagesForSend = async () => {
-        let finalUserContent = messageContent;
-        if (selectedAgent === 'cdspro') {
-          const isValid = cdsPro.validateSecurityRequest(messageContent);
-          if (!isValid) {
-            onMessagesUpdate(prev => prev.map(msg => 
-              msg.id === assistantMessageId 
-                ? { ...msg, content: cdsPro.getSecurityResponse() }
-                : msg
-            ));
-            setTypingMessageId(null);
-            setIsLoading(false);
-            return null;
-          }
-
-          const enriched = cdsPro.enrichPrompt(messageContent);
-          const vec = await cdsProService.searchVectorialDatabase(content, cdsPro.configuration.context);
-          let vecCtx = '';
-          if (vec && vec.length > 0) {
-            vecCtx = '\n\nRéférences (extraits):\n' + vec.slice(0, 3).map((r: any, i: number) => `[${i+1}] ${r.content?.slice(0, 280)}...`).join('\n');
-            toast.success('Références juridiques incluses', { 
-              description: `${Math.min(3, vec.length)} extraits ajoutés.`
-            });
-          }
-          finalUserContent = enriched + vecCtx;
-        }
-        return optimizedMessages.map((m, i, arr) => (i === arr.length - 1 && m.role === 'user' ? { ...m, content: finalUserContent } : m));
-      };
-
-      const messagesToSend = await buildMessagesForSend();
-      if (!messagesToSend) return;
+      const messagesToSend = optimizedMessages;
 
       await sendStreamingMessage(
         messagesToSend,
@@ -326,7 +292,7 @@ export function useChatLogic(selectedAgent: string) {
         description: error.message || 'Erreur inconnue',
       });
     }
-  }, [selectedAgent, optimizeMessages, generatePrepaContent, prepaConfig, cdsPro, sendStreamingMessage, processAttachments, processingAttachment]);
+  }, [selectedAgent, optimizeMessages, generatePrepaContent, prepaConfig, sendStreamingMessage, processAttachments, processingAttachment]);
 
   return {
     isLoading,

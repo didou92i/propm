@@ -2,12 +2,10 @@ import { useState, useRef, useEffect } from "react";
 import { getAgentById } from "@/config/agents";
 import { useConversationHistory } from "@/hooks/useConversationHistory";
 import { useChatLogic } from "@/hooks/chat/useChatLogic";
-import { useCdsProEnhancements } from "@/hooks/chat/useCdsProEnhancements";
 import { Message } from "@/types/chat";
 import { toast } from "sonner";
 import { ChatMessageList } from "./ChatMessageList";
 import { ChatComposer } from "./ChatComposer";
-import { CdsProControls } from "./CdsProControls";
 import { PrepaCdsWelcome } from "./PrepaCdsWelcome";
 import { ArreteGenerationPrompt } from "./ArreteGenerationPrompt";
 import { agentInfo } from "./utils/chatUtils";
@@ -42,7 +40,6 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
 
   const composerRef = useRef<HTMLDivElement>(null);
   const { updateConversation, getConversation } = useConversationHistory();
-  const cdsPro = useCdsProEnhancements();
   
   const {
     isLoading,
@@ -246,19 +243,6 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
                   {currentAgent?.description || "Comment puis-je vous aider ?"}
                 </p>
 
-                {selectedAgent === 'cdspro' && (
-                  <div className="mb-6 max-w-2xl mx-auto">
-                    <CdsProControls
-                      onContextChange={cdsPro.updateContext}
-                      onPriorityChange={cdsPro.updatePriority}
-                      onTemplateSelect={async (template) => {
-                        const generated = await cdsPro.generateDocumentTemplate(template);
-                        setInput(prev => (prev ? prev + '\n\n' : '') + generated);
-                        toast.success('Modèle inséré', { description: 'Le template a été ajouté dans l\'éditeur.' });
-                      }}
-                    />
-                  </div>
-                )}
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {currentAgent?.suggestions.map((suggestion, index) => (
