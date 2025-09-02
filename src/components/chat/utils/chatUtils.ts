@@ -34,15 +34,7 @@ export const agentInfo = {
   prepacds: {
     name: "Prepa CDS",
     description: "Assistant personnalisé pour la préparation aux concours de la fonction publique",
-    suggestions: [
-      "🎯 Commencer un entraînement QCM",
-      "📚 Générer un cas pratique",
-      "📝 Créer un plan de révision",
-      "🔍 Simulation d'oral",
-      "📊 Voir mes statistiques",
-      "🎓 Évaluer mes progrès",
-      "📋 Fiche de révision personnalisée"
-    ]
+    suggestions: []
   }
 };
 

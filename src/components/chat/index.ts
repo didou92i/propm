@@ -5,5 +5,4 @@ export { ChatAttachment } from './ChatAttachment';
 export { MessageWithAttachments } from './MessageWithAttachments';
 export { EditableMessage } from './EditableMessage';
 export { PrepaCdsSessionMgmt } from './PrepaCdsSessionMgmt';
-export { PrepaCdsSmartSuggestions } from './PrepaCdsSmartSuggestions';
 export { ArreteGenerationPrompt } from './ArreteGenerationPrompt';

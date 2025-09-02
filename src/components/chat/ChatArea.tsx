@@ -233,23 +233,24 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
                 {currentAgent?.description || "Comment puis-je vous aider ?"}
               </p>
 
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {currentAgent?.suggestions.map((suggestion, index) => (
-                  <button
-                    key={index}
-                    onClick={() => {
-                      sendMessage(suggestion, [], messages, userSession, setMessages);
-                    }}
-                    className="p-4 rounded-xl glass neomorphism-subtle hover-lift ripple-container text-left group animate-fade-in transform-3d hover-tilt glass-hover"
-                    style={{ animationDelay: `${(index + 1) * 0.1}s` }}
-                  >
-                    <div className="font-medium text-sm group-hover:text-primary transition-colors">
-                      {suggestion}
-                    </div>
-                  </button>
-                ))}
-              </div>
+              {currentAgent?.suggestions && currentAgent.suggestions.length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {currentAgent.suggestions.map((suggestion, index) => (
+                    <button
+                      key={index}
+                      onClick={() => {
+                        sendMessage(suggestion, [], messages, userSession, setMessages);
+                      }}
+                      className="p-4 rounded-xl glass neomorphism-subtle hover-lift ripple-container text-left group animate-fade-in transform-3d hover-tilt glass-hover"
+                      style={{ animationDelay: `${(index + 1) * 0.1}s` }}
+                    >
+                      <div className="font-medium text-sm group-hover:text-primary transition-colors">
+                        {suggestion}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </>
           </div>
         </div>
