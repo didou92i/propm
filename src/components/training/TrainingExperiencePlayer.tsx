@@ -253,19 +253,33 @@ export function TrainingExperiencePlayer({
   };
 
   const renderTrainingComponent = () => {
-    logger.debug('🎯 renderTrainingComponent appelé', { 
+    console.log('🎯 DEBUG renderTrainingComponent:', { 
       hasContent: !!content, 
+      content: content,
       sessionActive: session.isActive,
       displayState,
+      trainingType,
       timestamp: new Date().toISOString()
-    }, 'TrainingExperiencePlayer');
+    });
     
-    if (!content || displayState !== 'active') {
+    if (!content) {
+      console.log('❌ Pas de contenu disponible');
+      return <div className="flex items-center justify-center h-full text-white text-xl">Aucun contenu généré</div>;
+    }
+    
+    if (displayState !== 'active') {
+      console.log('❌ DisplayState pas actif:', displayState);
       return null;
     }
 
+    console.log('🎮 Rendu du composant:', trainingType);
+
     switch (trainingType) {
       case 'qcm':
+        console.log('📝 Rendu QCM avec questions:', content.questions);
+        if (!content.questions || !Array.isArray(content.questions)) {
+          return <div className="flex items-center justify-center h-full text-white text-xl">Questions QCM non valides</div>;
+        }
         return (
           <AnimatedQuizPlayer
             questions={content.questions}
@@ -276,6 +290,10 @@ export function TrainingExperiencePlayer({
         );
         
       case 'vrai_faux':
+        console.log('✅ Rendu Vrai/Faux avec questions:', content.questions);
+        if (!content.questions || !Array.isArray(content.questions)) {
+          return <div className="flex items-center justify-center h-full text-white text-xl">Questions Vrai/Faux non valides</div>;
+        }
         return (
           <TrueFalseAnimated
             questions={content.questions}
@@ -286,6 +304,7 @@ export function TrainingExperiencePlayer({
         );
         
       case 'cas_pratique':
+        console.log('🏛️ Rendu Cas Pratique avec données:', content);
         return (
           <CasePracticeSimulator
             caseData={content}
@@ -295,7 +314,8 @@ export function TrainingExperiencePlayer({
         );
         
       default:
-        return null;
+        console.log('❓ Type d\'entraînement non supporté:', trainingType);
+        return <div className="flex items-center justify-center h-full text-white text-xl">Type d'entraînement non supporté: {trainingType}</div>;
     }
   };
 
