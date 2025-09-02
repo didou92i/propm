@@ -49,7 +49,38 @@ export function AnimatedQuizPlayer({
     injectPrepaCdsStyles();
   }, [injectPrepaCdsStyles]);
 
+  // Vérification de sécurité pour éviter les erreurs
+  if (!questions || questions.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-prepacds-primary/5 to-prepacds-secondary/10 p-4 flex items-center justify-center">
+        <Card>
+          <CardContent className="p-8 text-center">
+            <h3 className="text-lg font-semibold mb-2">Aucune question disponible</h3>
+            <p className="text-muted-foreground mb-4">Le contenu du quiz n'a pas pu être chargé.</p>
+            <Button onClick={onExit}>Retour</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   const currentQuestion = questions[currentQuestionIndex];
+  
+  // Vérification supplémentaire pour la question actuelle
+  if (!currentQuestion) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-prepacds-primary/5 to-prepacds-secondary/10 p-4 flex items-center justify-center">
+        <Card>
+          <CardContent className="p-8 text-center">
+            <h3 className="text-lg font-semibold mb-2">Erreur de navigation</h3>
+            <p className="text-muted-foreground mb-4">Question introuvable.</p>
+            <Button onClick={onExit}>Retour</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
 
   // Timer logic
@@ -191,10 +222,10 @@ export function AnimatedQuizPlayer({
                 </span>
               </div>
               <Badge 
-                style={{ backgroundColor: getDifficultyColor(currentQuestion.difficulty) }}
+                style={{ backgroundColor: getDifficultyColor(currentQuestion?.difficulty || 'moyen') }}
                 className="text-white"
               >
-                {currentQuestion.difficulty}
+                {currentQuestion?.difficulty || 'moyen'}
               </Badge>
             </div>
             <Progress value={progress} className="mt-4" />
