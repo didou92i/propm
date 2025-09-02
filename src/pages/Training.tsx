@@ -55,10 +55,7 @@ const Training = () => {
   const trainingTypes = [
     { value: 'qcm', label: 'QCM - Questions à Choix Multiple', icon: Target },
     { value: 'vrai_faux', label: 'Vrai/Faux - Affirmations', icon: BookOpen },
-    { value: 'cas_pratique', label: 'Cas Pratiques - Simulations', icon: Brain },
-    { value: 'simulation_oral', label: 'Simulation Oral - Entretien', icon: Timer },
-    { value: 'question_ouverte', label: 'Questions Ouvertes - Rédaction', icon: Trophy },
-    { value: 'plan_revision', label: 'Plan de Révision - Planification', icon: BookOpen }
+    { value: 'cas_pratique', label: 'Cas Pratiques - Simulations', icon: Brain }
   ];
 
   const levels = [

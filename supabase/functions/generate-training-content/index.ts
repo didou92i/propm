@@ -348,7 +348,7 @@ serve(async (req) => {
 
     const validTrainingTypes = ['qcm', 'vrai_faux', 'cas_pratique'];
     if (!validTrainingTypes.includes(trainingType)) {
-      throw new Error(`Type d'entraînement non supporté: ${trainingType}`);
+      throw new Error(`Type d'entraînement non supporté: ${trainingType}. Types supportés: ${validTrainingTypes.join(', ')}`);
     }
 
     console.log(`[REQUEST] Nouvelle demande: ${trainingType} - ${level} - ${domain} - User: ${user.id}`);

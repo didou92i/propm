@@ -5,3 +5,7 @@ export { TrainingExperiencePlayer } from './TrainingExperiencePlayer';
 export { SimpleTrainingPlayer } from './SimpleTrainingPlayer';
 export { PrepaCdsAnimationTest } from './PrepaCdsAnimationTest';
 export { TestTrainingComponent } from './TestTrainingComponent';
+export { TrainingHeader } from './TrainingHeader';
+export { TrainingLoadingState } from './TrainingLoadingState';
+export { TrainingErrorState } from './TrainingErrorState';
+export { TrainingContentRenderer } from './TrainingContentRenderer';
