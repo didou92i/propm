@@ -113,7 +113,6 @@ export const ChatComposer = forwardRef<HTMLDivElement, ChatComposerProps>(
     return (
       <div 
         ref={ref}
-        className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-md border-t border-border/30 z-50"
       >
         <div className="container mx-auto px-4 py-6 max-w-3xl">
           {/* Attachments Display */}
