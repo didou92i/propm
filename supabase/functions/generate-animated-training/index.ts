@@ -289,7 +289,7 @@ IMPORTANT: Réponds UNIQUEMENT avec du JSON valide, sans texte additionnel.`;
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-5-2025-08-07', // Utiliser le meilleur modèle
+          model: 'gpt-4.1-2025-04-14',
           messages: [
             { 
               role: 'system', 
@@ -300,7 +300,7 @@ IMPORTANT: Réponds UNIQUEMENT avec du JSON valide, sans texte additionnel.`;
               content: `Génère maintenant le contenu pour un entraînement ${trainingType} de niveau ${level} en ${domain}.` 
             }
           ],
-          max_completion_tokens: 2500, // Utiliser max_completion_tokens pour GPT-5
+          max_completion_tokens: 2500,
           response_format: { type: "json_object" }
         }),
       });
@@ -324,7 +324,7 @@ IMPORTANT: Réponds UNIQUEMENT avec du JSON valide, sans texte additionnel.`;
               content: `Génère maintenant le contenu pour un entraînement ${trainingType} de niveau ${level} en ${domain}.` 
             }
           ],
-          max_completion_tokens: 2500, // Utiliser max_completion_tokens
+          max_completion_tokens: 2500,
           response_format: { type: "json_object" }
         }),
       });
