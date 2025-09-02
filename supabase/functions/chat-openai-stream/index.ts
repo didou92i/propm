@@ -138,44 +138,17 @@ serve(async (req) => {
     };
     const assistantId = assistantMap[selectedAgent] || assistantMap.redacpro;
 
-    // Optimized instruction calculation with caching
+    // Simplified instruction handling - let assistants use their core prompts
     const getInstructions = (agent: string, messageContent: string): string | undefined => {
-      const cacheKey = `${agent}-${messageContent.substring(0, 50)}`;
-      
-      if (instructionCache.has(cacheKey)) {
-        return instructionCache.get(cacheKey);
-      }
-      
-      const instructionMap: Record<string, () => string> = {
-        arrete: () => {
-          const text = messageContent.toLowerCase();
-          const shouldGenerate = /arr[ée]t[ée]|exemple|g[ée]n[ée]re|g[ée]n[ée]ration|r[ée]dige|produis|mod[èe]le|vas[- ]y|^oui$|^ok$/.test(text.trim());
-          const base = [
-            "Tu es 'Arrêté Territorial'. Réponds en français.",
-            "Style administratif formel, concis et juridiquement conforme (CGCT)."
-          ];
-          if (shouldGenerate) {
-            base.push(
-              "PRODUIS IMMÉDIATEMENT un arrêté complet sans reformuler les mêmes questions.",
-              "Structure sans Markdown: En-tête, Visas, Considérants, Articles numérotés, Dispositions finales, Signature.",
-              "Remplace toute donnée manquante par [INFORMATION MANQUANTE].",
-              "N'insiste pas pour reposer les mêmes questions."
-            );
-          } else {
-            base.push(
-              "Si la demande est une question générale (analyse juridique, explication), réponds directement sans générer un arrêté.",
-              "Ne boucle pas et ne repose pas les mêmes questions."
-            );
-          }
-          return base.join(' ');
+      // Only provide essential context for arrete agent when needed
+      if (agent === 'arrete') {
+        const text = messageContent.toLowerCase();
+        const shouldGenerate = /arr[ée]t[ée]|exemple|g[ée]n[ée]re|r[ée]dige|produis/.test(text);
+        if (shouldGenerate) {
+          return "Réponds en français. Produis l'arrêté demandé selon la structure réglementaire.";
         }
-      };
-      
-      const result = instructionMap[agent]?.();
-      if (result) {
-        instructionCache.set(cacheKey, result);
       }
-      return result;
+      return undefined; // Let other assistants use their configured prompts
     };
     
     const instructions = getInstructions(selectedAgent, lastMessage?.content || '');
@@ -205,14 +178,14 @@ serve(async (req) => {
       return streamAssistantResponse(openAIApiKey, threadId, runId);
     }
 
-    // Ultra-aggressive polling for regular requests
+    // Optimized adaptive polling for performance
     let runStatus = 'queued';
     let attempts = 0;
-    const maxAttempts = 60; // Reduced from 120
+    const maxAttempts = 50; // Further reduced for efficiency
 
     while (runStatus !== 'completed' && runStatus !== 'failed' && attempts < maxAttempts) {
-      // Ultra-aggressive polling: 50ms -> 100ms -> 150ms -> max 200ms
-      const pollInterval = attempts < 5 ? 50 : attempts < 15 ? 100 : attempts < 25 ? 150 : 200;
+      // Intelligent adaptive polling: start fast, then optimize
+      const pollInterval = attempts < 3 ? 50 : attempts < 10 ? 150 : attempts < 20 ? 300 : 400;
       await new Promise(resolve => setTimeout(resolve, pollInterval));
       
       const statusResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs/${runId}`, {
@@ -301,7 +274,7 @@ async function streamAssistantResponse(openAIApiKey: string, threadId: string, r
       controller.enqueue(encoder.encode('data: {"status": "thinking", "message": "L\'assistant réfléchit..."}\n\n'));
       
       while (runStatus !== 'completed' && runStatus !== 'failed' && attempts < maxAttempts) {
-        const pollInterval = attempts < 5 ? 50 : attempts < 15 ? 100 : attempts < 25 ? 150 : 200;
+        const pollInterval = attempts < 3 ? 50 : attempts < 10 ? 150 : attempts < 20 ? 300 : 400;
         await new Promise(resolve => setTimeout(resolve, pollInterval));
         
         try {

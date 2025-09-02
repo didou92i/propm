@@ -300,24 +300,24 @@ serve(async (req) => {
     const runId = runData.id;
     console.log(`Created run: ${runId}`);
 
-    // Optimized adaptive polling for better performance
+    // Performance-optimized adaptive polling
     let runStatus = 'queued';
     let attempts_poll = 0;
-    const maxAttempts = 100; // 2 minutes timeout with optimized polling
+    const maxAttempts = 80; // Reduced timeout for better performance
     const startTime = Date.now();
 
-    console.log('Starting optimized polling with adaptive intervals...');
+    console.log('Starting performance-optimized polling...');
     while (runStatus !== 'completed' && runStatus !== 'failed' && attempts_poll < maxAttempts) {
-      // Intelligent adaptive polling: aggressive start, then exponential backoff
+      // Optimized adaptive polling strategy
       let pollInterval;
-      if (attempts_poll < 5) {
-        pollInterval = 100; // Very fast initial polling (100ms)
-      } else if (attempts_poll < 15) {
-        pollInterval = 200; // Fast polling (200ms)
-      } else if (attempts_poll < 30) {
-        pollInterval = 400; // Medium polling (400ms)
+      if (attempts_poll < 3) {
+        pollInterval = 75; // Ultra-fast initial polling (75ms)
+      } else if (attempts_poll < 10) {
+        pollInterval = 150; // Fast polling (150ms)
+      } else if (attempts_poll < 25) {
+        pollInterval = 300; // Medium polling (300ms)
       } else {
-        pollInterval = 600; // Slower polling (600ms)
+        pollInterval = 500; // Conservative polling (500ms)
       }
       
       await new Promise(resolve => setTimeout(resolve, pollInterval));

@@ -9,9 +9,9 @@ export function createOpenAIClient(apiKey: string) {
   };
 }
 
-export const DEFAULT_MODEL = 'gpt-4o-mini';
+export const DEFAULT_MODEL = 'gpt-5-2025-08-07';
 export const POLLING_CONFIG = {
-  initialInterval: 100,
-  maxInterval: 600,
-  backoffMultiplier: 1.2
+  initialInterval: 50,
+  maxInterval: 400,
+  backoffMultiplier: 1.15
 };

@@ -116,8 +116,8 @@ export function useStreamingChat() {
             onMessageUpdate(nextChunk, currentIndex >= content.length);
             
             if (currentIndex < content.length) {
-              // Ultra-fast: 1-3ms per character
-              const delay = Math.random() * 2 + 1;
+              // Performance-optimized: 1-2ms per character
+              const delay = Math.random() * 1.5 + 0.5;
               setTimeout(revealNextChunk, delay);
             } else {
               // Finished streaming
