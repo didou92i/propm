@@ -4,7 +4,6 @@ export { ChatComposer } from './ChatComposer';
 export { ChatAttachment } from './ChatAttachment';
 export { MessageWithAttachments } from './MessageWithAttachments';
 export { EditableMessage } from './EditableMessage';
-export { PrepaCdsWelcome } from './PrepaCdsWelcome';
 export { PrepaCdsSessionMgmt } from './PrepaCdsSessionMgmt';
 export { PrepaCdsSmartSuggestions } from './PrepaCdsSmartSuggestions';
 export { ArreteGenerationPrompt } from './ArreteGenerationPrompt';

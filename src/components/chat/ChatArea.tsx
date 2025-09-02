@@ -6,7 +6,7 @@ import { Message } from "@/types/chat";
 import { toast } from "sonner";
 import { ChatMessageList } from "./ChatMessageList";
 import { ChatComposer } from "./ChatComposer";
-import { PrepaCdsWelcome } from "./PrepaCdsWelcome";
+
 import { ArreteGenerationPrompt } from "./ArreteGenerationPrompt";
 import { agentInfo } from "./utils/chatUtils";
 import { TrainingExperiencePlayer } from "@/components/training/TrainingExperiencePlayer";
@@ -217,51 +217,40 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
       {messages.length === 0 ? (
         <div className="flex-1 flex items-center justify-center p-8 animate-fade-in" style={{ paddingBottom: bottomPadding }}>
           <div className="text-center max-w-4xl w-full">
-            {selectedAgent === "prepacds" ? (
-              <PrepaCdsWelcome 
-                onSuggestionClick={(suggestion) => {
-                  sendMessage(suggestion, [], messages, userSession, setMessages);
-                }}
-                onSendMessage={(message) => {
-                  setMessages(prev => [...prev, message]);
-                }}
-              />
-            ) : (
-              <>
-                <div className="w-16 h-16 rounded-full gradient-agent-animated flex items-center justify-center mx-auto mb-6 float pulse-glow neomorphism overflow-hidden">
-                  {(() => {
-                    const agent = getAgentById(selectedAgent);
-                    return agent?.icon ? (
-                      <agent.icon className="w-8 h-8 text-primary" />
-                    ) : null;
-                  })()}
-                </div>
-                <h1 className="text-2xl font-bold mb-2 animate-scale-in">
-                  {currentAgent?.name || "Assistant IA"}
-                </h1>
-                <p className="text-muted-foreground mb-6 animate-fade-in" style={{ animationDelay: '0.2s' }}>
-                  {currentAgent?.description || "Comment puis-je vous aider ?"}
-                </p>
+            <>
+              <div className="w-16 h-16 rounded-full gradient-agent-animated flex items-center justify-center mx-auto mb-6 float pulse-glow neomorphism overflow-hidden">
+                {(() => {
+                  const agent = getAgentById(selectedAgent);
+                  return agent?.icon ? (
+                    <agent.icon className="w-8 h-8 text-primary" />
+                  ) : null;
+                })()}
+              </div>
+              <h1 className="text-2xl font-bold mb-2 animate-scale-in">
+                {currentAgent?.name || "Assistant IA"}
+              </h1>
+              <p className="text-muted-foreground mb-6 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+                {currentAgent?.description || "Comment puis-je vous aider ?"}
+              </p>
 
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {currentAgent?.suggestions.map((suggestion, index) => (
-                    <button
-                      key={index}
-                      onClick={() => {
-                        sendMessage(suggestion, [], messages, userSession, setMessages);
-                      }}
-                      className="p-4 rounded-xl glass neomorphism-subtle hover-lift ripple-container text-left group animate-fade-in transform-3d hover-tilt glass-hover"
-                      style={{ animationDelay: `${(index + 1) * 0.1}s` }}
-                    >
-                      <div className="font-medium text-sm group-hover:text-primary transition-colors">
-                        {suggestion}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {currentAgent?.suggestions.map((suggestion, index) => (
+                  <button
+                    key={index}
+                    onClick={() => {
+                      sendMessage(suggestion, [], messages, userSession, setMessages);
+                    }}
+                    className="p-4 rounded-xl glass neomorphism-subtle hover-lift ripple-container text-left group animate-fade-in transform-3d hover-tilt glass-hover"
+                    style={{ animationDelay: `${(index + 1) * 0.1}s` }}
+                  >
+                    <div className="font-medium text-sm group-hover:text-primary transition-colors">
+                      {suggestion}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </>
           </div>
         </div>
       ) : (
