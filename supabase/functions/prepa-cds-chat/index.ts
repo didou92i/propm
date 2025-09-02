@@ -92,7 +92,7 @@ Réponds de manière structurée et pédagogique.`;
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4.1-2025-04-14',
+        model: 'gpt-4o',
         messages: [
           { 
             role: 'system', 
@@ -103,7 +103,7 @@ Réponds de manière structurée et pédagogique.`;
             content: prompt 
           }
         ],
-        max_completion_tokens: 2000,
+        max_tokens: 2000,
       }),
     });
 

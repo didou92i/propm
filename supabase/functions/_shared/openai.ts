@@ -9,7 +9,7 @@ export function createOpenAIClient(apiKey: string) {
   };
 }
 
-export const DEFAULT_MODEL = 'gpt-5-2025-08-07';
+export const DEFAULT_MODEL = 'gpt-4o';
 export const POLLING_CONFIG = {
   initialInterval: 50,
   maxInterval: 400,
