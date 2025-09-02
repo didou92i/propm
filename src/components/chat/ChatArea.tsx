@@ -11,6 +11,7 @@ import { ArreteGenerationPrompt } from "./ArreteGenerationPrompt";
 import { agentInfo } from "./utils/chatUtils";
 import { TrainingExperiencePlayer } from "@/components/training/TrainingExperiencePlayer";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { ArrowLeft } from "lucide-react";
 
 interface ChatAreaProps {
@@ -220,13 +221,24 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
           <div className="h-full flex items-center justify-center p-8 animate-fade-in">
             <div className="text-center max-w-4xl w-full">
               <>
-                <div className="w-16 h-16 rounded-full gradient-agent-animated flex items-center justify-center mx-auto mb-6 float pulse-glow neomorphism overflow-hidden">
-                  {(() => {
-                    const agent = getAgentById(selectedAgent);
-                    return agent?.icon ? (
-                      <agent.icon className="w-8 h-8 text-primary" />
-                    ) : null;
-                  })()}
+                <div className="mx-auto mb-6 float pulse-glow">
+                  <Avatar className="w-16 h-16 gradient-agent-animated neomorphism">
+                    <AvatarImage 
+                      src={(() => {
+                        const agent = getAgentById(selectedAgent);
+                        return (agent as any)?.avatar;
+                      })()} 
+                      alt={currentAgent?.name || "Assistant IA"}
+                    />
+                    <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/40">
+                      {(() => {
+                        const agent = getAgentById(selectedAgent);
+                        return agent?.icon ? (
+                          <agent.icon className="w-8 h-8 text-primary" />
+                        ) : null;
+                      })()}
+                    </AvatarFallback>
+                  </Avatar>
                 </div>
                 <h1 className="text-2xl font-bold mb-2 animate-scale-in">
                   {currentAgent?.name || "Assistant IA"}
