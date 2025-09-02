@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { TrainingExperiencePlayer } from '@/components/training/TrainingExperiencePlayer';
+import { SimpleTrainingPlayer } from '@/components/training/SimpleTrainingPlayer';
 import { ParallaxBackground } from "@/components/common";
 import { LegalFooter } from "@/components/legal";
 import { useAgentTheme } from "@/hooks/useAgentTheme";
@@ -85,11 +85,22 @@ const Training = () => {
           <p>📊 {trainingType} - {level}</p>
           <p>🏛️ {domain}</p>
         </div>
-        <TrainingExperiencePlayer
+        <SimpleTrainingPlayer
           trainingType={trainingType}
           level={level}
           domain={domain}
-          onComplete={handleTrainingComplete}
+          onComplete={(score, answers) => {
+            const session: TrainingSession = {
+              id: `session-${Date.now()}`,
+              trainingType,
+              level,
+              domain,
+              isActive: false,
+              progress: 100,
+              score
+            };
+            handleTrainingComplete(session);
+          }}
           onExit={handleTrainingExit}
         />
       </div>
