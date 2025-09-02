@@ -11,7 +11,8 @@ import { logger } from '@/utils/logger';
 interface TrueFalseQuestion {
   id: string;
   statement: string;
-  isTrue: boolean;
+  isCorrect?: boolean; // Support both isCorrect and isTrue
+  isTrue?: boolean;
   explanation: string;
   domain: string;
 }
@@ -51,7 +52,38 @@ export function TrueFalseAnimated({
     injectPrepaCdsStyles();
   }, [injectPrepaCdsStyles]);
 
+  // Vérification de sécurité pour éviter les erreurs
+  if (!questions || questions.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-prepacds-primary/5 to-prepacds-secondary/10 p-4 flex items-center justify-center">
+        <Card>
+          <CardContent className="p-8 text-center">
+            <h3 className="text-lg font-semibold mb-2">Aucune question disponible</h3>
+            <p className="text-muted-foreground mb-4">Le contenu du quiz n'a pas pu être chargé.</p>
+            <Button onClick={onExit}>Retour</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   const currentQuestion = questions[currentQuestionIndex];
+  
+  // Vérification supplémentaire pour la question actuelle
+  if (!currentQuestion) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-prepacds-primary/5 to-prepacds-secondary/10 p-4 flex items-center justify-center">
+        <Card>
+          <CardContent className="p-8 text-center">
+            <h3 className="text-lg font-semibold mb-2">Erreur de navigation</h3>
+            <p className="text-muted-foreground mb-4">Question introuvable.</p>
+            <Button onClick={onExit}>Retour</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+  
   const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
 
   const handleAnswer = (answer: boolean) => {
@@ -73,7 +105,8 @@ export function TrueFalseAnimated({
     // Animation immédiate sur le bouton sélectionné
     const selectedBtn = answer ? trueBtnRef.current : falseBtnRef.current;
     const otherBtn = answer ? falseBtnRef.current : trueBtnRef.current;
-    const isCorrect = answer === currentQuestion.isTrue;
+    const questionCorrectAnswer = currentQuestion.isCorrect ?? currentQuestion.isTrue ?? false;
+    const isCorrect = answer === questionCorrectAnswer;
     
     if (selectedBtn) {
       logger.info("Application des styles d'animation", { 
@@ -123,7 +156,7 @@ export function TrueFalseAnimated({
           `;
           
           // Révéler la bonne réponse
-          const correctBtn = currentQuestion.isTrue ? trueBtnRef.current : falseBtnRef.current;
+          const correctBtn = questionCorrectAnswer ? trueBtnRef.current : falseBtnRef.current;
           if (correctBtn && correctBtn !== selectedBtn) {
             correctBtn.setAttribute('data-correct-reveal', 'true');
             correctBtn.style.cssText = `
@@ -171,7 +204,7 @@ export function TrueFalseAnimated({
         const newAnswers = [...userAnswers, answer];
         setUserAnswers(newAnswers);
         
-        if (answer === currentQuestion.isTrue) {
+        if (answer === questionCorrectAnswer) {
           setScore(prev => prev + 1);
         }
 
@@ -184,7 +217,7 @@ export function TrueFalseAnimated({
           if (currentQuestionIndex < questions.length - 1) {
             nextQuestion();
           } else {
-            const finalScore = score + (answer === currentQuestion.isTrue ? 1 : 0);
+            const finalScore = score + (answer === questionCorrectAnswer ? 1 : 0);
             logger.info("Quiz terminé", { finalScore, totalQuestions: questions.length }, "TrueFalseAnimated");
             onComplete(finalScore, newAnswers);
           }
@@ -231,7 +264,8 @@ export function TrueFalseAnimated({
     }, "TrueFalseAnimated");
   };
 
-  const isCorrect = selectedAnswer === currentQuestion.isTrue;
+  const questionCorrectAnswer = currentQuestion?.isCorrect ?? currentQuestion?.isTrue ?? false;
+  const isCorrect = selectedAnswer === questionCorrectAnswer;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-prepacds-primary/5 to-prepacds-secondary/10 p-4">
@@ -338,7 +372,7 @@ export function TrueFalseAnimated({
                       </h3>
 
                       <p className="text-lg mb-4">
-                        La bonne réponse est : <strong>{currentQuestion.isTrue ? 'VRAI' : 'FAUX'}</strong>
+                        La bonne réponse est : <strong>{questionCorrectAnswer ? 'VRAI' : 'FAUX'}</strong>
                       </p>
 
                       {/* Explanation */}

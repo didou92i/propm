@@ -10,6 +10,7 @@ import { TrueFalseAnimated } from './TrueFalseAnimated';
 import { CasePracticeSimulator } from './CasePracticeSimulator';
 import { usePrepaCdsChat } from '@/hooks/usePrepaCdsChat';
 import { getStaticContent } from '@/data/trainingData';
+import { validateTrainingContent, normalizeTrainingContent } from '@/utils/trainingValidation';
 import type { TrainingType, UserLevel, StudyDomain } from '@/types/prepacds';
 
 interface SimpleTrainingPlayerProps {
@@ -48,8 +49,17 @@ export function SimpleTrainingPlayer({
         
         if (aiContent && Object.keys(aiContent).length > 0) {
           console.log('✅ Contenu PrepaCDS chargé:', aiContent);
-          setContent(aiContent);
-          setContentSource('ai');
+          
+          // Valider et normaliser le contenu AI
+          const validation = validateTrainingContent(aiContent, trainingType);
+          if (validation.isValid) {
+            const normalizedContent = normalizeTrainingContent(aiContent, trainingType);
+            setContent(normalizedContent);
+            setContentSource('ai');
+          } else {
+            console.warn('⚠️ Contenu PrepaCDS invalide:', validation.errors);
+            throw new Error('Contenu PrepaCDS invalide');
+          }
         } else {
           throw new Error('Contenu PrepaCDS vide');
         }
@@ -60,8 +70,25 @@ export function SimpleTrainingPlayer({
         // Fallback vers contenu statique
         const staticContent = getStaticContent(trainingType, domain, level);
         console.log('📚 Contenu statique chargé:', staticContent);
-        setContent(staticContent);
-        setContentSource('fallback');
+        
+        // Format and validate static content
+        let formattedContent;
+        if (trainingType === 'qcm' || trainingType === 'vrai_faux') {
+          formattedContent = { questions: staticContent };
+        } else {
+          formattedContent = staticContent;
+        }
+        
+        const normalizedContent = normalizeTrainingContent(formattedContent, trainingType);
+        const validation = validateTrainingContent(normalizedContent, trainingType);
+        
+        if (validation.isValid) {
+          setContent(normalizedContent);
+          setContentSource('fallback');
+        } else {
+          console.error('❌ Contenu statique invalide:', validation.errors);
+          setContent(null);
+        }
       } finally {
         setIsLoading(false);
         setIsActive(true);
@@ -216,7 +243,7 @@ export function SimpleTrainingPlayer({
         >
           {trainingType === 'qcm' && (
             <AnimatedQuizPlayer
-              questions={content}
+              questions={content?.questions || []}
               onComplete={handleComplete}
               onExit={handleExit}
               title={`QCM ${domain} - ${level}`}
@@ -225,7 +252,7 @@ export function SimpleTrainingPlayer({
           
           {trainingType === 'vrai_faux' && (
             <TrueFalseAnimated
-              questions={content}
+              questions={content?.questions || []}
               onComplete={handleComplete}
               onExit={handleExit}
               title={`Vrai/Faux ${domain} - ${level}`}

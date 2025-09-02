@@ -34,6 +34,20 @@ export function CasePracticeSimulator({
   onComplete, 
   onExit 
 }: CasePracticeSimulatorProps) {
+  // Vérification de sécurité pour éviter les erreurs
+  if (!caseData || !caseData.steps || caseData.steps.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-prepacds-primary/5 to-prepacds-secondary/10 p-4 flex items-center justify-center">
+        <Card>
+          <CardContent className="p-8 text-center">
+            <h3 className="text-lg font-semibold mb-2">Aucun cas pratique disponible</h3>
+            <p className="text-muted-foreground mb-4">Le contenu du cas pratique n'a pas pu être chargé.</p>
+            <Button onClick={onExit}>Retour</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [answers, setAnswers] = useState<string[]>([]);
   const [currentAnswer, setCurrentAnswer] = useState('');
@@ -42,6 +56,22 @@ export function CasePracticeSimulator({
   const [isCompleted, setIsCompleted] = useState(false);
 
   const currentStep = caseData.steps[currentStepIndex];
+  
+  // Vérification supplémentaire pour l'étape actuelle
+  if (!currentStep) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-prepacds-primary/5 to-prepacds-secondary/10 p-4 flex items-center justify-center">
+        <Card>
+          <CardContent className="p-8 text-center">
+            <h3 className="text-lg font-semibold mb-2">Erreur de navigation</h3>
+            <p className="text-muted-foreground mb-4">Étape du cas pratique introuvable.</p>
+            <Button onClick={onExit}>Retour</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+  
   const progress = ((currentStepIndex + 1) / caseData.steps.length) * 100;
 
   const handleNext = () => {

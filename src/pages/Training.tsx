@@ -70,10 +70,8 @@ const Training = () => {
   const domains = [
     { value: 'droit_administratif', label: 'Droit Administratif' },
     { value: 'droit_penal', label: 'Droit Pénal' },
-    { value: 'securite_publique', label: 'Sécurité Publique' },
     { value: 'management', label: 'Management' },
-    { value: 'finances_publiques', label: 'Finances Publiques' },
-    { value: 'urbanisme', label: 'Urbanisme' }
+    { value: 'redaction_administrative', label: 'Rédaction Administrative' }
   ];
 
   if (isTrainingActive) {
