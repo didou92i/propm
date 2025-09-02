@@ -78,11 +78,6 @@ const Training = () => {
     console.log('🎮 Training.tsx - Rendu TrainingExperiencePlayer:', { trainingType, level, domain });
     return (
       <div className="fixed inset-0 z-50 bg-background">
-        <div className="fixed top-4 left-4 bg-black/80 text-white p-3 rounded-lg z-[60] text-sm max-w-xs">
-          <p>🎮 Training actif</p>
-          <p>📊 {trainingType} - {level}</p>
-          <p>🏛️ {domain}</p>
-        </div>
         <SimpleTrainingPlayer
           trainingType={trainingType}
           level={level}
