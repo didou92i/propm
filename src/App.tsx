@@ -8,8 +8,7 @@ import { CookieConsent } from "@/components/legal";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import { Suspense, lazy } from "react";
-
-const Index = lazy(() => import("./pages/Index"));
+import Index from "./pages/Index";
 const Privacy = lazy(() => import("./pages/Privacy"));
 const Terms = lazy(() => import("./pages/Terms"));
 const Legal = lazy(() => import("./pages/Legal"));
