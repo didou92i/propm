@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { getAgentById } from "@/config/agents";
+import { useAgent } from "@/hooks/useAgent";
 import { useConversationHistory } from "@/hooks/useConversationHistory";
 import { useChatLogic } from "@/hooks/chat/useChatLogic";
 import { useCdsProEnhancements } from "@/hooks/chat/useCdsProEnhancements";
@@ -12,6 +13,7 @@ import { agentInfo } from "./utils/chatUtils";
 import { TrainingExperiencePlayer } from "@/components/training/TrainingExperiencePlayer";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import { AgentAvatar } from "@/components/common/AgentAvatar";
 interface ChatAreaProps {
   selectedAgent: string;
   sharedContext?: {
@@ -162,7 +164,8 @@ export function ChatArea({
       console.error('Erreur lors de la réinitialisation:', error);
     }
   };
-  const currentAgent = agentInfo[selectedAgent as keyof typeof agentInfo];
+  const currentAgent = useAgent(selectedAgent);
+  const agentInfoData = agentInfo[selectedAgent as keyof typeof agentInfo];
 
   // Show training interface for PrepaCDS
   if (selectedAgent === "prepacds" && showTraining && trainingContent) {
@@ -188,5 +191,65 @@ export function ChatArea({
         </div>
       </div>;
   }
-  return;
+  return (
+    <div className="flex flex-col h-full">
+      {/* Header avec avatar de l'agent */}
+      <div className="px-6 pt-6 pb-4 border-b border-border/40">
+        <div className="flex items-center gap-4">
+          <AgentAvatar 
+            agentId={selectedAgent}
+            agentName={currentAgent?.name}
+            avatarUrl={currentAgent?.avatar}
+            fallbackIcon={currentAgent?.icon}
+            size="xl"
+          />
+          <div>
+            <h2 className="text-xl font-semibold">{currentAgent?.name}</h2>
+            <p className="text-sm text-muted-foreground">{agentInfoData?.description || currentAgent?.description}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Contenu principal */}
+      <div className="flex-1 flex flex-col relative">
+        {/* Zone spéciale pour Arrêté Territorial */}
+        {selectedAgent === "arrete" && messages.length === 0 && (
+          <div className="p-6">
+            <ArreteGenerationPrompt messageContent="" />
+          </div>
+        )}
+
+        {/* Liste des messages */}
+        <div className="flex-1 overflow-hidden">
+          <ChatMessageList
+            messages={messages}
+            selectedAgent={selectedAgent}
+            typingMessageId={typingMessageId}
+            streamingContent={streamingState.currentContent}
+            onMessageEdit={handleMessageEdit}
+            bottomPadding={bottomPadding}
+            isStreaming={streamingState.isStreaming}
+          />
+        </div>
+
+        {/* Compositeur de message fixe en bas */}
+        <div ref={composerRef} className="border-t border-border/40 bg-background/95 backdrop-blur-sm">
+          <ChatComposer
+            input={input}
+            setInput={setInput}
+            attachments={attachments}
+            setAttachments={setAttachments}
+            onSubmit={handleSubmit}
+            isLoading={isLoading}
+            processingAttachment={processingAttachment}
+            attachmentError={attachmentError}
+            setAttachmentError={setAttachmentError}
+            selectedAgent={selectedAgent}
+            onResetContext={handleResetContext}
+            messages={messages}
+          />
+        </div>
+      </div>
+    </div>
+  );
 }
