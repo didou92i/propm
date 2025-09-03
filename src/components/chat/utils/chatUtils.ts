@@ -16,9 +16,7 @@ export const agentInfo = {
       "Rédiger une note de service",
       "Analyser la conformité juridique",
       "Organiser les cycles de travail",
-      "Procédures de contrôle d'identité",
-      "Systèmes de vidéoprotection",
-      "Coordination avec forces de l'ordre"
+      "Procédures de contrôle d'identité"
     ]
   },
   arrete: {
@@ -34,7 +32,42 @@ export const agentInfo = {
   prepacds: {
     name: "Prepa CDS",
     description: "Assistant personnalisé pour la préparation aux concours de la fonction publique",
-    suggestions: []
+    suggestions: [
+      "Commencer une session d'entraînement",
+      "Réviser les notions de base",
+      "Tester mes connaissances",
+      "Simuler un concours blanc"
+    ]
+  },
+  salary: {
+    name: "Simulateur de salaire",
+    description: "Calcul des salaires et charges",
+    suggestions: [
+      "Calculer un salaire net",
+      "Estimer les charges sociales",
+      "Comparer différents statuts",
+      "Simuler une évolution de carrière"
+    ]
+  },
+  natif: {
+    name: "Pro NATINF",
+    description: "Recherche avancée dans la base NATINF",
+    suggestions: [
+      "Rechercher une infraction",
+      "Trouver un code NATINF",
+      "Consulter les sanctions",
+      "Vérifier la classification"
+    ]
+  },
+  jobs: {
+    name: "Nous recrutons",
+    description: "Mini job-board : publier et consulter des offres",
+    suggestions: [
+      "Publier une offre d'emploi",
+      "Rechercher des candidats",
+      "Consulter les offres disponibles",
+      "Gérer mes annonces"
+    ]
   }
 };
 
