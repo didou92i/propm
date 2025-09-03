@@ -218,7 +218,7 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
       {/* Messages Area */}
       <div className="flex-1 overflow-hidden">
         {messages.length === 0 ? (
-          <div className="h-full flex items-center justify-center p-8 animate-fade-in">
+          <div className="h-full flex flex-col items-center pt-12 p-8 animate-fade-in">
             <div className="text-center max-w-4xl w-full">
               <>
                 <div className="mx-auto mb-6 float pulse-glow">
