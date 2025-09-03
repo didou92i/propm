@@ -1,18 +1,19 @@
 import { useState, useRef, useEffect } from "react";
+import { getAgentById } from "@/config/agents";
 import { useConversationHistory } from "@/hooks/useConversationHistory";
 import { useChatLogic } from "@/hooks/chat/useChatLogic";
+import { useCdsProEnhancements } from "@/hooks/chat/useCdsProEnhancements";
 import { Message } from "@/types/chat";
 import { toast } from "sonner";
 import { ChatMessageList } from "./ChatMessageList";
 import { ChatComposer } from "./ChatComposer";
+import { CdsProControls } from "./CdsProControls";
+import { PrepaCdsWelcome } from "./PrepaCdsWelcome";
 import { ArreteGenerationPrompt } from "./ArreteGenerationPrompt";
 import { agentInfo } from "./utils/chatUtils";
 import { TrainingExperiencePlayer } from "@/components/training/TrainingExperiencePlayer";
 import { Button } from "@/components/ui/button";
-import { AgentAvatar } from "@/components/common";
-import { useAgentSafe } from "@/hooks/ui";
 import { ArrowLeft } from "lucide-react";
-
 interface ChatAreaProps {
   selectedAgent: string;
   sharedContext?: {
@@ -20,27 +21,33 @@ interface ChatAreaProps {
     messages: Message[];
   };
 }
-
 interface AttachedFile {
   id: string;
   file: File;
   preview?: string;
 }
-
-export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
+export function ChatArea({
+  selectedAgent,
+  sharedContext
+}: ChatAreaProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [attachments, setAttachments] = useState<AttachedFile[]>([]);
-  const [userSession, setUserSession] = useState<{ id: string; threadId?: string }>({
+  const [userSession, setUserSession] = useState<{
+    id: string;
+    threadId?: string;
+  }>({
     id: `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     threadId: undefined
   });
   const [contextShared, setContextShared] = useState(false);
   const [bottomPadding, setBottomPadding] = useState<number>(200);
-
   const composerRef = useRef<HTMLDivElement>(null);
-  const { updateConversation, getConversation } = useConversationHistory();
-  
+  const {
+    updateConversation,
+    getConversation
+  } = useConversationHistory();
+  const cdsPro = useCdsProEnhancements();
   const {
     isLoading,
     processingAttachment,
@@ -64,14 +71,12 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
       const extra = 24;
       setBottomPadding(composerH + footerH + bottomOffset + extra);
     };
-
     updateOffsets();
     window.addEventListener('resize', updateOffsets);
     const ro = new ResizeObserver(updateOffsets);
     if (composerRef.current) ro.observe(composerRef.current);
     const footerNode = document.querySelector('footer');
     if (footerNode) ro.observe(footerNode);
-    
     return () => {
       window.removeEventListener('resize', updateOffsets);
       ro.disconnect();
@@ -95,9 +100,15 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
   useEffect(() => {
     try {
       const tid = localStorage.getItem(`openai.thread.${selectedAgent}`) || localStorage.getItem(`threadId_${selectedAgent}`);
-      setUserSession(prev => ({ ...prev, threadId: tid || undefined }));
+      setUserSession(prev => ({
+        ...prev,
+        threadId: tid || undefined
+      }));
     } catch {
-      setUserSession(prev => ({ ...prev, threadId: undefined }));
+      setUserSession(prev => ({
+        ...prev,
+        threadId: undefined
+      }));
     }
   }, [selectedAgent]);
 
@@ -106,18 +117,14 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
     if (sharedContext && !contextShared) {
       const contextMessage: Message = {
         id: `context_${Date.now()}`,
-        content: `**Contexte partagé depuis ${sharedContext.sourceAgent}:**\n\n${sharedContext.messages.map(msg => 
-          `**${msg.role === 'user' ? 'Utilisateur' : 'Assistant'}:** ${msg.content}`
-        ).join('\n\n')}\n\n---\n\n*Ce contexte vous aide à comprendre la discussion précédente. Comment puis-je vous aider maintenant ?*`,
+        content: `**Contexte partagé depuis ${sharedContext.sourceAgent}:**\n\n${sharedContext.messages.map(msg => `**${msg.role === 'user' ? 'Utilisateur' : 'Assistant'}:** ${msg.content}`).join('\n\n')}\n\n---\n\n*Ce contexte vous aide à comprendre la discussion précédente. Comment puis-je vous aider maintenant ?*`,
         role: "assistant",
-        timestamp: new Date(),
+        timestamp: new Date()
       };
-      
       setMessages([contextMessage]);
       setContextShared(true);
-      
       toast.success("Contexte partagé", {
-        description: `Le contexte de votre conversation avec ${sharedContext.sourceAgent} a été importé.`,
+        description: `Le contexte de votre conversation avec ${sharedContext.sourceAgent} a été importé.`
       });
     }
   }, [sharedContext, contextShared]);
@@ -128,56 +135,43 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
       updateConversation(selectedAgent, messages);
     }
   }, [messages, selectedAgent, updateConversation, contextShared]);
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     sendMessage(input, attachments, messages, userSession, setMessages);
   };
-
   const handleMessageEdit = (messageId: string, newContent: string) => {
-    setMessages(prev => prev.map(message => 
-      message.id === messageId 
-        ? { ...message, content: newContent }
-        : message
-    ));
+    setMessages(prev => prev.map(message => message.id === messageId ? {
+      ...message,
+      content: newContent
+    } : message));
   };
-
   const handleResetContext = () => {
     try {
       // Clear localStorage threads
       localStorage.removeItem(`openai.thread.${selectedAgent}`);
       localStorage.removeItem(`threadId_${selectedAgent}`);
-      
+
       // Reset session
       const newSessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       setUserSession({
         id: newSessionId,
         threadId: undefined
       });
-      
+
       // Clear messages
       setMessages([]);
-      
     } catch (error) {
       console.error('Erreur lors de la réinitialisation:', error);
     }
   };
-
   const currentAgent = agentInfo[selectedAgent as keyof typeof agentInfo];
-  const { agent, name: agentName, avatar: agentAvatar, icon: agentIcon } = useAgentSafe(selectedAgent);
 
   // Show training interface for PrepaCDS
   if (selectedAgent === "prepacds" && showTraining && trainingContent) {
-    return (
-      <div className="flex flex-col h-full">
+    return <div className="flex flex-col h-full">
         <div className="px-6 pt-3 pb-3 border-b border-border/40">
           <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowTraining(false)}
-              className="gap-2"
-            >
+            <Button variant="ghost" size="sm" onClick={() => setShowTraining(false)} className="gap-2">
               <ArrowLeft className="h-4 w-4" />
               Retour au chat
             </Button>
@@ -187,111 +181,14 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
           </div>
         </div>
         <div className="flex-1">
-          <TrainingExperiencePlayer
-            trainingType={trainingContent.trainingType}
-            level={trainingContent.level}
-            domain={trainingContent.domain}
-            initialContent={trainingContent}
-            onComplete={(session) => {
-              toast.success("Entraînement terminé !", {
-                description: `Score: ${session.score || 0}%`,
-              });
-              setShowTraining(false);
-            }}
-            onExit={() => setShowTraining(false)}
-          />
+          <TrainingExperiencePlayer trainingType={trainingContent.trainingType} level={trainingContent.level} domain={trainingContent.domain} initialContent={trainingContent} onComplete={session => {
+          toast.success("Entraînement terminé !", {
+            description: `Score: ${session.score || 0}%`
+          });
+          setShowTraining(false);
+        }} onExit={() => setShowTraining(false)} />
         </div>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="flex flex-col h-full">
-      {selectedAgent === 'cdspro' && (
-        <div className="px-6 pt-3">
-          <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">
-            Références juridiques activées
-          </span>
-        </div>
-      )}
-
-      {/* Messages Area */}
-      <div className="flex-1 overflow-hidden">
-        {messages.length === 0 ? (
-          <div className="h-full flex flex-col items-center pt-12 p-8 animate-fade-in">
-            <div className="text-center max-w-4xl w-full">
-              <>
-                <div className="mx-auto mb-6 float pulse-glow">
-                  <AgentAvatar 
-                    agentId={selectedAgent}
-                    agentName={agentName}
-                    avatarUrl={agentAvatar}
-                    fallbackIcon={agentIcon}
-                    size="xl"
-                    className="gradient-agent-animated neomorphism"
-                  />
-                </div>
-                <h1 className="text-2xl font-bold mb-2 animate-scale-in">
-                  {agentName}
-                </h1>
-                <p className="text-muted-foreground mb-6 animate-fade-in" style={{ animationDelay: '0.2s' }}>
-                  {currentAgent?.description || "Comment puis-je vous aider ?"}
-                </p>
-
-                {currentAgent?.suggestions && currentAgent.suggestions.length > 0 && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {currentAgent.suggestions.map((suggestion, index) => (
-                      <button
-                        key={index}
-                        onClick={() => {
-                          sendMessage(suggestion, [], messages, userSession, setMessages);
-                        }}
-                        className="p-4 rounded-xl glass neomorphism-subtle hover-lift ripple-container text-left group animate-fade-in transform-3d hover-tilt glass-hover"
-                        style={{ animationDelay: `${(index + 1) * 0.1}s` }}
-                      >
-                        <div className="font-medium text-sm group-hover:text-primary transition-colors">
-                          {suggestion}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </>
-            </div>
-          </div>
-        ) : (
-          <div className="h-full overflow-y-auto">
-            <ChatMessageList
-              messages={messages}
-              selectedAgent={selectedAgent}
-              typingMessageId={typingMessageId}
-              streamingContent={streamingState.currentContent}
-              isStreaming={streamingState.isStreaming}
-              bottomPadding={0}
-              onMessageEdit={handleMessageEdit}
-            />
-          </div>
-        )}
-      </div>
-
-      {/* Sticky Composer */}
-      <div className="sticky bottom-0 bg-background/95 backdrop-blur-md border-t border-border/30">
-        <ChatComposer
-          ref={composerRef}
-          input={input}
-          setInput={setInput}
-          attachments={attachments}
-          setAttachments={setAttachments}
-          messages={messages}
-          selectedAgent={selectedAgent}
-          isLoading={isLoading}
-          processingAttachment={processingAttachment}
-          attachmentError={attachmentError}
-          onSubmit={handleSubmit}
-          onResetContext={handleResetContext}
-          setAttachmentError={setAttachmentError}
-        />
-      </div>
-    </div>
-  );
+  return;
 }
