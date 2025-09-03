@@ -1,10 +1,10 @@
-import { Bot, User } from "lucide-react";
-import { getAgentById } from "@/config/agents";
+import { User } from "lucide-react";
+import { AgentAvatar } from "@/components/common";
+import { useAgentSafe } from "@/hooks/ui";
 import { VirtualizedMessageList } from "@/components/common";
 import type { VirtualizedMessageListRef } from "@/components/common/VirtualizedMessageList";
 import { EditableMessage, MessageWithAttachments } from "@/components/chat";
 import { StreamingProgress } from "@/components/common";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Message } from "@/types/chat";
 import { formatTime } from "./utils/chatUtils";
 
@@ -29,7 +29,7 @@ export function ChatMessageList({
   onMessageEdit,
   messagesListRef
 }: ChatMessageListProps) {
-  const currentAgent = getAgentById(selectedAgent);
+  const { agent: currentAgent, name: agentName, avatar: agentAvatar, icon: agentIcon } = useAgentSafe(selectedAgent);
 
   return (
     <div className="flex-1 overflow-hidden">
@@ -40,27 +40,19 @@ export function ChatMessageList({
               <div key={message.id} className="mb-6 group animate-message-in px-6">
                 <div className={`flex gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}>
                   {message.role === "assistant" && (
-                    <div className="flex-shrink-0">
-                      <Avatar className="w-8 h-8">
-                        <AvatarImage 
-                          src={(currentAgent as any)?.avatar} 
-                          alt={currentAgent?.name || "Assistant"}
-                        />
-                        <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/40">
-                          {currentAgent?.icon ? (
-                            <currentAgent.icon className="w-5 h-5 text-primary" />
-                          ) : (
-                            <Bot className="w-5 h-5 text-primary" />
-                          )}
-                        </AvatarFallback>
-                      </Avatar>
-                    </div>
+                    <AgentAvatar 
+                      agentId={selectedAgent}
+                      agentName={agentName}
+                      avatarUrl={agentAvatar}
+                      fallbackIcon={agentIcon}
+                      size="md"
+                    />
                   )}
                   
                   <div className={`flex-1 max-w-[85%] ${message.role === "user" ? "ml-12" : "mr-12"}`}>
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-xs text-muted-foreground font-medium">
-                        {message.role === "user" ? "Vous" : currentAgent?.name || "Assistant"}
+                        {message.role === "user" ? "Vous" : agentName}
                       </span>
                       <span className="text-xs text-muted-foreground">
                         {formatTime(message.timestamp)}

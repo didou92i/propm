@@ -1,7 +1,8 @@
 import { Bot, FileText, Calculator, MessageSquare, Search, Briefcase, GraduationCap } from "lucide-react";
 import { getAgentPrompt, hasAgentPrompt } from "./prompts";
+import type { Agent } from "@/types/agent";
 
-export const AGENTS = [
+export const AGENTS: Agent[] = [
   { 
     id: "redacpro", 
     name: "RedacPro", 
@@ -36,7 +37,7 @@ export const AGENTS = [
   },
 ];
 
-export const TOOLS = [
+export const TOOLS: Agent[] = [
   { 
     id: "salary", 
     name: "Simulateur de salaire", 
@@ -60,9 +61,9 @@ export const TOOLS = [
   },
 ];
 
-export const ALL_AGENTS = [...AGENTS, ...TOOLS];
+export const ALL_AGENTS: Agent[] = [...AGENTS, ...TOOLS];
 
-export const getAgentById = (id: string) => {
+export const getAgentById = (id: string): Agent | undefined => {
   return ALL_AGENTS.find(agent => agent.id === id);
 };
 

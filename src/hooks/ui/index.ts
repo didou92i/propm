@@ -8,3 +8,4 @@ export { useOptimizedCache } from '@/hooks/useOptimizedCache';
 export { useIncrementalSearch } from '@/hooks/useIncrementalSearch';
 export { useRealTimePerformanceMonitor } from '@/hooks/useRealTimePerformanceMonitor';
 export { useIntelligentPrefetch } from '@/hooks/useIntelligentPrefetch';
+export { useAgent, useAgentSafe } from '@/hooks/useAgent';

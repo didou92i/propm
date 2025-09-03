@@ -2,3 +2,4 @@
 export * from './chat';
 export * from './api';
 export * from './ui';
+export * from './agent';

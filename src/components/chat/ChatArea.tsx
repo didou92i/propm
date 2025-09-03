@@ -1,17 +1,16 @@
 import { useState, useRef, useEffect } from "react";
-import { getAgentById } from "@/config/agents";
 import { useConversationHistory } from "@/hooks/useConversationHistory";
 import { useChatLogic } from "@/hooks/chat/useChatLogic";
 import { Message } from "@/types/chat";
 import { toast } from "sonner";
 import { ChatMessageList } from "./ChatMessageList";
 import { ChatComposer } from "./ChatComposer";
-
 import { ArreteGenerationPrompt } from "./ArreteGenerationPrompt";
 import { agentInfo } from "./utils/chatUtils";
 import { TrainingExperiencePlayer } from "@/components/training/TrainingExperiencePlayer";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { AgentAvatar } from "@/components/common";
+import { useAgentSafe } from "@/hooks/ui";
 import { ArrowLeft } from "lucide-react";
 
 interface ChatAreaProps {
@@ -165,6 +164,7 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
   };
 
   const currentAgent = agentInfo[selectedAgent as keyof typeof agentInfo];
+  const { agent, name: agentName, avatar: agentAvatar, icon: agentIcon } = useAgentSafe(selectedAgent);
 
   // Show training interface for PrepaCDS
   if (selectedAgent === "prepacds" && showTraining && trainingContent) {
@@ -222,26 +222,17 @@ export function ChatArea({ selectedAgent, sharedContext }: ChatAreaProps) {
             <div className="text-center max-w-4xl w-full">
               <>
                 <div className="mx-auto mb-6 float pulse-glow">
-                  <Avatar className="w-16 h-16 gradient-agent-animated neomorphism">
-                    <AvatarImage 
-                      src={(() => {
-                        const agent = getAgentById(selectedAgent);
-                        return (agent as any)?.avatar;
-                      })()} 
-                      alt={currentAgent?.name || "Assistant IA"}
-                    />
-                    <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/40">
-                      {(() => {
-                        const agent = getAgentById(selectedAgent);
-                        return agent?.icon ? (
-                          <agent.icon className="w-8 h-8 text-primary" />
-                        ) : null;
-                      })()}
-                    </AvatarFallback>
-                  </Avatar>
+                  <AgentAvatar 
+                    agentId={selectedAgent}
+                    agentName={agentName}
+                    avatarUrl={agentAvatar}
+                    fallbackIcon={agentIcon}
+                    size="xl"
+                    className="gradient-agent-animated neomorphism"
+                  />
                 </div>
                 <h1 className="text-2xl font-bold mb-2 animate-scale-in">
-                  {currentAgent?.name || "Assistant IA"}
+                  {agentName}
                 </h1>
                 <p className="text-muted-foreground mb-6 animate-fade-in" style={{ animationDelay: '0.2s' }}>
                   {currentAgent?.description || "Comment puis-je vous aider ?"}

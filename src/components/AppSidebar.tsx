@@ -7,6 +7,7 @@ import { ConversationSwitcher } from "@/components/conversation";
 import { useConversationHistory } from "@/hooks/useConversationHistory";
 import { Message } from "@/types/chat";
 import { AGENTS, TOOLS } from "@/config/agents";
+import { AgentAvatar } from "@/components/common";
 import {
   Sidebar,
   SidebarContent,
@@ -121,23 +122,16 @@ export function AppSidebar({ selectedAgent, onAgentSelect, onContextShare }: App
                         : "hover:bg-sidebar-accent/50 hover-glow glass-subtle"
                     }`}
                   >
-                    {agent.avatar ? (
-                      <div className="w-5 h-5 rounded-full overflow-hidden">
-                        <img 
-                          src={agent.avatar}
-                          alt={`${agent.name} Avatar`} 
-                          className={`w-5 h-5 object-cover transition-all duration-300 ${
-                            selectedAgent === agent.id ? 'scale-110' : ''
-                          }`}
-                          loading="lazy"
-                          decoding="async"
-                        />
-                      </div>
-                    ) : (
-                      <agent.icon className={`w-5 h-5 transition-all duration-300 ${
-                        selectedAgent === agent.id ? 'text-primary scale-110' : agent.color
-                      }`} />
-                    )}
+                    <AgentAvatar 
+                      agentId={agent.id}
+                      agentName={agent.name}
+                      avatarUrl={agent.avatar}
+                      fallbackIcon={agent.icon}
+                      size="sm"
+                      className={`transition-all duration-300 ${
+                        selectedAgent === agent.id ? 'scale-110' : ''
+                      }`}
+                    />
                     <span className="font-medium flex-1">{agent.name}</span>
                     {(() => {
                       const summary = getConversationSummary(agent.id);
