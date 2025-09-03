@@ -7,8 +7,6 @@ import { Message } from "@/types/chat";
 import { toast } from "sonner";
 import { ChatMessageList } from "./ChatMessageList";
 import { ChatComposer } from "./ChatComposer";
-import { CdsProControls } from "./CdsProControls";
-import { PrepaCdsWelcome } from "./PrepaCdsWelcome";
 import { ArreteGenerationPrompt } from "./ArreteGenerationPrompt";
 import { agentInfo } from "./utils/chatUtils";
 import { TrainingExperiencePlayer } from "@/components/training/TrainingExperiencePlayer";
