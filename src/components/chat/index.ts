@@ -6,3 +6,4 @@ export { MessageWithAttachments } from './MessageWithAttachments';
 export { EditableMessage } from './EditableMessage';
 export { PrepaCdsSessionMgmt } from './PrepaCdsSessionMgmt';
 export { ArreteGenerationPrompt } from './ArreteGenerationPrompt';
+export { AgentSuggestions } from './AgentSuggestions';

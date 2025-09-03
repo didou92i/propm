@@ -14,6 +14,8 @@ import { TrainingExperiencePlayer } from "@/components/training/TrainingExperien
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { AgentAvatar } from "@/components/common/AgentAvatar";
+import { AgentSuggestions } from "./AgentSuggestions";
+
 interface ChatAreaProps {
   selectedAgent: string;
   sharedContext?: {
@@ -217,6 +219,14 @@ export function ChatArea({
           <div className="p-6">
             <ArreteGenerationPrompt messageContent="" />
           </div>
+        )}
+
+        {/* Suggestions de l'assistant */}
+        {messages.length === 0 && selectedAgent !== "arrete" && (
+          <AgentSuggestions
+            agentId={selectedAgent}
+            onSuggestionClick={(suggestion) => setInput(suggestion)}
+          />
         )}
 
         {/* Liste des messages */}
