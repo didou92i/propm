@@ -15,11 +15,11 @@ export function AgentSuggestions({ agentId, onSuggestionClick }: AgentSuggestion
 
   return (
     <div className="px-6 py-8">
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-4xl mx-auto">
         <h3 className="text-lg font-medium text-center mb-6 text-muted-foreground">
           Suggestions pour vous aider à commencer
         </h3>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
           {suggestions.map((suggestion, index) => (
             <Button
               key={index}
