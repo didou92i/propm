@@ -387,6 +387,7 @@ const Training = () => {
                 </motion.div>
               )}
             </div>
+            </div>
           </div>
 
           <LegalFooter />
