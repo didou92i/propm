@@ -7,3 +7,4 @@ export { EditableMessage } from './EditableMessage';
 export { PrepaCdsSessionMgmt } from './PrepaCdsSessionMgmt';
 export { ArreteGenerationPrompt } from './ArreteGenerationPrompt';
 export { AgentSuggestions } from './AgentSuggestions';
+export { StreamingPerformanceIndicator } from './StreamingPerformanceIndicator';

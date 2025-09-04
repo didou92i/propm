@@ -5,6 +5,7 @@ import { VirtualizedMessageList } from "@/components/common";
 import type { VirtualizedMessageListRef } from "@/components/common/VirtualizedMessageList";
 import { EditableMessage, MessageWithAttachments } from "@/components/chat";
 import { StreamingProgress } from "@/components/common";
+import { StreamingPerformanceIndicator } from "./StreamingPerformanceIndicator";
 import { Message } from "@/types/chat";
 import { formatTime } from "./utils/chatUtils";
 
@@ -16,6 +17,11 @@ interface ChatMessageListProps {
   isStreaming: boolean;
   onMessageEdit: (messageId: string, newContent: string) => void;
   messagesListRef?: React.RefObject<VirtualizedMessageListRef>;
+  streamingPerformance?: {
+    firstTokenLatency: number;
+    tokenCount: number;
+    tokensPerSecond: number;
+  };
 }
 
 export function ChatMessageList({ 
@@ -25,7 +31,8 @@ export function ChatMessageList({
   streamingContent, 
   isStreaming,
   onMessageEdit,
-  messagesListRef
+  messagesListRef,
+  streamingPerformance
 }: ChatMessageListProps) {
   const { agent: currentAgent, name: agentName, avatar: agentAvatar, icon: agentIcon } = useAgentSafe(selectedAgent);
 
@@ -75,6 +82,10 @@ export function ChatMessageList({
                   {message.id === typingMessageId && isStreaming && streamingContent && (
                     <div className="mt-2 text-sm opacity-70">
                       {streamingContent}...
+                      <StreamingPerformanceIndicator 
+                        performance={streamingPerformance} 
+                        isStreaming={isStreaming} 
+                      />
                     </div>
                   )}
                 </div>

@@ -13,6 +13,7 @@ import { ArreteGenerationPrompt } from "./ArreteGenerationPrompt";
 import { agentInfo } from "./utils/chatUtils";
 import { AgentAvatar } from "@/components/common/AgentAvatar";
 import { AgentSuggestions } from "./AgentSuggestions";
+import { StreamingPerformanceIndicator } from "./StreamingPerformanceIndicator";
 
 interface ChatAreaProps {
   selectedAgent: string;
@@ -163,6 +164,7 @@ export function ChatArea({
             streamingContent={streamingState.currentContent}
             onMessageEdit={handleMessageEdit}
             isStreaming={streamingState.isStreaming}
+            streamingPerformance={streamingState.performance}
           />
         </div>
 

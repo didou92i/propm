@@ -39,6 +39,9 @@ verify_jwt = true
 [functions.chat-openai-stream]
 verify_jwt = true
 
+[functions.chat-completions-stream]
+verify_jwt = true
+
 [functions.search-cds-vectorial]
 verify_jwt = true
 

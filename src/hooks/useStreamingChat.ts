@@ -8,6 +8,11 @@ interface StreamingState {
   isStreaming: boolean;
   currentContent: string;
   isTyping: boolean;
+  performance?: {
+    firstTokenLatency: number;
+    tokenCount: number;
+    tokensPerSecond: number;
+  };
 }
 
 export function useStreamingChat() {
@@ -31,7 +36,7 @@ export function useStreamingChat() {
     const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const messageLength = messages[messages.length - 1]?.content?.length || 0;
     
-    // Démarrer le monitoring de performance avec paramètres optimisés
+    // Start performance monitoring
     const optimizedParams = startSession(sessionId, messageLength, selectedAgent);
     
     try {
@@ -47,141 +52,70 @@ export function useStreamingChat() {
       }
       abortControllerRef.current = new AbortController();
 
-      // Immediate feedback with performance awareness
-      const feedbackMessage = optimizedParams.streamingSpeed < 2 ? 
-        'L\'assistant traite votre demande (mode haute performance)...' : 
-        'L\'assistant réfléchit...';
-      onMessageUpdate(feedbackMessage, false);
+      // Immediate user feedback
+      onMessageUpdate('L\'assistant traite votre demande...', false);
 
-      // Use streaming endpoint with loop detection
-      const loopDetected = messages.filter(m => m.content === messages[messages.length - 1].content).length > 2;
-      let storedThreadId: string | null = null;
-      try {
-        storedThreadId = localStorage.getItem(`openai.thread.${selectedAgent}`) || localStorage.getItem(`threadId_${selectedAgent}`);
-      } catch {}
-      const effectiveThreadId = loopDetected ? undefined : (userSession?.threadId ?? storedThreadId ?? undefined);
-
-      // Try SSE streaming first
-      try {
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-        const response = await fetch(`${supabaseUrl}/functions/v1/chat-openai-stream`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-            'Content-Type': 'application/json',
-            'Accept': 'text/event-stream',
-          },
-          body: JSON.stringify({
-            messages,
-            selectedAgent,
-            userSession: {
-              ...(typeof userSession === 'object' ? userSession : { id: String(userSession || '') }),
-              threadId: effectiveThreadId
-            }
-          }),
-          signal: abortControllerRef.current.signal
-        });
-
-        if (response.ok && response.headers.get('content-type')?.includes('text/event-stream')) {
-          await handleSSEStream(response, onMessageUpdate, onComplete, selectedAgent);
-          return;
-        }
-      } catch (sseError) {
-        console.log('SSE failed, falling back to regular streaming:', sseError);
-      }
-
-      // Fallback to regular API with ultra-fast simulated streaming
-      const { data, error } = await supabase.functions.invoke('chat-openai-stream', {
-        body: {
+      // Use new ultra-fast streaming endpoint
+      const response = await fetch(`https://yulhsufpnjkiozkrgyoq.supabase.co/functions/v1/chat-completions-stream`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+          'Content-Type': 'application/json',
+          'Accept': 'text/event-stream',
+        },
+        body: JSON.stringify({
           messages,
           selectedAgent,
-          userSession: {
-            ...(typeof userSession === 'object' ? userSession : { id: String(userSession || '') }),
-            threadId: effectiveThreadId
-          }
-        }
+          userSession
+        }),
+        signal: abortControllerRef.current.signal
       });
 
-      if (error) {
-        throw new Error(`Erreur: ${error.message}`);
+      if (!response.ok) {
+        throw new Error(`Erreur de réseau: ${response.status}`);
       }
 
-      // Handle streaming response with ultra-fast optimized reveal
-      if (data && data.content) {
-        const content = data.content;
-        let currentIndex = 0;
-        
-        const revealNextChunk = () => {
-          if (currentIndex < content.length && !abortControllerRef.current?.signal.aborted) {
-            // Performance-optimized chunking based on optimized parameters
-            const chunkSize = Math.max(2, Math.min(optimizedParams.chunkSize + Math.floor(Math.random() * 2), 8));
-            const nextChunk = content.slice(0, currentIndex + chunkSize);
-            currentIndex += chunkSize;
-            
-            setStreamingState(prev => ({
-              ...prev,
-              currentContent: nextChunk,
-              isTyping: currentIndex < content.length
-            }));
-            
-            onMessageUpdate(nextChunk, currentIndex >= content.length);
-            
-            if (currentIndex < content.length) {
-              // Optimized delay based on performance parameters
-              const delay = Math.max(0.5, optimizedParams.streamingSpeed + (Math.random() * 1.5) - 0.75);
-              setTimeout(revealNextChunk, delay);
-            } else {
-              // Finished streaming
-              setStreamingState(prev => ({
-                ...prev,
-                isStreaming: false,
-                isTyping: false
-              }));
-              try {
-                if (data.threadId) {
-                  localStorage.setItem(`openai.thread.${selectedAgent}`, data.threadId);
-                }
-              } catch {}
-              
-              // Enregistrer le succès de la session
-              endSession(sessionId, true);
-              onComplete(content, data.threadId);
-            }
-          }
-        };
-        
-        // Start immediately
-        revealNextChunk();
-      } else {
-        // Pas de contenu - enregistrer comme erreur
-        endSession(sessionId, false);
-      }
+      // Handle real-time streaming
+      await handleRealTimeStream(response, onMessageUpdate, onComplete, sessionId);
 
     } catch (error) {
-      // Enregistrer l'erreur dans le monitoring
       endSession(sessionId, false);
       
-      logger.error('Chat error', error, 'useStreamingChat');
+      if (error.name === 'AbortError') {
+        return; // User cancelled, don't show error
+      }
+      
+      logger.error('Streaming error', error, 'useStreamingChat');
       setStreamingState(prev => ({
         ...prev,
         isStreaming: false,
         isTyping: false
       }));
-      onError(error instanceof Error ? error.message : 'Erreur inconnue');
+      
+      // Fallback to old method if new one fails
+      console.log('Chat Completions failed, falling back to Assistants API');
+      try {
+        await fallbackToAssistantsAPI(messages, selectedAgent, userSession, onMessageUpdate, onComplete, onError);
+      } catch (fallbackError) {
+        onError(error instanceof Error ? error.message : 'Erreur de connexion');
+      }
     }
   }, [startSession, endSession]);
 
-  // Handle Server-Sent Events streaming
-  const handleSSEStream = async (
+  // Handle real-time streaming with Chat Completions
+  const handleRealTimeStream = async (
     response: Response,
     onMessageUpdate: (content: string, isComplete: boolean) => void,
     onComplete: (content: string, threadId?: string) => void,
-    selectedAgent: string
+    sessionId: string
   ) => {
     const reader = response.body?.getReader();
     const decoder = new TextDecoder();
     
     if (!reader) return;
+
+    let fullContent = '';
+    let firstTokenReceived = false;
 
     try {
       while (true) {
@@ -192,40 +126,135 @@ export function useStreamingChat() {
         const lines = chunk.split('\n');
         
         for (const line of lines) {
-          if (line.startsWith('data: ')) {
+          if (line.startsWith('data: ') && line.length > 6) {
             try {
               const data = JSON.parse(line.slice(6));
               
-              if (data.status) {
-                // Status update
-                onMessageUpdate(data.message || 'Traitement...', false);
-              } else if (data.content) {
-                // Complete response
-                setStreamingState(prev => ({
-                  ...prev,
-                  isStreaming: false,
-                  isTyping: false
-                }));
-                
-                if (data.threadId) {
-                  try {
-                    localStorage.setItem(`openai.thread.${selectedAgent}`, data.threadId);
-                  } catch {}
+              if (data.status === 'streaming_started') {
+                // Stream has started successfully
+                continue;
+              }
+              
+              if (data.token) {
+                // Real-time token streaming
+                if (!firstTokenReceived) {
+                  firstTokenReceived = true;
+                  onMessageUpdate('', false); // Clear initial message
                 }
                 
-                onComplete(data.content, data.threadId);
+                fullContent = data.content;
+                
+                setStreamingState(prev => ({
+                  ...prev,
+                  currentContent: fullContent,
+                  isTyping: true,
+                  performance: {
+                    firstTokenLatency: 0, // Will be updated by edge function
+                    tokenCount: data.tokenCount || 0,
+                    tokensPerSecond: 0
+                  }
+                }));
+                
+                onMessageUpdate(fullContent, false);
+              }
+              
+              if (data.content && !data.token) {
+                // Complete response received
+                fullContent = data.content;
+                
+                setStreamingState(prev => ({
+                  ...prev,
+                  currentContent: fullContent,
+                  isStreaming: false,
+                  isTyping: false,
+                  performance: data.performance ? {
+                    firstTokenLatency: data.performance.firstTokenLatency,
+                    tokenCount: data.performance.tokenCount,
+                    tokensPerSecond: data.performance.tokensPerSecond
+                  } : prev.performance
+                }));
+                
+                endSession(sessionId, true);
+                onComplete(fullContent);
                 return;
-              } else if (data.error) {
+              }
+              
+              if (data.error) {
                 throw new Error(data.error);
               }
             } catch (parseError) {
-              // Ignore parse errors for SSE format lines
+              // Ignore parse errors for malformed SSE data
+              continue;
             }
           }
         }
       }
     } finally {
       reader.releaseLock();
+    }
+  };
+
+  // Fallback to Assistants API when Chat Completions fails
+  const fallbackToAssistantsAPI = async (
+    messages: Message[],
+    selectedAgent: string,
+    userSession: any,
+    onMessageUpdate: (content: string, isComplete: boolean) => void,
+    onComplete: (content: string, threadId?: string) => void,
+    onError: (error: string) => void
+  ) => {
+    console.log('Using fallback Assistants API');
+    onMessageUpdate('Connexion de secours...', false);
+    
+    // Use the old chat-openai-stream function as fallback
+    const { data, error } = await supabase.functions.invoke('chat-openai-stream', {
+      body: {
+        messages,
+        selectedAgent,
+        userSession
+      }
+    });
+
+    if (error) {
+      throw new Error(`Erreur: ${error.message}`);
+    }
+
+    if (data && data.content) {
+      // Simulate streaming for better UX
+      const content = data.content;
+      let currentIndex = 0;
+      
+      const revealNextChunk = () => {
+        if (currentIndex < content.length && !abortControllerRef.current?.signal.aborted) {
+          const chunkSize = Math.max(3, Math.min(8, Math.floor(Math.random() * 5) + 3));
+          const nextChunk = content.slice(0, currentIndex + chunkSize);
+          currentIndex += chunkSize;
+          
+          setStreamingState(prev => ({
+            ...prev,
+            currentContent: nextChunk,
+            isTyping: currentIndex < content.length
+          }));
+          
+          onMessageUpdate(nextChunk, currentIndex >= content.length);
+          
+          if (currentIndex < content.length) {
+            const delay = Math.max(5, Math.random() * 15 + 5);
+            setTimeout(revealNextChunk, delay);
+          } else {
+            setStreamingState(prev => ({
+              ...prev,
+              isStreaming: false,
+              isTyping: false
+            }));
+            onComplete(content, data.threadId);
+          }
+        }
+      };
+      
+      revealNextChunk();
+    } else {
+      throw new Error('Aucune réponse reçue');
     }
   };
 
