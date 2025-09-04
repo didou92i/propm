@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ProPM3DLogo } from './ProPM3DLogo';
+
 import { Brain, BookOpen, Target, Trophy, Zap, Star } from 'lucide-react';
 
 interface TrainingHeroProps {
@@ -90,14 +90,40 @@ export const TrainingHero: React.FC<TrainingHeroProps> = ({ onStartTraining }) =
       {/* Hero Content */}
       <div className="relative z-10 text-center max-w-6xl mx-auto px-6">
         
-        {/* Logo 3D ProPM */}
+        {/* Logo ProPM */}
         <motion.div
-          className="mb-8"
+          className="mb-8 relative group"
           initial={{ opacity: 0, scale: 0.8, rotateY: -180 }}
           animate={{ opacity: 1, scale: 1, rotateY: 0 }}
           transition={{ duration: 1.2, ease: [0.68, -0.55, 0.265, 1.55] }}
         >
-          <ProPM3DLogo size={350} autoRotate={true} />
+          <div className="relative">
+            {/* Glow Effect */}
+            <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse" />
+            
+            {/* Logo Image */}
+            <motion.img
+              src="/lovable-uploads/42cdc339-200d-4d90-a524-fec562ad5786.png"
+              alt="ProPM Logo"
+              className="w-80 h-auto mx-auto relative z-10 drop-shadow-2xl"
+              animate={{ 
+                rotate: [0, 2, -2, 0],
+                scale: [1, 1.02, 1]
+              }}
+              transition={{ 
+                duration: 6, 
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+              whileHover={{ 
+                scale: 1.1,
+                transition: { duration: 0.3 }
+              }}
+            />
+            
+            {/* Backdrop Blur Ring */}
+            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary/10 via-transparent to-secondary/10 backdrop-blur-sm" />
+          </div>
         </motion.div>
 
         {/* Main Title with Typewriter Effect */}
