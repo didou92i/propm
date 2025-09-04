@@ -33,7 +33,7 @@ export const AGENTS: Agent[] = [
     icon: GraduationCap, 
     color: "text-orange-400",
     avatar: "/lovable-uploads/67da1939-3215-457e-bc29-ea5425cd6aea.png",
-    description: "Assistant de préparation CDS"
+    description: "Assistant conversationnel pour la préparation aux concours"
   },
 ];
 

@@ -169,30 +169,6 @@ export function ChatArea({
   const currentAgent = useAgent(selectedAgent);
   const agentInfoData = agentInfo[selectedAgent as keyof typeof agentInfo];
 
-  // Show training interface for PrepaCDS
-  if (selectedAgent === "prepacds" && showTraining && trainingContent) {
-    return <div className="flex flex-col h-full">
-        <div className="px-6 pt-3 pb-3 border-b border-border/40">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" onClick={() => setShowTraining(false)} className="gap-2">
-              <ArrowLeft className="h-4 w-4" />
-              Retour au chat
-            </Button>
-            <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">
-              Mode Entraînement Actif
-            </span>
-          </div>
-        </div>
-        <div className="flex-1">
-          <TrainingExperiencePlayer trainingType={trainingContent.trainingType} level={trainingContent.level} domain={trainingContent.domain} initialContent={trainingContent} onComplete={session => {
-          toast.success("Entraînement terminé !", {
-            description: `Score: ${session.score || 0}%`
-          });
-          setShowTraining(false);
-        }} onExit={() => setShowTraining(false)} />
-        </div>
-      </div>;
-  }
   return (
     <div className="flex flex-col h-full">
       {/* Header avec avatar de l'agent */}

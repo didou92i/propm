@@ -31,12 +31,12 @@ export const agentInfo = {
   },
   prepacds: {
     name: "Prepa CDS",
-    description: "Assistant personnalisé pour la préparation aux concours de la fonction publique",
+    description: "Assistant conversationnel pour la préparation aux concours de la fonction publique",
     suggestions: [
-      "Commencer une session d'entraînement",
-      "Réviser les notions de base",
-      "Tester mes connaissances",
-      "Simuler un concours blanc"
+      "Conseils pour réviser efficacement",
+      "Méthodes de préparation aux concours",
+      "Questions sur les programmes d'étude",
+      "Techniques de gestion du stress"
     ]
   },
   salary: {
