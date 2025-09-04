@@ -103,7 +103,7 @@ export const TrainingHero: React.FC<TrainingHeroProps> = ({ onStartTraining }) =
             
             {/* Logo Image */}
             <motion.img
-              src="/lovable-uploads/42cdc339-200d-4d90-a524-fec562ad5786.png"
+              src="/lovable-uploads/c4c814bd-a9c4-4fd2-9d22-585a4e0b49b6.png"
               alt="ProPM Logo"
               className="w-80 h-auto mx-auto relative z-10 drop-shadow-2xl"
               animate={{ 
