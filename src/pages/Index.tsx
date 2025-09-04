@@ -85,7 +85,7 @@ const Index = () => {
   return (
     <ParallaxBackground className="min-h-screen">
       <SidebarProvider>
-        <div className="min-h-screen grid grid-rows-[auto_1fr_auto] w-full theme-transition">
+        <div className="flex h-screen w-full theme-transition">
           <AppSidebar 
             selectedAgent={selectedAgent} 
             onAgentSelect={handleAgentSelect} 
@@ -93,28 +93,31 @@ const Index = () => {
             onNewChat={handleNewChat}
           />
           
-          {/* Header */}
-          <header className="flex items-center justify-between p-4 border-b border-border/40 glass backdrop-blur-sm animate-fade-in">
-            <div className="flex items-center gap-4">
-              <SidebarTrigger className="p-2 hover-lift neomorphism-hover" />
-              <div>
-                <h1 className="agent-transition text-gray-200 text-lg font-bold">Bienvenue sur Propm.fr</h1>
+          {/* Main Content */}
+          <div className="flex-1 flex flex-col">
+            {/* Header */}
+            <header className="flex items-center justify-between p-4 border-b border-border/40 glass backdrop-blur-sm animate-fade-in">
+              <div className="flex items-center gap-4">
+                <SidebarTrigger className="p-2 hover-lift neomorphism-hover" />
+                <div>
+                  <h1 className="agent-transition text-gray-200 text-lg font-bold">Bienvenue sur Propm.fr</h1>
+                </div>
               </div>
-            </div>
-            {/* Agent indicator with morphing icon */}
-            <div className="flex items-center gap-3">
-              <MorphingIcon fromIcon={Bot} toIcon={Sparkles} isActive={isNewChatMode} size={20} className="text-primary" />
-              <div className="w-3 h-3 rounded-full gradient-agent-animated pulse-glow" />
-              <span className="text-sm font-medium capitalize">{selectedAgent}</span>
-            </div>
-          </header>
+              {/* Agent indicator with morphing icon */}
+              <div className="flex items-center gap-3">
+                <MorphingIcon fromIcon={Bot} toIcon={Sparkles} isActive={isNewChatMode} size={20} className="text-primary" />
+                <div className="w-3 h-3 rounded-full gradient-agent-animated pulse-glow" />
+                <span className="text-sm font-medium capitalize">{selectedAgent}</span>
+              </div>
+            </header>
 
-          {/* Main Chat Area */}
-          <main className="flex-1 overflow-hidden">
-            <ChatArea key={chatKey} selectedAgent={selectedAgent} sharedContext={sharedContext} />
-          </main>
+            {/* Main Chat Area */}
+            <main className="flex-1 overflow-hidden pb-20">
+              <ChatArea key={chatKey} selectedAgent={selectedAgent} sharedContext={sharedContext} />
+            </main>
+          </div>
           
-          {/* Legal Footer - Not Fixed */}
+          {/* Legal Footer - Fixed */}
           <LegalFooter />
           
           {/* Enhanced Floating Action Buttons */}

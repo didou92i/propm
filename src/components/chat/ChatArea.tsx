@@ -140,7 +140,7 @@ export function ChatArea({
   const agentInfoData = agentInfo[selectedAgent as keyof typeof agentInfo];
 
   return (
-    <div className="flex flex-col h-full max-w-4xl mx-auto">
+    <div className="flex flex-col h-full max-w-[min(90vw,4xl)] mx-auto w-full">
       {/* Contenu principal centré */}
       <div className="flex-1 flex flex-col relative">
         {/* Suggestions de l'assistant pour tous les agents */}

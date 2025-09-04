@@ -111,7 +111,7 @@ export const ChatComposer = forwardRef<HTMLDivElement, ChatComposerProps>(
     };
 
     return (
-      <div ref={ref} className="px-4 py-4 pb-6 bg-background/80 backdrop-blur-md border-t border-white/10">
+      <div ref={ref} className="px-4 py-4 pb-6 bg-background/60 backdrop-blur-sm border-t border-white/10">
         <div className="max-w-full mx-auto">
           {/* Attachments Display */}
           {attachments.length > 0 && (
@@ -144,7 +144,7 @@ export const ChatComposer = forwardRef<HTMLDivElement, ChatComposerProps>(
 
           {/* Main Input Container */}
           <form onSubmit={onSubmit}>
-            <div className="relative flex items-end gap-2 p-3 border border-white/10 rounded-3xl bg-background/60 backdrop-blur-xl shadow-2xl hover:border-white/20 transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)]">
+            <div className="relative flex items-end gap-2 p-3 border border-white/10 rounded-2xl bg-background/40 backdrop-blur-sm shadow-lg hover:border-white/20 transition-all duration-300">
               {/* Attachment Button */}
               <input
                 type="file"
