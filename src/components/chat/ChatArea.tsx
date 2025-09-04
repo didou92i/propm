@@ -162,39 +162,24 @@ export function ChatArea({
   const agentInfoData = agentInfo[selectedAgent as keyof typeof agentInfo];
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Header avec avatar de l'agent */}
-      <div className="px-6 pt-6 pb-4 border-b border-border/40">
-        <div className="flex items-center gap-4">
-          <AgentAvatar 
-            agentId={selectedAgent}
-            agentName={currentAgent?.name}
-            avatarUrl={currentAgent?.avatar}
-            fallbackIcon={currentAgent?.icon}
-            size="xl"
-          />
-          <div>
-            <h2 className="text-xl font-semibold">{currentAgent?.name}</h2>
-            <p className="text-sm text-muted-foreground">{agentInfoData?.description || currentAgent?.description}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Contenu principal */}
+    <div className="flex flex-col h-full max-w-4xl mx-auto">
+      {/* Contenu principal centré */}
       <div className="flex-1 flex flex-col relative">
         {/* Zone spéciale pour Arrêté Territorial */}
         {selectedAgent === "arrete" && messages.length === 0 && (
-          <div className="p-6">
+          <div className="px-6 py-8">
             <ArreteGenerationPrompt messageContent="" />
           </div>
         )}
 
         {/* Suggestions de l'assistant */}
         {messages.length === 0 && selectedAgent !== "arrete" && (
-          <AgentSuggestions
-            agentId={selectedAgent}
-            onSuggestionClick={(suggestion) => setInput(suggestion)}
-          />
+          <div className="px-6 py-8">
+            <AgentSuggestions
+              agentId={selectedAgent}
+              onSuggestionClick={(suggestion) => setInput(suggestion)}
+            />
+          </div>
         )}
 
         {/* Liste des messages */}
@@ -211,7 +196,7 @@ export function ChatArea({
         </div>
 
         {/* Compositeur de message fixe en bas */}
-        <div ref={composerRef} className="border-t border-border/40 bg-background/95 backdrop-blur-sm">
+        <div ref={composerRef} className="bg-background">
           <ChatComposer
             input={input}
             setInput={setInput}

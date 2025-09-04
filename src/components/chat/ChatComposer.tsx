@@ -111,35 +111,25 @@ export const ChatComposer = forwardRef<HTMLDivElement, ChatComposerProps>(
     };
 
     return (
-      <div 
-        ref={ref}
-      >
-        <div className="container mx-auto px-4 py-6 max-w-3xl">
+      <div ref={ref} className="px-4 py-6">
+        <div className="max-w-3xl mx-auto">
           {/* Attachments Display */}
           {attachments.length > 0 && (
-            <div className="mb-4 flex flex-wrap gap-2">
+            <div className="mb-3 flex flex-wrap gap-2">
               {attachments.map(attachment => (
                 <div
                   key={attachment.id}
-                  className="p-3 flex items-center gap-3 bg-card/50 border border-border/40 rounded-xl backdrop-blur-sm"
+                  className="px-3 py-2 flex items-center gap-2 bg-muted rounded-lg text-sm"
                 >
-                  <Paperclip className="w-4 h-4 text-primary" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate max-w-40">
-                      {attachment.file.name}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {Math.round(attachment.file.size / 1024)}KB
-                    </p>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-8 w-8 p-0 hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                  <Paperclip className="w-3 h-3" />
+                  <span className="truncate max-w-32">{attachment.file.name}</span>
+                  <button
+                    type="button"
                     onClick={() => removeAttachment(attachment.id)}
+                    className="text-muted-foreground hover:text-foreground ml-1"
                   >
                     ×
-                  </Button>
+                  </button>
                 </div>
               ))}
             </div>
@@ -147,14 +137,14 @@ export const ChatComposer = forwardRef<HTMLDivElement, ChatComposerProps>(
 
           {/* Error Display */}
           {attachmentError && (
-            <div className="mb-4 p-4 bg-destructive/10 border border-destructive/20 rounded-xl text-sm text-destructive">
+            <div className="mb-3 p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-sm text-destructive">
               {attachmentError}
             </div>
           )}
 
           {/* Main Input Container */}
-          <form onSubmit={onSubmit} className="space-y-3">
-            <div className="relative flex items-end gap-3 p-4 bg-card/50 rounded-2xl border border-border/40 backdrop-blur-sm">
+          <form onSubmit={onSubmit}>
+            <div className="relative flex items-end gap-2 p-3 bg-background border border-border rounded-2xl shadow-sm">
               {/* Attachment Button */}
               <input
                 type="file"
@@ -170,13 +160,13 @@ export const ChatComposer = forwardRef<HTMLDivElement, ChatComposerProps>(
                 size="sm"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isLoading || processingAttachment}
-                className="h-8 w-8 p-0 hover:bg-accent/50 text-muted-foreground hover:text-foreground"
+                className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
               >
                 <Paperclip className="w-4 h-4" />
               </Button>
 
               {/* Text Input */}
-              <div className="flex-1 relative">
+              <div className="flex-1">
                 <textarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
@@ -184,7 +174,7 @@ export const ChatComposer = forwardRef<HTMLDivElement, ChatComposerProps>(
                   className={cn(
                     "w-full resize-none bg-transparent border-0 outline-none",
                     "text-sm placeholder:text-muted-foreground",
-                    "min-h-[24px] max-h-32 py-2 px-0",
+                    "min-h-[20px] max-h-32 py-0 px-0",
                     "focus:ring-0 focus:border-0"
                   )}
                   onKeyDown={(e) => {
@@ -196,7 +186,7 @@ export const ChatComposer = forwardRef<HTMLDivElement, ChatComposerProps>(
                   rows={1}
                   style={{
                     height: 'auto',
-                    minHeight: '24px'
+                    minHeight: '20px'
                   }}
                   onInput={(e) => {
                     const target = e.target as HTMLTextAreaElement;
@@ -213,10 +203,10 @@ export const ChatComposer = forwardRef<HTMLDivElement, ChatComposerProps>(
                 disabled={(!input.trim() && attachments.length === 0) || isLoading || processingAttachment}
                 onClick={handleSendClick}
                 className={cn(
-                  "h-8 w-8 p-0 rounded-full transition-all duration-200",
+                  "h-8 w-8 p-0 rounded-lg",
                   (!input.trim() && attachments.length === 0) || isLoading || processingAttachment
                     ? "bg-muted text-muted-foreground cursor-not-allowed"
-                    : "bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-105"
+                    : "bg-foreground text-background hover:bg-foreground/90"
                 )}
               >
                 <Send className="w-4 h-4" />
@@ -225,16 +215,15 @@ export const ChatComposer = forwardRef<HTMLDivElement, ChatComposerProps>(
 
             {/* Secondary Actions */}
             {(messages.length > 0 || attachments.length > 0) && (
-              <div className="flex justify-center">
+              <div className="flex justify-center mt-4">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button 
                       variant="ghost" 
                       size="sm"
-                      className="text-xs text-muted-foreground hover:text-foreground h-8 px-3"
+                      className="text-xs text-muted-foreground hover:text-foreground h-7 px-2"
                     >
-                      <MoreVertical className="w-3 h-3 mr-1" />
-                      Options
+                      <MoreVertical className="w-3 h-3" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="center" className="w-48">
