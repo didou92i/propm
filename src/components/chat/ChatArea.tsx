@@ -157,11 +157,18 @@ export function ChatArea({
   const agentInfoData = agentInfo[selectedAgent as keyof typeof agentInfo];
 
   return (
-    <div className="flex flex-col h-full relative">
+    <div className="flex flex-col h-full max-w-4xl mx-auto">
       {/* Contenu principal centré */}
       <div className="flex-1 flex flex-col relative">
-        {/* Suggestions de l'assistant pour tous les agents */}
-        {messages.length === 0 && (
+        {/* Zone spéciale pour Arrêté Territorial */}
+        {selectedAgent === "arrete" && messages.length === 0 && (
+          <div className="px-6 py-8">
+            <ArreteGenerationPrompt messageContent="" />
+          </div>
+        )}
+
+        {/* Suggestions de l'assistant */}
+        {messages.length === 0 && selectedAgent !== "arrete" && (
           <div className="px-6 py-8">
             <AgentSuggestions
               agentId={selectedAgent}
@@ -183,8 +190,8 @@ export function ChatArea({
           />
         </div>
 
-        {/* Compositeur de message fixe en bas */}
-        <div ref={composerRef} className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border/30 z-50">
+        {/* Compositeur de message dans le flux normal */}
+        <div ref={composerRef} className="mt-auto">
           <ChatComposer
             input={input}
             setInput={setInput}

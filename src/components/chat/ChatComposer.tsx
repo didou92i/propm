@@ -111,8 +111,8 @@ export const ChatComposer = forwardRef<HTMLDivElement, ChatComposerProps>(
     };
 
     return (
-      <div ref={ref} className="px-4 py-4">
-        <div className="max-w-4xl mx-auto">
+      <div ref={ref} className="px-4 py-3">
+        <div className="max-w-3xl mx-auto">
           {/* Attachments Display */}
           {attachments.length > 0 && (
             <div className="mb-3 flex flex-wrap gap-2">

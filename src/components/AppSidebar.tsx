@@ -118,7 +118,7 @@ export function AppSidebar({ selectedAgent, onAgentSelect, onContextShare }: App
                     onClick={(e) => handleAgentSelect(agent.id, e)}
                     className={`flex items-center gap-3 p-3 rounded-lg ripple-container hover-lift transform-3d hover-tilt glass-hover neomorphism-hover ${
                       selectedAgent === agent.id
-                        ? "glass-intense text-sidebar-accent-foreground border-l-2 border-primary pulse-glow neomorphism"
+                        ? "glass-intense text-sidebar-accent-foreground border-l-2 border-primary neomorphism"
                         : "hover:bg-sidebar-accent/50 hover-glow glass-subtle"
                     }`}
                   >

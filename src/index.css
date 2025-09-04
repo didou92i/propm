@@ -180,7 +180,7 @@ All colors MUST be HSL.
   .gradient-agent-animated {
     background: linear-gradient(var(--gradient-direction), hsl(var(--agent-primary)) 0%, hsl(var(--agent-accent)) 50%, hsl(var(--agent-primary)) 100%);
     background-size: 200% 200%;
-    animation: gradient-move 12s ease-in-out infinite;
+    animation: gradient-move 24s ease-in-out infinite;
     transition: var(--transition-smooth);
   }
 
@@ -370,7 +370,7 @@ All colors MUST be HSL.
 
   /* Pulse for active states */
   .pulse-glow {
-    animation: glow 6s ease-in-out infinite;
+    animation: glow 15s ease-in-out infinite;
   }
 
   /* Advanced hover effects for glass elements */
