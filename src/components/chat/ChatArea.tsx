@@ -142,10 +142,10 @@ export function ChatArea({
   return (
     <div className="flex flex-col h-full max-w-[min(90vw,4xl)] mx-auto w-full">
       {/* Contenu principal centré */}
-      <div className="flex-1 flex flex-col relative">
+      <div className="flex-1 flex flex-col h-full">
         {/* Suggestions de l'assistant pour tous les agents */}
         {messages.length === 0 && (
-          <div className="px-6 py-8">
+          <div className="px-6 py-8 flex-shrink-0">
             <AgentSuggestions
               agentId={selectedAgent}
               onSuggestionClick={(suggestion) => setInput(suggestion)}
@@ -153,8 +153,8 @@ export function ChatArea({
           </div>
         )}
 
-        {/* Liste des messages */}
-        <div className="flex-1 overflow-hidden">
+        {/* Liste des messages avec scroll */}
+        <div className="flex-1 min-h-0">
           <ChatMessageList
             messages={messages}
             selectedAgent={selectedAgent}
@@ -165,8 +165,8 @@ export function ChatArea({
           />
         </div>
 
-        {/* Compositeur de message dans le flux normal */}
-        <div ref={composerRef} className="mt-auto">
+        {/* Compositeur de message fixé en bas */}
+        <div ref={composerRef} className="flex-shrink-0">
           <ChatComposer
             input={input}
             setInput={setInput}

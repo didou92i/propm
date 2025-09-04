@@ -30,60 +30,58 @@ export function ChatMessageList({
   const { agent: currentAgent, name: agentName, avatar: agentAvatar, icon: agentIcon } = useAgentSafe(selectedAgent);
 
   return (
-    <div className="flex-1 overflow-hidden">
-      <div className="h-full overflow-auto">
-        <div className="px-4 py-6">
-              {messages.map((message, index) => (
-                <div key={message.id} className="py-6 group">
-                  <div className={`flex gap-4 ${message.role === "user" ? "justify-end" : "justify-start"}`}>
-                    {/* Simple message display without bubbles */}
-                    <div className={`max-w-[85%] ${message.role === "user" ? "text-right" : "text-left"}`}>
-                      {/* Author and timestamp */}
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-sm font-medium text-muted-foreground">
-                          {message.role === "user" ? "Vous" : agentName}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {formatTime(message.timestamp)}
-                        </span>
-                      </div>
-                      
-                      {/* Message content - simple text without background */}
-                      <div className={`
-                        text-sm leading-relaxed
-                        ${message.id === typingMessageId ? "animate-pulse" : ""}
-                      `}>
-                        {message.attachments && message.attachments.length > 0 ? (
-                          <div className="space-y-3">
-                            <MessageWithAttachments 
-                              attachments={message.attachments}
-                              className="mb-2"
-                            />
-                            <EditableMessage 
-                              content={message.content}
-                              onContentChange={(newContent) => onMessageEdit(message.id, newContent)}
-                              isAssistant={message.role === "assistant"}
-                            />
-                          </div>
-                        ) : (
-                          <EditableMessage 
-                            content={message.content}
-                            onContentChange={(newContent) => onMessageEdit(message.id, newContent)}
-                            isAssistant={message.role === "assistant"}
-                          />
-                        )}
-                        
-                        {message.id === typingMessageId && isStreaming && streamingContent && (
-                          <div className="mt-2 text-sm opacity-70">
-                            {streamingContent}...
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+    <div className="flex-1 h-full">
+      <div className="h-full overflow-y-auto scroll-smooth px-4 py-6 space-y-6">
+        {messages.map((message, index) => (
+          <div key={message.id} className="group">
+            <div className={`flex gap-4 ${message.role === "user" ? "justify-end" : "justify-start"}`}>
+              {/* Simple message display without bubbles */}
+              <div className={`max-w-[85%] ${message.role === "user" ? "text-right" : "text-left"}`}>
+                {/* Author and timestamp */}
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-sm font-medium text-muted-foreground">
+                    {message.role === "user" ? "Vous" : agentName}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {formatTime(message.timestamp)}
+                  </span>
                 </div>
-              ))}
-        </div>
+                
+                {/* Message content - simple text without background */}
+                <div className={`
+                  text-sm leading-relaxed
+                  ${message.id === typingMessageId ? "animate-pulse" : ""}
+                `}>
+                  {message.attachments && message.attachments.length > 0 ? (
+                    <div className="space-y-3">
+                      <MessageWithAttachments 
+                        attachments={message.attachments}
+                        className="mb-2"
+                      />
+                      <EditableMessage 
+                        content={message.content}
+                        onContentChange={(newContent) => onMessageEdit(message.id, newContent)}
+                        isAssistant={message.role === "assistant"}
+                      />
+                    </div>
+                  ) : (
+                    <EditableMessage 
+                      content={message.content}
+                      onContentChange={(newContent) => onMessageEdit(message.id, newContent)}
+                      isAssistant={message.role === "assistant"}
+                    />
+                  )}
+                  
+                  {message.id === typingMessageId && isStreaming && streamingContent && (
+                    <div className="mt-2 text-sm opacity-70">
+                      {streamingContent}...
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
