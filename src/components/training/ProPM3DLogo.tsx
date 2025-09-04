@@ -1,6 +1,6 @@
 import React, { useRef, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Text, OrbitControls, Environment, Float, Sphere } from '@react-three/drei';
+import { OrbitControls, Environment, Float, Sphere } from '@react-three/drei';
 import * as THREE from 'three';
 
 interface SegmentProps {
@@ -72,10 +72,10 @@ const CenterSphere: React.FC = () => {
   return (
     <Sphere ref={sphereRef} args={[0.4, 32, 32]} position={[0, 0, 0.2]}>
       <meshStandardMaterial 
-        color="hsl(var(--primary))"
+        color="#2563eb"
         metalness={0.9}
         roughness={0.1}
-        emissive="hsl(var(--primary))"
+        emissive="#1d4ed8"
         emissiveIntensity={0.2}
       />
     </Sphere>
@@ -95,14 +95,14 @@ const Logo3D: React.FC = () => {
 
   const segments = useMemo(() => {
     const colors = [
-      "hsl(221, 83%, 53%)", // Primary blue
-      "hsl(271, 81%, 56%)", // Purple
-      "hsl(142, 76%, 36%)", // Green
-      "hsl(25, 95%, 53%)",  // Orange
-      "hsl(340, 82%, 52%)", // Pink
-      "hsl(200, 98%, 39%)", // Cyan
-      "hsl(47, 96%, 53%)",  // Yellow
-      "hsl(0, 84%, 60%)"    // Red
+      "#2563eb", // Primary blue
+      "#7c3aed", // Purple
+      "#059669", // Green
+      "#f97316", // Orange
+      "#e11d48", // Pink
+      "#0284c7", // Cyan
+      "#eab308", // Yellow
+      "#dc2626"  // Red
     ];
     
     return Array.from({ length: 8 }, (_, i) => ({
@@ -126,41 +126,25 @@ const Logo3D: React.FC = () => {
         ))}
         <CenterSphere />
         
-        {/* PM Text */}
-        <Text
-          position={[0, 0, 0.5]}
-          fontSize={0.8}
-          color="white"
-          anchorX="center"
-          anchorY="middle"
-          font="/fonts/inter-bold.woff"
-        >
-          PM
-        </Text>
+        {/* Texte PM en 3D simple */}
+        <mesh position={[0, 0, 0.5]}>
+          <boxGeometry args={[1.5, 0.8, 0.2]} />
+          <meshStandardMaterial 
+            color="white"
+            metalness={0.5}
+            roughness={0.3}
+          />
+        </mesh>
         
-        {/* PRO Text */}
-        <Text
-          position={[0, -3.5, 0]}
-          fontSize={0.4}
-          color="hsl(var(--primary))"
-          anchorX="center"
-          anchorY="middle"
-          font="/fonts/inter-bold.woff"
-        >
-          PRO PM
-        </Text>
-        
-        {/* PROPM.FR Text */}
-        <Text
-          position={[0, -4.2, 0]}
-          fontSize={0.3}
-          color="hsl(var(--muted-foreground))"
-          anchorX="center"
-          anchorY="middle"
-          font="/fonts/inter-regular.woff"
-        >
-          PROPM.FR
-        </Text>
+        {/* Texte PRO PM en dessous */}
+        <mesh position={[0, -3.5, 0]}>
+          <boxGeometry args={[2, 0.4, 0.1]} />
+          <meshStandardMaterial 
+            color="#2563eb"
+            metalness={0.7}
+            roughness={0.2}
+          />
+        </mesh>
       </group>
     </Float>
   );
