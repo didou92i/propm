@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Message } from '@/types/chat';
 import { logger } from '@/utils/logger';
+import { usePerformanceMonitor } from '@/hooks/performance/usePerformanceMonitor';
 
 interface StreamingState {
   isStreaming: boolean;
@@ -17,6 +18,7 @@ export function useStreamingChat() {
   });
   
   const abortControllerRef = useRef<AbortController | null>(null);
+  const { startSession, endSession, getOptimizedParams } = usePerformanceMonitor();
 
   const sendStreamingMessage = useCallback(async (
     messages: Message[],
@@ -26,6 +28,12 @@ export function useStreamingChat() {
     onComplete: (content: string, threadId?: string) => void,
     onError: (error: string) => void
   ) => {
+    const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const messageLength = messages[messages.length - 1]?.content?.length || 0;
+    
+    // Démarrer le monitoring de performance avec paramètres optimisés
+    const optimizedParams = startSession(sessionId, messageLength, selectedAgent);
+    
     try {
       setStreamingState({
         isStreaming: true,
@@ -39,8 +47,11 @@ export function useStreamingChat() {
       }
       abortControllerRef.current = new AbortController();
 
-      // Immediate feedback
-      onMessageUpdate('L\'assistant réfléchit...', false);
+      // Immediate feedback with performance awareness
+      const feedbackMessage = optimizedParams.streamingSpeed < 2 ? 
+        'L\'assistant traite votre demande (mode haute performance)...' : 
+        'L\'assistant réfléchit...';
+      onMessageUpdate(feedbackMessage, false);
 
       // Use streaming endpoint with loop detection
       const loopDetected = messages.filter(m => m.content === messages[messages.length - 1].content).length > 2;
@@ -95,15 +106,15 @@ export function useStreamingChat() {
         throw new Error(`Erreur: ${error.message}`);
       }
 
-      // Handle streaming response with ultra-fast reveal
+      // Handle streaming response with ultra-fast optimized reveal
       if (data && data.content) {
         const content = data.content;
         let currentIndex = 0;
         
         const revealNextChunk = () => {
           if (currentIndex < content.length && !abortControllerRef.current?.signal.aborted) {
-            // Ultra-fast streaming: 3-6 characters at a time
-            const chunkSize = Math.floor(Math.random() * 4) + 3;
+            // Performance-optimized chunking based on optimized parameters
+            const chunkSize = Math.max(2, Math.min(optimizedParams.chunkSize + Math.floor(Math.random() * 2), 8));
             const nextChunk = content.slice(0, currentIndex + chunkSize);
             currentIndex += chunkSize;
             
@@ -116,8 +127,8 @@ export function useStreamingChat() {
             onMessageUpdate(nextChunk, currentIndex >= content.length);
             
             if (currentIndex < content.length) {
-              // Performance-optimized: 1-2ms per character
-              const delay = Math.random() * 1.5 + 0.5;
+              // Optimized delay based on performance parameters
+              const delay = Math.max(0.5, optimizedParams.streamingSpeed + (Math.random() * 1.5) - 0.75);
               setTimeout(revealNextChunk, delay);
             } else {
               // Finished streaming
@@ -131,6 +142,9 @@ export function useStreamingChat() {
                   localStorage.setItem(`openai.thread.${selectedAgent}`, data.threadId);
                 }
               } catch {}
+              
+              // Enregistrer le succès de la session
+              endSession(sessionId, true);
               onComplete(content, data.threadId);
             }
           }
@@ -138,9 +152,15 @@ export function useStreamingChat() {
         
         // Start immediately
         revealNextChunk();
+      } else {
+        // Pas de contenu - enregistrer comme erreur
+        endSession(sessionId, false);
       }
 
     } catch (error) {
+      // Enregistrer l'erreur dans le monitoring
+      endSession(sessionId, false);
+      
       logger.error('Chat error', error, 'useStreamingChat');
       setStreamingState(prev => ({
         ...prev,
@@ -149,7 +169,7 @@ export function useStreamingChat() {
       }));
       onError(error instanceof Error ? error.message : 'Erreur inconnue');
     }
-  }, []);
+  }, [startSession, endSession]);
 
   // Handle Server-Sent Events streaming
   const handleSSEStream = async (

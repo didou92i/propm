@@ -15,21 +15,49 @@ const corsHeaders = {
   'Connection': 'keep-alive',
 };
 
-// Thread cache for intelligent management
-const threadCache = new Map<string, { threadId: string, lastUsed: number, expiry: number }>();
+// Ultra-intelligent thread cache with performance optimization
+const threadCache = new Map<string, { 
+  threadId: string; 
+  lastUsed: number; 
+  expiry: number; 
+  useCount: number;
+  averageResponseTime: number;
+  agentType: string;
+}>();
 
-// Pre-calculated instructions cache
-const instructionCache = new Map<string, string>();
+// Performance metrics for cache optimization
+let cacheHitRate = 0;
+let totalCacheRequests = 0;
 
-// Cleanup old threads every 30 minutes
+// Pre-calculated instructions cache with TTL
+const instructionCache = new Map<string, { instructions: string; expiry: number }>();
+
+// Ultra-aggressive cleanup every 15 minutes for better performance
 setInterval(() => {
   const now = Date.now();
+  let cleanedThreads = 0;
+  let cleanedInstructions = 0;
+  
+  // Clean expired threads
   for (const [key, data] of threadCache.entries()) {
-    if (now > data.expiry) {
+    if (now > data.expiry || (data.useCount === 0 && now - data.lastUsed > 30 * 60 * 1000)) {
       threadCache.delete(key);
+      cleanedThreads++;
     }
   }
-}, 30 * 60 * 1000);
+  
+  // Clean expired instructions
+  for (const [key, data] of instructionCache.entries()) {
+    if (now > data.expiry) {
+      instructionCache.delete(key);
+      cleanedInstructions++;
+    }
+  }
+  
+  if (cleanedThreads > 0 || cleanedInstructions > 0) {
+    console.log('cache-cleanup:', { cleanedThreads, cleanedInstructions, cacheSize: threadCache.size });
+  }
+}, 15 * 60 * 1000); // Every 15 minutes
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -70,16 +98,25 @@ serve(async (req) => {
       isStreaming: isStreamingRequest
     });
 
-    // Intelligent thread management with cache
+    // Ultra-intelligent thread management with performance-aware cache
     const cacheKey = `${user.id}-${selectedAgent}`;
     let threadId = userSession?.threadId;
+    totalCacheRequests++;
     
-    // Check cache first
+    // Check cache first with performance tracking
     const cachedThread = threadCache.get(cacheKey);
     if (cachedThread && !threadId && Date.now() < cachedThread.expiry) {
       threadId = cachedThread.threadId;
-      console.log('chat-openai-stream: using cached thread', { threadId });
+      cachedThread.lastUsed = Date.now();
+      cachedThread.useCount++;
+      cacheHitRate = ((cacheHitRate * (totalCacheRequests - 1)) + 1) / totalCacheRequests;
+      console.log('chat-openai-stream: using cached thread', { 
+        threadId, 
+        useCount: cachedThread.useCount,
+        cacheHitRate: Math.round(cacheHitRate * 100) / 100
+      });
     }
+    
     if (!threadId) {
       console.log('chat-openai-stream: creating new thread', { userId: user.id, selectedAgent });
       const threadResponse = await fetch('https://api.openai.com/v1/threads', {
@@ -99,18 +136,26 @@ serve(async (req) => {
       const threadData = await threadResponse.json();
       threadId = threadData.id;
       
-      // Cache the new thread for 1 hour
+      // Cache the new thread with enhanced metadata for 2 hours (increased for performance)
       threadCache.set(cacheKey, {
         threadId,
         lastUsed: Date.now(),
-        expiry: Date.now() + (60 * 60 * 1000) // 1 hour
+        expiry: Date.now() + (120 * 60 * 1000), // 2 hours for better performance
+        useCount: 1,
+        averageResponseTime: 0,
+        agentType: selectedAgent
       });
       
-      console.log('chat-openai-stream: created and cached thread', { threadId });
+      console.log('chat-openai-stream: created and cached thread', { 
+        threadId, 
+        cacheSize: threadCache.size,
+        selectedAgent
+      });
     } else {
-      // Update cache usage
+      // Update cache usage for existing threads
       if (cachedThread) {
         cachedThread.lastUsed = Date.now();
+        cachedThread.useCount++;
       }
       console.log('chat-openai-stream: reusing thread', { threadId });
     }
@@ -178,14 +223,21 @@ serve(async (req) => {
       return streamAssistantResponse(openAIApiKey, threadId, runId);
     }
 
-    // Optimized adaptive polling for performance
+    // Ultra-optimized adaptive polling with performance intelligence
     let runStatus = 'queued';
     let attempts = 0;
-    const maxAttempts = 50; // Further reduced for efficiency
+    const maxAttempts = 60; // Increased for better reliability
+    const startTime = Date.now();
 
     while (runStatus !== 'completed' && runStatus !== 'failed' && attempts < maxAttempts) {
-      // Intelligent adaptive polling: start fast, then optimize
-      const pollInterval = attempts < 3 ? 50 : attempts < 10 ? 150 : attempts < 20 ? 300 : 400;
+      // Ultra-aggressive polling: faster initial intervals, smarter adaptation
+      const pollInterval = attempts < 2 ? 15 : // Ultra-fast start
+                          attempts < 5 ? 25 : // Fast continuation
+                          attempts < 12 ? 40 : // Moderate speed
+                          attempts < 25 ? 75 : // Standard polling
+                          attempts < 40 ? 150 : // Slower but persistent
+                          250; // Conservative fallback
+      
       await new Promise(resolve => setTimeout(resolve, pollInterval));
       
       const statusResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs/${runId}`, {
@@ -199,8 +251,17 @@ serve(async (req) => {
       if (statusResponse.ok) {
         const statusData = await statusResponse.json();
         runStatus = statusData.status;
-        if (attempts % 3 === 0) { // More frequent status logging
-          console.log('chat-openai-stream: run status', { runId, runStatus, attempts, pollInterval });
+        
+        // Intelligent logging with performance tracking
+        if (attempts % 5 === 0 || attempts < 5) {
+          console.log('chat-openai-stream: run status', { 
+            runId, 
+            runStatus, 
+            attempts, 
+            pollInterval,
+            elapsedTime: Date.now() - startTime,
+            estimatedCompletion: runStatus === 'in_progress' ? `~${Math.round((Date.now() - startTime) * 1.5)}ms` : 'unknown'
+          });
         }
         if (runStatus === 'requires_action') {
           await fetch(`https://api.openai.com/v1/threads/${threadId}/runs/${runId}/submit_tool_outputs`, {
@@ -264,8 +325,9 @@ async function streamAssistantResponse(openAIApiKey: string, threadId: string, r
   
   let runStatus = 'queued';
   let attempts = 0;
-  const maxAttempts = 60;
+  const maxAttempts = 70; // Increased for SSE reliability
   let lastContent = '';
+  const startTime = Date.now();
   
   const stream = new ReadableStream({
     async start(controller) {
@@ -274,7 +336,14 @@ async function streamAssistantResponse(openAIApiKey: string, threadId: string, r
       controller.enqueue(encoder.encode('data: {"status": "thinking", "message": "L\'assistant réfléchit..."}\n\n'));
       
       while (runStatus !== 'completed' && runStatus !== 'failed' && attempts < maxAttempts) {
-        const pollInterval = attempts < 3 ? 50 : attempts < 10 ? 150 : attempts < 20 ? 300 : 400;
+        // Ultra-aggressive SSE polling - even faster than non-streaming
+        const pollInterval = attempts < 2 ? 10 : // Instant feedback
+                            attempts < 5 ? 20 : // Ultra-fast
+                            attempts < 12 ? 35 : // Fast continuation
+                            attempts < 25 ? 60 : // Moderate speed
+                            attempts < 45 ? 120 : // Standard polling
+                            200; // Conservative fallback
+        
         await new Promise(resolve => setTimeout(resolve, pollInterval));
         
         try {
