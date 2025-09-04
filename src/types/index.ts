@@ -4,3 +4,4 @@ export * from './api';
 export * from './ui';
 export * from './agent';
 export * from './performance';
+export * from './training';
