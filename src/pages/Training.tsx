@@ -9,11 +9,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { SimpleTrainingPlayer } from '@/components/training/SimpleTrainingPlayer';
 import { TrainingHero } from '@/components/training/TrainingHero';
 import { PerformanceDashboard } from '@/components/training/PerformanceDashboard';
+import { ProtectedTrainingRoute } from '@/components/ProtectedTrainingRoute';
 import { ParallaxBackground } from "@/components/common";
 import { LegalFooter } from "@/components/legal";
 import { useAgentTheme } from "@/hooks/useAgentTheme";
-import { Brain, BookOpen, Target, Timer, Trophy, Play, ArrowLeft, Settings, BarChart } from 'lucide-react';
+import { useTrainingSession } from "@/hooks/useTrainingSession";
+import { Brain, BookOpen, Target, Timer, Trophy, Play, ArrowLeft, Settings, BarChart, LogOut } from 'lucide-react';
 import type { TrainingType, UserLevel, StudyDomain } from '@/types/prepacds';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 
 interface TrainingSession {
   id: string;
@@ -33,7 +37,18 @@ const Training = () => {
   const [trainingType, setTrainingType] = useState<TrainingType>('qcm');
   const [level, setLevel] = useState<UserLevel>('intermediaire');
   const [domain, setDomain] = useState<StudyDomain>('droit_administratif');
-  const [completedSessions, setCompletedSessions] = useState<TrainingSession[]>([]);
+  const [sessionStartTime, setSessionStartTime] = useState<number>(0);
+
+  // Hooks pour l'authentification et les sessions
+  const { user, signOut } = useAuth();
+  const { 
+    createSession, 
+    completeSession, 
+    currentSessionId, 
+    isLoading: sessionLoading,
+    sessionData,
+    refreshSessionData 
+  } = useTrainingSession();
 
   useAgentTheme(selectedAgent);
 
@@ -41,22 +56,53 @@ const Training = () => {
     setSelectedAgent(agentId);
   };
 
-  const handleStartTraining = () => {
-    if (!showConfiguration) {
-      setShowConfiguration(true);
-    } else {
-      console.log('🚀 Training.tsx - Démarrage entraînement:', { trainingType, level, domain });
-      setIsTrainingActive(true);
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      toast.success('Déconnexion réussie');
+    } catch (error) {
+      toast.error('Erreur lors de la déconnexion');
     }
   };
 
-  const handleTrainingComplete = (session: TrainingSession) => {
-    setCompletedSessions(prev => [...prev, session]);
+  const handleStartTraining = async () => {
+    if (!showConfiguration) {
+      setShowConfiguration(true);
+    } else {
+      try {
+        const sessionId = await createSession(trainingType, level, domain);
+        if (sessionId) {
+          setSessionStartTime(Date.now());
+          setIsTrainingActive(true);
+          toast.success('Session d\'entraînement démarrée !', {
+            description: `${trainingType} • ${level} • ${domain}`
+          });
+        }
+      } catch (error) {
+        toast.error('Erreur lors du démarrage de la session');
+      }
+    }
+  };
+
+  const handleTrainingComplete = async (score: number, answers: any[]) => {
+    if (currentSessionId) {
+      const duration = Math.floor((Date.now() - sessionStartTime) / 1000);
+      const success = await completeSession(currentSessionId, duration, score, answers);
+      
+      if (success) {
+        // Rafraîchir les données pour mettre à jour le dashboard
+        await refreshSessionData();
+        toast.success('Session terminée avec succès !', {
+          description: `Score: ${score}% • Durée: ${Math.floor(duration / 60)}min ${duration % 60}s`
+        });
+      }
+    }
     setIsTrainingActive(false);
   };
 
   const handleTrainingExit = () => {
     setIsTrainingActive(false);
+    toast.info('Session d\'entraînement interrompue');
   };
 
   const trainingTypes = [
@@ -73,44 +119,38 @@ const Training = () => {
 
   const domains = [
     { value: 'droit_administratif', label: 'Droit Administratif' },
-    { value: 'droit_penal', label: 'Droit Pénal' },
+    { value: 'police_municipale', label: 'Police Municipale' },
+    { value: 'securite_publique', label: 'Sécurité Publique' },
+    { value: 'reglementation', label: 'Réglementation' },
+    { value: 'procedure_penale', label: 'Procédure Pénale' },
     { value: 'management', label: 'Management' },
-    { value: 'redaction_administrative', label: 'Rédaction Administrative' }
+    { value: 'ethique_deontologie', label: 'Éthique & Déontologie' }
   ];
 
-  if (isTrainingActive) {
-    console.log('🎮 Training.tsx - Rendu TrainingExperiencePlayer:', { trainingType, level, domain });
+  if (isTrainingActive && currentSessionId) {
     return (
-      <div className="fixed inset-0 z-50 bg-background">
-        <SimpleTrainingPlayer
-          trainingType={trainingType}
-          level={level}
-          domain={domain}
-          onComplete={(score, answers) => {
-            const session: TrainingSession = {
-              id: `session-${Date.now()}`,
-              trainingType,
-              level,
-              domain,
-              isActive: false,
-              progress: 100,
-              score
-            };
-            handleTrainingComplete(session);
-          }}
-          onExit={handleTrainingExit}
-        />
-      </div>
+      <ProtectedTrainingRoute>
+        <div className="fixed inset-0 z-50 bg-background">
+          <SimpleTrainingPlayer
+            trainingType={trainingType}
+            level={level}
+            domain={domain}
+            onComplete={handleTrainingComplete}
+            onExit={handleTrainingExit}
+          />
+        </div>
+      </ProtectedTrainingRoute>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background/95 to-accent/5">
-      <SidebarProvider>
-        <div className="min-h-screen flex w-full theme-transition">
-          <AppSidebar selectedAgent={selectedAgent} onAgentSelect={handleAgentSelect} />
-          
-          <div className="flex-1 flex flex-col">
+    <ProtectedTrainingRoute>
+      <div className="min-h-screen bg-gradient-to-br from-background via-background/95 to-accent/5">
+        <SidebarProvider>
+          <div className="min-h-screen flex w-full theme-transition">
+            <AppSidebar selectedAgent={selectedAgent} onAgentSelect={handleAgentSelect} />
+            
+            <div className="flex-1 flex flex-col">
             {/* Modern Header */}
             <header className="flex items-center justify-between p-4 border-b border-border/20 backdrop-blur-xl bg-background/80 sticky top-0 z-40">
               <div className="flex items-center gap-4">
@@ -134,6 +174,12 @@ const Training = () => {
                 </div>
               </div>
               <div className="flex items-center gap-3">
+                {user && (
+                  <Badge variant="outline" className="flex items-center gap-2 glass">
+                    <div className="w-2 h-2 rounded-full bg-green-500" />
+                    {user.email}
+                  </Badge>
+                )}
                 <Button
                   variant={showConfiguration ? "default" : "outline"}
                   size="sm"
@@ -142,6 +188,15 @@ const Training = () => {
                 >
                   <Settings className="w-4 h-4 mr-2" />
                   Configuration
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSignOut}
+                  className="glass text-muted-foreground hover:text-destructive"
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Déconnexion
                 </Button>
                 <Badge variant="secondary" className="flex items-center gap-2 glass">
                   <motion.div
@@ -315,7 +370,7 @@ const Training = () => {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8, delay: 0.7 }}
                   >
-                    <PerformanceDashboard completedSessions={completedSessions} />
+                    <PerformanceDashboard onStartTraining={() => setShowConfiguration(true)} />
                   </motion.div>
                 </div>
               </motion.div>
@@ -326,6 +381,7 @@ const Training = () => {
         </div>
       </SidebarProvider>
     </div>
+  </ProtectedTrainingRoute>
   );
 };
 

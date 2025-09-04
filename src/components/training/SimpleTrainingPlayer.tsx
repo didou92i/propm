@@ -29,6 +29,14 @@ export function SimpleTrainingPlayer({
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [sessionId] = useState(`training-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
   
+  // Hooks pour l'intégration des sessions et contenu
+  const { 
+    recordExercise, 
+    recordProgress, 
+    isContentAlreadyProposed,
+    currentSessionId 
+  } = useTrainingSession();
+  
   // Utilisation du hook refactorisé
   const {
     isLoading,

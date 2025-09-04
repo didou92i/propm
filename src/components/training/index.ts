@@ -11,3 +11,5 @@ export { TrainingHeader } from './TrainingHeader';
 export { TrainingLoadingState } from './TrainingLoadingState';
 export { TrainingErrorState } from './TrainingErrorState';
 export { TrainingContentRenderer } from './TrainingContentRenderer';
+export { ActivityCalendar } from './ActivityCalendar';
+export { EmptyTrainingState } from './EmptyTrainingState';

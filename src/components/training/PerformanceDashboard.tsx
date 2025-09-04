@@ -35,6 +35,8 @@ import {
   Users
 } from 'lucide-react';
 import { useTrainingSession } from '@/hooks/useTrainingSession';
+import { ActivityCalendar } from './ActivityCalendar';
+import { EmptyTrainingState } from './EmptyTrainingState';
 
 interface PerformanceData {
   date: string;
@@ -53,9 +55,10 @@ interface TrainingSessionForDashboard {
 
 interface PerformanceDashboardProps {
   completedSessions?: any[]; // Gardé pour rétrocompatibilité mais non utilisé
+  onStartTraining?: () => void; // Callback pour démarrer un entraînement
 }
 
-export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = () => {
+export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({ onStartTraining }) => {
   const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'year'>('week');
   const [animatedStats, setAnimatedStats] = useState({
     avgScore: 0,
@@ -205,6 +208,11 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = () => {
     const mins = minutes % 60;
     return `${hours}h ${mins}m`;
   };
+
+  // Si pas de données et callback fourni, afficher l'état vide
+  if (isEmpty && onStartTraining) {
+    return <EmptyTrainingState onStartTraining={onStartTraining} />;
+  }
 
   return (
     <div className="space-y-6">
@@ -458,60 +466,10 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 1 }}
       >
-        <Card className="glass neomorphism">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-primary" />
-              Calendrier d'Activité
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-7 gap-2 mb-4">
-              {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map(day => (
-                <div key={day} className="text-xs text-center text-muted-foreground font-medium py-2">
-                  {day}
-                </div>
-              ))}
-            </div>
-            <div className="grid grid-cols-7 gap-2">
-              {Array.from({ length: 35 }).map((_, i) => {
-                const intensity = Math.random();
-                const hasActivity = intensity > 0.3;
-                return (
-                  <motion.div
-                    key={i}
-                    className={`aspect-square rounded-md border-2 cursor-pointer transition-all duration-200 ${
-                      hasActivity 
-                        ? intensity > 0.8 
-                          ? 'bg-primary border-primary' 
-                          : intensity > 0.6 
-                          ? 'bg-primary/60 border-primary/60' 
-                          : 'bg-primary/30 border-primary/30'
-                        : 'bg-muted/20 border-muted hover:border-primary/30'
-                    }`}
-                    whileHover={{ scale: 1.1 }}
-                    initial={{ opacity: 0, scale: 0 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: i * 0.02 }}
-                  />
-                );
-              })}
-            </div>
-            <div className="flex items-center justify-between mt-4 text-xs text-muted-foreground">
-              <span>Moins actif</span>
-              <div className="flex gap-1">
-                {[0.2, 0.4, 0.6, 0.8].map((opacity, i) => (
-                  <div 
-                    key={i}
-                    className={`w-3 h-3 rounded-sm bg-primary`}
-                    style={{ opacity }}
-                  />
-                ))}
-              </div>
-              <span>Plus actif</span>
-            </div>
-          </CardContent>
-        </Card>
+        <ActivityCalendar 
+          recentActivity={sessionData?.recentActivity || []}
+          isLoading={isLoading}
+        />
       </motion.div>
     </div>
   );
