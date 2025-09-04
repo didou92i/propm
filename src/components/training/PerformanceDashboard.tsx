@@ -30,8 +30,11 @@ import {
   Flame,
   Star,
   Zap,
-  Brain
+  Brain,
+  Loader2,
+  Users
 } from 'lucide-react';
+import { useTrainingSession } from '@/hooks/useTrainingSession';
 
 interface PerformanceData {
   date: string;
@@ -49,10 +52,10 @@ interface TrainingSessionForDashboard {
 }
 
 interface PerformanceDashboardProps {
-  completedSessions: any[];
+  completedSessions?: any[]; // Gardé pour rétrocompatibilité mais non utilisé
 }
 
-export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({ completedSessions }) => {
+export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = () => {
   const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'year'>('week');
   const [animatedStats, setAnimatedStats] = useState({
     avgScore: 0,
@@ -61,65 +64,123 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({ comp
     totalTime: 0
   });
 
-  // Mock data for demonstration
-  const mockPerformanceData: PerformanceData[] = [
-    { date: '2024-01', score: 75, time: 45, questions: 20 },
-    { date: '2024-02', score: 82, time: 38, questions: 25 },
-    { date: '2024-03', score: 78, time: 42, questions: 22 },
-    { date: '2024-04', score: 88, time: 35, questions: 28 },
-    { date: '2024-05', score: 92, time: 32, questions: 30 },
-    { date: '2024-06', score: 95, time: 28, questions: 32 },
-  ];
+  // Utilisation des vraies données depuis Supabase
+  const { sessionData, isLoading, hasData, isEmpty, isAuthenticated } = useTrainingSession();
 
-  const domainData = [
-    { name: 'Droit Administratif', value: 35, color: 'hsl(var(--primary))' },
-    { name: 'Droit Pénal', value: 25, color: 'hsl(var(--secondary))' },
-    { name: 'Management', value: 20, color: 'hsl(var(--accent))' },
-    { name: 'Rédaction', value: 20, color: 'hsl(var(--muted))' },
-  ];
+  // Transformation des données de domaine
+  const domainData = React.useMemo(() => {
+    if (!sessionData?.sessionsByDomain) {
+      return [
+        { name: 'Aucune donnée', value: 100, color: 'hsl(var(--muted))' }
+      ];
+    }
 
-  const achievementBadges = [
-    { 
-      id: 'streak_7', 
-      name: 'Série de 7 jours', 
-      icon: Flame, 
-      color: 'text-orange-500', 
-      unlocked: true,
-      description: 'Entraînement quotidien pendant 7 jours'
-    },
-    { 
-      id: 'perfect_score', 
-      name: 'Score Parfait', 
-      icon: Star, 
-      color: 'text-yellow-500', 
-      unlocked: true,
-      description: '100% dans une session'
-    },
-    { 
-      id: 'speed_master', 
-      name: 'Maître de Vitesse', 
-      icon: Zap, 
-      color: 'text-blue-500', 
-      unlocked: false,
-      description: 'Terminer en moins de 30 secondes'
-    },
-    { 
-      id: 'knowledge_seeker', 
-      name: 'Chercheur de Savoir', 
-      icon: Brain, 
-      color: 'text-purple-500', 
-      unlocked: true,
-      description: '50 sessions complétées'
-    },
-  ];
+    const domainNames: Record<string, string> = {
+      'droit_administratif': 'Droit Administratif',
+      'droit_penal': 'Droit Pénal', 
+      'police_municipale': 'Police Municipale',
+      'securite_publique': 'Sécurité Publique',
+      'reglementation': 'Réglementation',
+      'procedure_penale': 'Procédure Pénale',
+      'management': 'Management',
+      'ethique_deontologie': 'Éthique & Déontologie'
+    };
 
+    const colors = [
+      'hsl(var(--primary))',
+      'hsl(var(--secondary))', 
+      'hsl(var(--accent))',
+      'hsl(220 14.3% 65.9%)',
+      'hsl(210 40% 60%)',
+      'hsl(280 35% 60%)',
+      'hsl(160 60% 45%)',
+      'hsl(30 80% 55%)'
+    ];
+
+    return Object.entries(sessionData.sessionsByDomain).map(([domain, count], index) => ({
+      name: domainNames[domain] || domain,
+      value: count,
+      color: colors[index % colors.length]
+    }));
+  }, [sessionData?.sessionsByDomain]);
+
+  // Transformation des données d'activité récente pour le graphique
+  const performanceData = React.useMemo(() => {
+    if (!sessionData?.recentActivity) return [];
+    
+    return sessionData.recentActivity
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      .map(activity => ({
+        date: new Date(activity.date).toLocaleDateString('fr-FR', { 
+          month: 'short', 
+          day: 'numeric' 
+        }),
+        score: activity.averageScore,
+        sessions: activity.sessionsCount,
+        time: activity.sessionsCount * 15 // Estimation: 15min par session
+      }));
+  }, [sessionData?.recentActivity]);
+
+  // Calcul des badges débloqués basé sur les vraies données
+  const achievementBadges = React.useMemo(() => {
+    if (!sessionData) {
+      return [
+        { 
+          id: 'no_data', 
+          name: 'Commencez votre parcours', 
+          icon: Users, 
+          color: 'text-muted-foreground', 
+          unlocked: false,
+          description: 'Connectez-vous pour débloquer des badges'
+        }
+      ];
+    }
+
+    return [
+      { 
+        id: 'streak_7', 
+        name: 'Série de 7 jours', 
+        icon: Flame, 
+        color: 'text-orange-500', 
+        unlocked: sessionData.streakDays >= 7,
+        description: 'Entraînement quotidien pendant 7 jours'
+      },
+      { 
+        id: 'perfect_score', 
+        name: 'Score Parfait', 
+        icon: Star, 
+        color: 'text-yellow-500', 
+        unlocked: sessionData.averageScore >= 100,
+        description: '100% de moyenne dans vos sessions'
+      },
+      { 
+        id: 'time_master', 
+        name: 'Maître du Temps', 
+        icon: Clock, 
+        color: 'text-blue-500', 
+        unlocked: sessionData.totalTimeMinutes >= 600, // 10 heures
+        description: 'Plus de 10 heures d\'entraînement'
+      },
+      { 
+        id: 'knowledge_seeker', 
+        name: 'Chercheur de Savoir', 
+        icon: Brain, 
+        color: 'text-purple-500', 
+        unlocked: sessionData.totalSessions >= 50,
+        description: '50 sessions complétées'
+      },
+    ];
+  }, [sessionData]);
+
+  // Animation des statistiques basée sur les vraies données
   useEffect(() => {
-    // Animate statistics
+    if (!sessionData) return;
+
     const targetStats = {
-      avgScore: 87,
-      totalSessions: completedSessions.length || 24,
-      streakDays: 12,
-      totalTime: 1440 // minutes
+      avgScore: sessionData.averageScore,
+      totalSessions: sessionData.totalSessions,
+      streakDays: sessionData.streakDays,
+      totalTime: sessionData.totalTimeMinutes
     };
 
     Object.entries(targetStats).forEach(([key, target]) => {
@@ -137,7 +198,7 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({ comp
         }));
       }, 25);
     });
-  }, [completedSessions]);
+  }, [sessionData]);
 
   const formatTime = (minutes: number) => {
     const hours = Math.floor(minutes / 60);
@@ -244,7 +305,7 @@ export const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({ comp
           <CardContent>
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={mockPerformanceData}>
+                <AreaChart data={performanceData}>
                   <defs>
                     <linearGradient id="scoreGradient" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>

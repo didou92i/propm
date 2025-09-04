@@ -4,6 +4,7 @@ import { TrainingLoadingState } from './TrainingLoadingState';
 import { TrainingErrorState } from './TrainingErrorState';
 import { TrainingContentRenderer } from './TrainingContentRenderer';
 import { useTrainingContent } from '@/hooks/useTrainingContent';
+import { useTrainingSession } from '@/hooks/useTrainingSession';
 import { getStaticContent } from '@/data/trainingData';
 import { validateTrainingContent, normalizeTrainingContent } from '@/utils/trainingValidation';
 import type { TrainingType, UserLevel, StudyDomain } from '@/types/prepacds';
