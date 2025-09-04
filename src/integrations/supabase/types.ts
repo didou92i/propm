@@ -467,15 +467,13 @@ export type Database = {
       }
     }
     Views: {
-      security_monitoring_view: {
-        Row: {
-          category: string | null
-          metrics: Json | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
+      auto_update_extensions: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       check_exercise_duplicate: {
         Args: {
           p_content_hash: string
@@ -497,6 +495,10 @@ export type Database = {
         Returns: Json
       }
       generate_security_report: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      get_security_monitoring_data: {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
@@ -577,6 +579,10 @@ export type Database = {
       }
       rechercher_code_natinf_text: {
         Args: { code_recherche: string }
+        Returns: Json
+      }
+      run_security_diagnostics: {
+        Args: Record<PropertyKey, never>
         Returns: Json
       }
       update_database_extensions: {

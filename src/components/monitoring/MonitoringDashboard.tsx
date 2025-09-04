@@ -3,6 +3,8 @@ import { useMonitoringStats } from '@/hooks/monitoring/useMonitoringStats';
 import { MonitoringHeader } from './MonitoringHeader';
 import { MonitoringMetrics } from './MonitoringMetrics';
 import { MonitoringAnalytics } from './MonitoringAnalytics';
+import { SecurityPanel } from './SecurityPanel';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export function MonitoringDashboard() {
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -24,12 +26,28 @@ export function MonitoringDashboard() {
         isRefreshing={isRefreshing}
       />
       
-      <MonitoringMetrics stats={stats} />
-      
-      <MonitoringAnalytics 
-        stats={stats} 
-        getSeverityColor={getSeverityColor}
-      />
+      <Tabs defaultValue="overview" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
+          <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="security">Sécurité</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="overview" className="space-y-6">
+          <MonitoringMetrics stats={stats} />
+        </TabsContent>
+        
+        <TabsContent value="analytics" className="space-y-6">
+          <MonitoringAnalytics 
+            stats={stats} 
+            getSeverityColor={getSeverityColor}
+          />
+        </TabsContent>
+        
+        <TabsContent value="security" className="space-y-6">
+          <SecurityPanel />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
