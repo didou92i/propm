@@ -6,7 +6,9 @@ export const agentInfo = {
       "Améliorer un rapport",
       "Rédiger un procès-verbal",
       "Rédiger une note de service",
-      "Modifier un arrêté existant"
+      "Modifier un arrêté existant",
+      "Analyser la conformité réglementaire",
+      "Gérer les procédures administratives"
     ]
   },
   cdspro: {
@@ -16,7 +18,9 @@ export const agentInfo = {
       "Rédiger une note de service",
       "Analyser la conformité juridique",
       "Organiser les cycles de travail",
-      "Procédures de contrôle d'identité"
+      "Procédures de contrôle d'identité",
+      "Planifier les effectifs",
+      "Superviser les opérations terrain"
     ]
   },
   arrete: {
@@ -26,7 +30,9 @@ export const agentInfo = {
       "Rédiger un arrêté municipal",
       "Modifier un arrêté existant",
       "Vérifier la conformité", 
-      "Consulter la jurisprudence"
+      "Consulter la jurisprudence",
+      "Analyser la jurisprudence récente",
+      "Valider les aspects juridiques"
     ]
   },
   prepacds: {
@@ -36,7 +42,9 @@ export const agentInfo = {
       "Conseils pour réviser efficacement",
       "Méthodes de préparation aux concours",
       "Questions sur les programmes d'étude",
-      "Techniques de gestion du stress"
+      "Techniques de gestion du stress",
+      "Planifier un programme de révision",
+      "Évaluer mes connaissances actuelles"
     ]
   },
   salary: {
@@ -46,7 +54,9 @@ export const agentInfo = {
       "Calculer un salaire net",
       "Estimer les charges sociales",
       "Comparer différents statuts",
-      "Simuler une évolution de carrière"
+      "Simuler une évolution de carrière",
+      "Analyser l'évolution salariale",
+      "Comparer les régimes de retraite"
     ]
   },
   natif: {
@@ -56,7 +66,9 @@ export const agentInfo = {
       "Rechercher une infraction",
       "Trouver un code NATINF",
       "Consulter les sanctions",
-      "Vérifier la classification"
+      "Vérifier la classification",
+      "Analyser les textes de référence",
+      "Comparer les infractions similaires"
     ]
   },
   jobs: {
@@ -66,7 +78,9 @@ export const agentInfo = {
       "Publier une offre d'emploi",
       "Rechercher des candidats",
       "Consulter les offres disponibles",
-      "Gérer mes annonces"
+      "Gérer mes annonces",
+      "Analyser le marché de l'emploi",
+      "Optimiser mes annonces"
     ]
   }
 };

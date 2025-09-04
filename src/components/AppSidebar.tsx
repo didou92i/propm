@@ -48,6 +48,20 @@ export function AppSidebar({ selectedAgent, onAgentSelect, onContextShare }: App
     }
   };
 
+  const handleNewConversation = () => {
+    // Reset vers le premier agent (RedacPro) et déclenche une nouvelle conversation
+    onAgentSelect('redacpro');
+    
+    // Effacer le localStorage pour cette conversation
+    localStorage.removeItem(`chat-messages-${selectedAgent}`);
+    localStorage.removeItem(`threadId-${selectedAgent}`);
+    
+    toast({
+      title: "Nouvelle conversation",
+      description: "Conversation réinitialisée avec succès",
+    });
+  };
+
   const handleSignOut = async (event: React.MouseEvent<HTMLElement>) => {
     createRipple(event);
     try {
@@ -88,7 +102,10 @@ export function AppSidebar({ selectedAgent, onAgentSelect, onContextShare }: App
           </div>
           <span className="font-semibold text-lg">Propm.fr</span>
         </div>
-        <button className="flex items-center gap-2 w-full p-2 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-sidebar-accent ripple-container hover-lift glass-hover neomorphism-hover">
+        <button 
+          onClick={handleNewConversation}
+          className="flex items-center gap-2 w-full p-2 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-sidebar-accent ripple-container hover-lift glass-hover neomorphism-hover"
+        >
           <Plus className="w-4 h-4" />
           Nouvelle conversation
         </button>

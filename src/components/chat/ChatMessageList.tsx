@@ -37,7 +37,7 @@ export function ChatMessageList({
                 <div key={message.id} className="py-6 group">
                   <div className={`flex gap-4 ${message.role === "user" ? "justify-end" : "justify-start"}`}>
                     {/* Simple message display without bubbles */}
-                    <div className={`max-w-[80%] ${message.role === "user" ? "text-right" : "text-left"}`}>
+                    <div className={`max-w-[85%] ${message.role === "user" ? "text-right" : "text-left"}`}>
                       {/* Author and timestamp */}
                       <div className="flex items-center gap-2 mb-2">
                         <span className="text-sm font-medium text-muted-foreground">
