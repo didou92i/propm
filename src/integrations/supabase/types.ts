@@ -467,7 +467,13 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      security_monitoring_view: {
+        Row: {
+          category: string | null
+          metrics: Json | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       check_exercise_duplicate: {
@@ -487,6 +493,14 @@ export type Database = {
         Returns: undefined
       }
       cleanup_old_data: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      generate_security_report: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      get_security_status: {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
@@ -553,12 +567,20 @@ export type Database = {
           title: string
         }[]
       }
+      optimize_security_settings: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       rechercher_code_natinf: {
         Args: { code_recherche: number } | { code_recherche: string }
         Returns: Json
       }
       rechercher_code_natinf_text: {
         Args: { code_recherche: string }
+        Returns: Json
+      }
+      update_database_extensions: {
+        Args: Record<PropertyKey, never>
         Returns: Json
       }
     }
