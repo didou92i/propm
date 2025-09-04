@@ -1,152 +1,99 @@
-import React, { useRef, useMemo } from 'react';
+import React, { useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Environment, Float, Sphere } from '@react-three/drei';
 import * as THREE from 'three';
 
-interface SegmentProps {
-  angle: number;
-  radius: number;
-  color: string;
-  index: number;
-}
-
-const LogoSegment: React.FC<SegmentProps> = ({ angle, radius, color, index }) => {
+// Composant segment simplifié avec géométrie de base
+const SimpleSegment: React.FC<{ position: [number, number, number], color: string, index: number }> = ({ 
+  position, 
+  color, 
+  index 
+}) => {
   const meshRef = useRef<THREE.Mesh>(null);
   
   useFrame((state) => {
     if (meshRef.current) {
       const time = state.clock.getElapsedTime();
-      meshRef.current.rotation.z = Math.sin(time * 0.5 + index * 0.2) * 0.1;
-      meshRef.current.position.y = Math.sin(time * 0.3 + index * 0.4) * 0.05;
+      meshRef.current.rotation.z = time * 0.5 + index * 0.2;
+      meshRef.current.rotation.x = Math.sin(time + index) * 0.1;
     }
   });
 
-  const segmentGeometry = useMemo(() => {
-    const shape = new THREE.Shape();
-    const innerRadius = radius * 0.6;
-    const outerRadius = radius;
-    const startAngle = angle - Math.PI / 8;
-    const endAngle = angle + Math.PI / 8;
-    
-    // Create segment shape
-    shape.moveTo(Math.cos(startAngle) * innerRadius, Math.sin(startAngle) * innerRadius);
-    shape.lineTo(Math.cos(startAngle) * outerRadius, Math.sin(startAngle) * outerRadius);
-    shape.absarc(0, 0, outerRadius, startAngle, endAngle, false);
-    shape.lineTo(Math.cos(endAngle) * innerRadius, Math.sin(endAngle) * innerRadius);
-    shape.absarc(0, 0, innerRadius, endAngle, startAngle, true);
-    
-    return new THREE.ExtrudeGeometry(shape, {
-      depth: 0.3,
-      bevelEnabled: true,
-      bevelThickness: 0.05,
-      bevelSize: 0.05,
-      bevelSegments: 8
-    });
-  }, [angle, radius]);
-
   return (
-    <mesh ref={meshRef} geometry={segmentGeometry} position={[0, 0, 0]}>
+    <mesh ref={meshRef} position={position}>
+      <boxGeometry args={[0.5, 1.5, 0.3]} />
       <meshStandardMaterial 
         color={color}
-        metalness={0.7}
-        roughness={0.2}
-        emissive={color}
-        emissiveIntensity={0.1}
+        metalness={0.6}
+        roughness={0.4}
       />
     </mesh>
   );
 };
 
-const CenterSphere: React.FC = () => {
+// Sphère centrale simplifiée
+const SimpleSphere: React.FC = () => {
   const sphereRef = useRef<THREE.Mesh>(null);
   
   useFrame((state) => {
     if (sphereRef.current) {
       const time = state.clock.getElapsedTime();
-      sphereRef.current.rotation.x = time * 0.2;
-      sphereRef.current.rotation.y = time * 0.3;
-      sphereRef.current.scale.setScalar(1 + Math.sin(time * 2) * 0.1);
+      sphereRef.current.rotation.y = time * 0.5;
+      sphereRef.current.scale.setScalar(1 + Math.sin(time * 2) * 0.05);
     }
   });
 
   return (
-    <Sphere ref={sphereRef} args={[0.4, 32, 32]} position={[0, 0, 0.2]}>
+    <mesh ref={sphereRef} position={[0, 0, 0]}>
+      <sphereGeometry args={[0.8, 16, 16]} />
       <meshStandardMaterial 
-        color="#2563eb"
-        metalness={0.9}
-        roughness={0.1}
-        emissive="#1d4ed8"
-        emissiveIntensity={0.2}
+        color="#3b82f6"
+        metalness={0.8}
+        roughness={0.2}
       />
-    </Sphere>
+    </mesh>
   );
 };
 
-const Logo3D: React.FC = () => {
+// Logo 3D ultra-simplifié
+const SimpleLogo3D: React.FC = () => {
   const groupRef = useRef<THREE.Group>(null);
   
   useFrame((state) => {
     if (groupRef.current) {
-      const time = state.clock.getElapsedTime();
-      groupRef.current.rotation.z = time * 0.1;
-      groupRef.current.rotation.x = Math.sin(time * 0.2) * 0.1;
+      groupRef.current.rotation.y = state.clock.getElapsedTime() * 0.1;
     }
   });
 
-  const segments = useMemo(() => {
-    const colors = [
-      "#2563eb", // Primary blue
-      "#7c3aed", // Purple
-      "#059669", // Green
-      "#f97316", // Orange
-      "#e11d48", // Pink
-      "#0284c7", // Cyan
-      "#eab308", // Yellow
-      "#dc2626"  // Red
-    ];
-    
-    return Array.from({ length: 8 }, (_, i) => ({
-      angle: (i * Math.PI * 2) / 8,
-      color: colors[i],
-      index: i
-    }));
-  }, []);
+  // Positions et couleurs pour les segments
+  const segments = [
+    { position: [1.5, 0, 0] as [number, number, number], color: "#ef4444" },
+    { position: [1.1, 1.1, 0] as [number, number, number], color: "#f97316" },
+    { position: [0, 1.5, 0] as [number, number, number], color: "#eab308" },
+    { position: [-1.1, 1.1, 0] as [number, number, number], color: "#22c55e" },
+    { position: [-1.5, 0, 0] as [number, number, number], color: "#06b6d4" },
+    { position: [-1.1, -1.1, 0] as [number, number, number], color: "#3b82f6" },
+    { position: [0, -1.5, 0] as [number, number, number], color: "#8b5cf6" },
+    { position: [1.1, -1.1, 0] as [number, number, number], color: "#ec4899" },
+  ];
 
   return (
-    <Float speed={1} rotationIntensity={0.5} floatIntensity={0.5}>
-      <group ref={groupRef}>
-        {segments.map((segment, index) => (
-          <LogoSegment 
-            key={index}
-            angle={segment.angle}
-            radius={2}
-            color={segment.color}
-            index={segment.index}
-          />
-        ))}
-        <CenterSphere />
-        
-        {/* Texte PM en 3D simple */}
-        <mesh position={[0, 0, 0.5]}>
-          <boxGeometry args={[1.5, 0.8, 0.2]} />
-          <meshStandardMaterial 
-            color="white"
-            metalness={0.5}
-            roughness={0.3}
-          />
-        </mesh>
-        
-        {/* Texte PRO PM en dessous */}
-        <mesh position={[0, -3.5, 0]}>
-          <boxGeometry args={[2, 0.4, 0.1]} />
-          <meshStandardMaterial 
-            color="#2563eb"
-            metalness={0.7}
-            roughness={0.2}
-          />
-        </mesh>
-      </group>
-    </Float>
+    <group ref={groupRef}>
+      {segments.map((segment, index) => (
+        <SimpleSegment 
+          key={index}
+          position={segment.position}
+          color={segment.color}
+          index={index}
+        />
+      ))}
+      <SimpleSphere />
+      
+      {/* Texte PM simplifié */}
+      <mesh position={[0, 0, 1]}>
+        <boxGeometry args={[1.2, 0.6, 0.2]} />
+        <meshStandardMaterial color="white" />
+      </mesh>
+    </group>
   );
 };
 
@@ -162,32 +109,14 @@ export const ProPM3DLogo: React.FC<ProPM3DLogoProps> = ({
   return (
     <div style={{ width: size, height: size }} className="mx-auto">
       <Canvas
-        camera={{ position: [0, 0, 8], fov: 50 }}
-        gl={{ antialias: true, alpha: true }}
-        style={{ background: 'transparent' }}
+        camera={{ position: [0, 0, 6], fov: 50 }}
+        gl={{ antialias: true }}
       >
-        <Environment preset="studio" />
+        {/* Éclairage simple */}
+        <ambientLight intensity={0.5} />
+        <directionalLight position={[5, 5, 5]} intensity={1} />
         
-        <ambientLight intensity={0.3} />
-        <directionalLight 
-          position={[10, 10, 5]} 
-          intensity={1}
-          castShadow
-          shadow-mapSize-width={2048}
-          shadow-mapSize-height={2048}
-        />
-        <pointLight position={[-10, -10, -10]} intensity={0.5} />
-        
-        <Logo3D />
-        
-        {autoRotate && (
-          <OrbitControls
-            enableZoom={false}
-            enablePan={false}
-            autoRotate
-            autoRotateSpeed={0.5}
-          />
-        )}
+        <SimpleLogo3D />
       </Canvas>
     </div>
   );
