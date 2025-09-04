@@ -4,7 +4,7 @@ import { JobCard } from "@/components/recruitment";
 import { getCommunes, listJobs, searchJobsAI, type JobPost } from "@/services/jobsService";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2, Plus, Shield } from "lucide-react";
+import { Loader2, Plus, Shield, ArrowLeft, MessageSquare } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { logger } from "@/utils/logger";
 import { useAdmin } from "@/hooks/useAdmin";
@@ -88,6 +88,21 @@ const JobsPage: React.FC = () => {
 
   return (
     <div className="container mx-auto px-4 py-6 space-y-6">
+      {/* Breadcrumb Navigation */}
+      <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+        <Button 
+          variant="ghost" 
+          size="sm"
+          onClick={() => navigate('/')}
+          className="h-8 px-2 text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4 mr-1" />
+          Retour au chat
+        </Button>
+        <span className="text-muted-foreground/40">•</span>
+        <span className="text-foreground font-medium">Nous recrutons</span>
+      </nav>
+
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-semibold">Nous recrutons</h1>

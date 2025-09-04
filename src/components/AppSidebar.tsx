@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Calculator, Search, Settings, Plus, User, Moon, Sun, LogOut, MessageSquare, Activity, Brain } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -28,9 +28,10 @@ interface AppSidebarProps {
   selectedAgent: string;
   onAgentSelect: (agentId: string) => void;
   onContextShare?: (sourceAgent: string, targetAgent: string, messages: Message[]) => void;
+  onNewChat?: () => void;
 }
 
-export function AppSidebar({ selectedAgent, onAgentSelect, onContextShare }: AppSidebarProps) {
+export function AppSidebar({ selectedAgent, onAgentSelect, onContextShare, onNewChat }: AppSidebarProps) {
   const createRipple = useRipple('enhanced');
   const { theme, toggleTheme } = useTheme();
   const { user, signOut } = useAuth();
@@ -48,19 +49,15 @@ export function AppSidebar({ selectedAgent, onAgentSelect, onContextShare }: App
     }
   };
 
-  const handleNewConversation = () => {
-    // Reset vers le premier agent (RedacPro) et déclenche une nouvelle conversation
-    onAgentSelect('redacpro');
-    
-    // Effacer le localStorage pour cette conversation
-    localStorage.removeItem(`chat-messages-${selectedAgent}`);
-    localStorage.removeItem(`threadId-${selectedAgent}`);
-    
-    toast({
-      title: "Nouvelle conversation",
-      description: "Conversation réinitialisée avec succès",
-    });
-  };
+  const handleNewConversation = useCallback(() => {
+    if (onNewChat) {
+      onNewChat();
+      toast({
+        title: "Nouvelle conversation",
+        description: "Conversation réinitialisée avec succès",
+      });
+    }
+  }, [onNewChat]);
 
   const handleSignOut = async (event: React.MouseEvent<HTMLElement>) => {
     createRipple(event);
