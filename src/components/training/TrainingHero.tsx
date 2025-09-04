@@ -97,32 +97,47 @@ export const TrainingHero: React.FC<TrainingHeroProps> = ({ onStartTraining }) =
           animate={{ opacity: 1, scale: 1, rotateY: 0 }}
           transition={{ duration: 1.2, ease: [0.68, -0.55, 0.265, 1.55] }}
         >
-          <div className="relative">
-            {/* Glow Effect */}
-            <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse" />
+          <div className="relative w-48 h-48 mx-auto">
+            {/* Multiple Glow Layers for 3D Effect */}
+            <div className="absolute inset-0 bg-primary/30 blur-2xl rounded-full animate-pulse scale-110" />
+            <div className="absolute inset-0 bg-accent/20 blur-xl rounded-full animate-pulse scale-105" />
+            <div className="absolute inset-0 bg-secondary/15 blur-lg rounded-full animate-pulse scale-100" />
             
-            {/* Logo Image */}
+            {/* 3D Relief Shadow Layers */}
+            <div className="absolute top-2 left-2 w-full h-full bg-black/10 blur-sm rounded-full" />
+            <div className="absolute top-1 left-1 w-full h-full bg-black/5 blur-xs rounded-full" />
+            
+            {/* Logo Image with Background Removal Effects */}
             <motion.img
               src="/lovable-uploads/c4c814bd-a9c4-4fd2-9d22-585a4e0b49b6.png"
               alt="ProPM Logo"
-              className="w-80 h-auto mx-auto relative z-10 drop-shadow-2xl"
+              className="w-48 h-48 mx-auto relative z-10 object-contain"
+              style={{
+                mixBlendMode: 'multiply',
+                filter: 'contrast(1.2) brightness(1.1) saturate(1.3) drop-shadow(0 8px 32px rgba(0,0,0,0.3)) drop-shadow(0 4px 16px rgba(0,0,0,0.2)) drop-shadow(0 2px 8px rgba(0,0,0,0.1))'
+              }}
               animate={{ 
-                rotate: [0, 2, -2, 0],
-                scale: [1, 1.02, 1]
+                rotate: [0, 1, -1, 0],
+                scale: [1, 1.01, 1],
+                y: [0, -2, 0]
               }}
               transition={{ 
-                duration: 6, 
+                duration: 8, 
                 repeat: Infinity,
                 ease: "easeInOut"
               }}
               whileHover={{ 
-                scale: 1.1,
+                scale: 1.05,
+                y: -5,
                 transition: { duration: 0.3 }
               }}
             />
             
-            {/* Backdrop Blur Ring */}
-            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary/10 via-transparent to-secondary/10 backdrop-blur-sm" />
+            {/* Highlight Reflection */}
+            <div className="absolute top-4 left-8 w-16 h-8 bg-white/20 blur-md rounded-full rotate-45 opacity-70" />
+            
+            {/* Bottom Shadow for Ground Effect */}
+            <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-32 h-6 bg-black/20 blur-lg rounded-full" />
           </div>
         </motion.div>
 
