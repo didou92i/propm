@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useRipple } from "@/hooks/useRipple";
 import { useTheme } from "@/hooks/useTheme";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 
 interface AppSidebarProps {
   selectedAgent: string;
@@ -37,10 +37,13 @@ export function AppSidebar({ selectedAgent, onAgentSelect, onContextShare, onNew
   const { user, signOut } = useAuth();
   const { toast } = useToast();
   const { getConversationSummary } = useConversationHistory();
+  const navigate = useNavigate();
 
   const handleAgentSelect = (agentId: string, event?: React.MouseEvent<HTMLElement>) => {
     if (event) createRipple(event);
     onAgentSelect(agentId);
+    // Navigate to main chat page when AI agent is selected
+    navigate('/');
   };
 
   const handleContextShare = (sourceAgent: string, targetAgent: string, messages: Message[]) => {
