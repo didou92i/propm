@@ -14,7 +14,6 @@ interface ChatMessageListProps {
   typingMessageId: string | null;
   streamingContent: string;
   isStreaming: boolean;
-  bottomPadding: number;
   onMessageEdit: (messageId: string, newContent: string) => void;
   messagesListRef?: React.RefObject<VirtualizedMessageListRef>;
 }
@@ -25,7 +24,6 @@ export function ChatMessageList({
   typingMessageId, 
   streamingContent, 
   isStreaming,
-  bottomPadding,
   onMessageEdit,
   messagesListRef
 }: ChatMessageListProps) {
@@ -33,10 +31,8 @@ export function ChatMessageList({
 
   return (
     <div className="flex-1 overflow-hidden">
-      <div className="h-full relative">
-        <div className="h-full relative" style={{ paddingBottom: `${bottomPadding}px` }}>
-          <div className="h-full overflow-auto">
-            <div className="max-w-3xl mx-auto px-4">
+      <div className="h-full overflow-auto">
+        <div className="px-4 py-6">
               {messages.map((message, index) => (
                 <div key={message.id} className="py-6 group">
                   <div className={`flex gap-4 ${message.role === "user" ? "justify-end" : "justify-start"}`}>
@@ -87,8 +83,6 @@ export function ChatMessageList({
                   </div>
                 </div>
               ))}
-            </div>
-          </div>
         </div>
       </div>
     </div>

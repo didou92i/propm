@@ -40,7 +40,6 @@ export function ChatArea({
     threadId: undefined
   });
   const [contextShared, setContextShared] = useState(false);
-  const [bottomPadding, setBottomPadding] = useState<number>(200);
   const composerRef = useRef<HTMLDivElement>(null);
   const {
     updateConversation,
@@ -57,22 +56,6 @@ export function ChatArea({
     setAttachmentError
   } = useChatLogic(selectedAgent);
 
-  // Calculate bottom padding for fixed composer
-  useEffect(() => {
-    const updateOffsets = () => {
-      const composerH = composerRef.current?.getBoundingClientRect().height ?? 0;
-      const bottomOffset = 16; // Espacement minimal
-      setBottomPadding(composerH + bottomOffset);
-    };
-    updateOffsets();
-    window.addEventListener('resize', updateOffsets);
-    const ro = new ResizeObserver(updateOffsets);
-    if (composerRef.current) ro.observe(composerRef.current);
-    return () => {
-      window.removeEventListener('resize', updateOffsets);
-      ro.disconnect();
-    };
-  }, []);
 
   // Load conversation history when agent changes
   useEffect(() => {
@@ -160,15 +143,8 @@ export function ChatArea({
     <div className="flex flex-col h-full max-w-4xl mx-auto">
       {/* Contenu principal centré */}
       <div className="flex-1 flex flex-col relative">
-        {/* Zone spéciale pour Arrêté Territorial */}
-        {selectedAgent === "arrete" && messages.length === 0 && (
-          <div className="px-6 py-8">
-            <ArreteGenerationPrompt messageContent="" />
-          </div>
-        )}
-
-        {/* Suggestions de l'assistant */}
-        {messages.length === 0 && selectedAgent !== "arrete" && (
+        {/* Suggestions de l'assistant pour tous les agents */}
+        {messages.length === 0 && (
           <div className="px-6 py-8">
             <AgentSuggestions
               agentId={selectedAgent}
@@ -185,7 +161,6 @@ export function ChatArea({
             typingMessageId={typingMessageId}
             streamingContent={streamingState.currentContent}
             onMessageEdit={handleMessageEdit}
-            bottomPadding={bottomPadding}
             isStreaming={streamingState.isStreaming}
           />
         </div>

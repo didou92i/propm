@@ -106,7 +106,7 @@ const Index = () => {
             </header>
 
             {/* Main Chat Area */}
-            <div>
+            <div className="flex-1">
               <ChatArea key={chatKey} selectedAgent={selectedAgent} sharedContext={sharedContext} />
             </div>
           </div>
