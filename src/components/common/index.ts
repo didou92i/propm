@@ -1,5 +1,4 @@
 export { MarkdownRenderer } from './MarkdownRenderer';
-export { EnhancedMarkdownRenderer } from './EnhancedMarkdownRenderer';
 export { SkeletonMessage } from './SkeletonMessage';
 export { MorphingIcon } from './MorphingIcon';
 export { ParallaxBackground } from './ParallaxBackground';
