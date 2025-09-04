@@ -154,7 +154,7 @@ export const TrainingHero: React.FC<TrainingHeroProps> = ({ onStartTraining }) =
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, delay: 0.7 }}
             >
-              Centre
+              CDS
             </motion.span>{" "}
             <motion.span
               initial={{ opacity: 0, x: 50 }}
@@ -162,7 +162,7 @@ export const TrainingHero: React.FC<TrainingHeroProps> = ({ onStartTraining }) =
               transition={{ duration: 0.8, delay: 0.9 }}
               className="text-primary"
             >
-              d'Excellence
+              Academy
             </motion.span>
           </h1>
           
