@@ -1,5 +1,6 @@
 
 @import './styles/training-overlay.css';
+@import './styles/typewriter-animations.css';
 
 @tailwind base;
 @tailwind components;
