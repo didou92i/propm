@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { compressedStorage } from '@/services/compressedStorage';
 import { logger } from '@/utils/logger';
+import type { ConversationData } from '@/types/performance';
+import type { Message } from '@/types/chat';
 
 interface CacheOptions {
   staleTime?: number;
@@ -32,7 +34,7 @@ export function useOptimizedCache() {
   // Mutation optimisée pour sauvegarder les conversations
   const useConversationSave = (agentId: string) => {
     return useMutation({
-      mutationFn: async (messages: any[]) => {
+      mutationFn: async (messages: Message[]) => {
         const success = compressedStorage.setItem(`conversation_${agentId}`, {
           messages,
           timestamp: new Date().toISOString(),
@@ -82,7 +84,7 @@ export function useOptimizedCache() {
   };
 
   // Préchargement intelligent
-  const prefetchData = async (keys: string[], prefetchFn: (key: string) => Promise<any>) => {
+  const prefetchData = async (keys: string[], prefetchFn: (key: string) => Promise<unknown>) => {
     const promises = keys.map(async (key) => {
       try {
         await queryClient.prefetchQuery({

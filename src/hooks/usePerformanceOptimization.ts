@@ -89,7 +89,7 @@ export function usePerformanceOptimization(config: PerformanceConfig = {
   }, []);
 
   // Debounce function for performance
-  const debounce = useCallback(<T extends (...args: any[]) => any>(
+  const debounce = useCallback(<T extends (...args: Parameters<T>) => ReturnType<T>>(
     func: T,
     wait: number
   ): (...args: Parameters<T>) => void => {

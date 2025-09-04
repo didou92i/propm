@@ -1,7 +1,8 @@
-import { VectorStoreIndex } from 'llamaindex';
+import { VectorStoreIndex, Document } from 'llamaindex';
 import { supabase } from '@/integrations/supabase/client';
+import type { DocumentMetadata, SupabaseDocument, LlamaIndexDocument, IndexManagerInterface } from '@/types/llama';
 
-export class IndexManager {
+export class IndexManager implements IndexManagerInterface {
   private index: VectorStoreIndex | null = null;
   private queryEngine: any = null;
   private initializationPromise: Promise<void> | null = null;
@@ -18,15 +19,27 @@ export class IndexManager {
     return { index: this.index!, queryEngine: this.queryEngine! };
   }
 
-  async addDocument(content: string, metadata: any): Promise<void> {
+  async addDocument(content: string, metadata: DocumentMetadata): Promise<void> {
     if (!this.index) {
       await this.initialize();
     }
 
     try {
-      // TODO: Implement document addition to index
-      // This would require LlamaIndex document creation and insertion
-      console.log('Adding document to index:', { content: content.substring(0, 100), metadata });
+      // Create LlamaIndex Document object
+      const doc = new Document({
+        text: content,
+        metadata: {
+          id: metadata.id,
+          title: metadata.title || 'Sans titre',
+          source: metadata.source || 'unknown',
+          category: metadata.category || 'general',
+          timestamp: metadata.timestamp || new Date().toISOString(),
+          type: metadata.type || 'document'
+        }
+      });
+      
+      // Add to index
+      await this.index!.insertNodes([doc]);
       
       // Clear cache after adding document
       this.clearCache();
@@ -96,7 +109,7 @@ export class IndexManager {
     }
   }
 
-  private async fetchDocumentsFromSupabase(): Promise<any[]> {
+  private async fetchDocumentsFromSupabase(): Promise<LlamaIndexDocument[]> {
     try {
       const { data: documents, error } = await supabase
         .from('documents')
@@ -109,21 +122,25 @@ export class IndexManager {
         return [];
       }
 
-      // Convert to LlamaIndex Document format
-      const llamaDocuments = documents?.map((doc: any) => {
-        // TODO: Create proper LlamaIndex Document objects
-        return {
+      if (!documents || documents.length === 0) {
+        return [];
+      }
+
+      // Convert to proper LlamaIndex Document objects
+      const llamaDocuments: LlamaIndexDocument[] = documents.map((doc: SupabaseDocument) => {
+        const metadata = doc.metadata as any || {};
+        return new Document({
           text: doc.content || '',
           metadata: {
             id: doc.id,
-            title: doc.title,
-            source: doc.source,
-            category: doc.category,
-            timestamp: doc.created_at,
-            type: doc.type || 'document'
+            title: metadata.title || 'Sans titre',
+            source: metadata.source || 'unknown',
+            category: metadata.category || 'general',
+            timestamp: new Date().toISOString(),
+            type: metadata.type || 'document'
           }
-        };
-      }) || [];
+        });
+      });
 
       return llamaDocuments;
     } catch (error) {
