@@ -154,7 +154,7 @@ export const TrainingHero: React.FC<TrainingHeroProps> = ({ onStartTraining }) =
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, delay: 0.7 }}
             >
-              CDS
+              Propm
             </motion.span>{" "}
             <motion.span
               initial={{ opacity: 0, x: 50 }}
