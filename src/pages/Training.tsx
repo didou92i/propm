@@ -14,6 +14,7 @@ import { ParallaxBackground } from "@/components/common";
 import { LegalFooter } from "@/components/legal";
 import { useAgentTheme } from "@/hooks/useAgentTheme";
 import { useTrainingSession } from "@/hooks/useTrainingSession";
+import { TrainingToastManager } from "@/components/training/TrainingToastManager";
 import { Brain, BookOpen, Target, Timer, Trophy, Play, ArrowLeft, Settings, BarChart, LogOut } from 'lucide-react';
 import type { TrainingType, UserLevel, StudyDomain } from '@/types/prepacds';
 import { useAuth } from '@/hooks/useAuth';
@@ -65,23 +66,27 @@ const Training = () => {
     }
   };
 
+  const [isStarting, setIsStarting] = useState(false);
+
   const handleStartTraining = async () => {
-    if (!showConfiguration) {
-      setShowConfiguration(true);
-    } else {
-      try {
-        const sessionId = await createSession(trainingType, level, domain);
-        if (sessionId) {
-          setSessionStartTime(Date.now());
-          setIsTrainingActive(true);
-          toast.success('Session d\'entraînement démarrée !', {
-            description: `${trainingType} • ${level} • ${domain}`
-          });
-        }
-      } catch (error) {
-        toast.error('Erreur lors du démarrage de la session');
+    setIsStarting(true);
+    try {
+      // Démarrage direct avec paramètres par défaut
+      const sessionId = await createSession(trainingType, level, domain);
+      if (sessionId) {
+        setSessionStartTime(Date.now());
+        setIsTrainingActive(true);
+        TrainingToastManager.sessionStarted(trainingType, level, domain);
       }
+    } catch (error) {
+      TrainingToastManager.error('Erreur lors du démarrage', 'Veuillez réessayer dans quelques instants');
+    } finally {
+      setIsStarting(false);
     }
+  };
+
+  const handleShowConfiguration = () => {
+    setShowConfiguration(true);
   };
 
   const handleTrainingComplete = async (score: number, answers: any[]) => {
@@ -92,9 +97,7 @@ const Training = () => {
       if (success) {
         // Rafraîchir les données pour mettre à jour le dashboard
         await refreshSessionData();
-        toast.success('Session terminée avec succès !', {
-          description: `Score: ${score}% • Durée: ${Math.floor(duration / 60)}min ${duration % 60}s`
-        });
+        TrainingToastManager.sessionCompleted(score, duration);
       }
     }
     setIsTrainingActive(false);
@@ -102,7 +105,7 @@ const Training = () => {
 
   const handleTrainingExit = () => {
     setIsTrainingActive(false);
-    toast.info('Session d\'entraînement interrompue');
+    TrainingToastManager.sessionInterrupted();
   };
 
   const trainingTypes = [
@@ -211,7 +214,11 @@ const Training = () => {
 
             {/* Hero Section */}
             {!showConfiguration && (
-              <TrainingHero onStartTraining={handleStartTraining} />
+              <TrainingHero 
+                onStartTraining={handleStartTraining}
+                onShowConfiguration={handleShowConfiguration}
+                isLoading={isStarting || sessionLoading}
+              />
             )}
 
             {/* Configuration Section */}

@@ -1,7 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Bot } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { TrainingLoadingIndicator } from './TrainingLoadingIndicator';
+import { Brain, Clock, Target, X, Zap } from 'lucide-react';
 import type { TrainingType, UserLevel, StudyDomain } from '@/types/prepacds';
 import type { GenerationMetrics } from '@/services/training/trainingContentService';
 
@@ -20,44 +23,95 @@ export function TrainingLoadingState({
   metrics,
   onCancel
 }: TrainingLoadingStateProps) {
+  const [currentStep, setCurrentStep] = useState("Initialisation IA");
+  const [progress, setProgress] = useState(0);
+  const [subtitle, setSubtitle] = useState("Préparation de votre session d'entraînement");
+
+  useEffect(() => {
+    const steps = [
+      { name: "Initialisation IA", subtitle: "Préparation de votre session d'entraînement", duration: 2000 },
+      { name: "Génération contenu", subtitle: "Création de questions personnalisées", duration: 3000 },
+      { name: "Optimisation", subtitle: "Finalisation et vérifications", duration: 1500 }
+    ];
+
+    let stepIndex = 0;
+    let progressValue = 0;
+
+    const updateProgress = () => {
+      if (stepIndex < steps.length) {
+        const step = steps[stepIndex];
+        setCurrentStep(step.name);
+        setSubtitle(step.subtitle);
+        
+        const targetProgress = ((stepIndex + 1) / steps.length) * 100;
+        const increment = (targetProgress - progressValue) / (step.duration / 100);
+        
+        const progressTimer = setInterval(() => {
+          progressValue += increment;
+          setProgress(Math.min(progressValue, targetProgress));
+          
+          if (progressValue >= targetProgress) {
+            clearInterval(progressTimer);
+            stepIndex++;
+            setTimeout(updateProgress, 200);
+          }
+        }, 100);
+      }
+    };
+
+    updateProgress();
+  }, []);
   return (
-    <div className="fixed inset-0 bg-background flex items-center justify-center z-50">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="text-center space-y-4 max-w-md p-6"
-      >
-        <div className="relative">
-          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-          <Bot className="w-6 h-6 text-primary absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
-        </div>
-        
-        <div className="space-y-2">
-          <h3 className="text-lg font-semibold flex items-center gap-2 justify-center">
-            <Bot className="w-5 h-5 text-primary" />
-            Génération de contenu PrepaCDS
-          </h3>
-          <p className="text-muted-foreground">
-            {trainingType} • {level} • {domain}
-          </p>
-          <div className="text-xs text-muted-foreground space-y-1">
-            <div>Connexion à l'assistant spécialisé...</div>
-            {metrics.requestCount > 0 && (
-              <div className="flex justify-center gap-4">
-                <span>Requêtes: {metrics.requestCount}</span>
-                <span>Succès: {metrics.successCount}</span>
-                {metrics.errorCount > 0 && (
-                  <span className="text-destructive">Erreurs: {metrics.errorCount}</span>
-                )}
-              </div>
-            )}
+    <div className="fixed inset-0 bg-background/95 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md glass neomorphism">
+        <CardContent className="p-8 text-center space-y-6">
+          {/* Enhanced Loading Indicator */}
+          <TrainingLoadingIndicator
+            step={currentStep}
+            progress={progress}
+            subtitle={subtitle}
+          />
+
+          {/* Training Info */}
+          <div className="space-y-3">
+            <div className="flex flex-wrap justify-center gap-2">
+              <Badge variant="outline" className="glass">
+                {trainingType}
+              </Badge>
+              <Badge variant="outline" className="glass">
+                {level}
+              </Badge>
+              <Badge variant="outline" className="glass">
+                {domain}
+              </Badge>
+            </div>
           </div>
-        </div>
-        
-        <Button onClick={onCancel} variant="outline" size="sm">
-          Annuler
-        </Button>
-      </motion.div>
+
+          {/* Metrics Display */}
+          {metrics && (
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Clock className="w-4 h-4" />
+                <span>{metrics.averageResponseTime > 0 ? `${metrics.averageResponseTime.toFixed(1)}s` : 'Calcul...'}</span>
+              </div>
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Target className="w-4 h-4" />
+                <span>Req. #{metrics.requestCount + 1}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Cancel Button */}
+          <Button
+            variant="outline"
+            onClick={onCancel}
+            className="w-full glass hover-lift"
+          >
+            <X className="w-4 h-4 mr-2" />
+            Annuler
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }

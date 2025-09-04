@@ -13,3 +13,5 @@ export { TrainingErrorState } from './TrainingErrorState';
 export { TrainingContentRenderer } from './TrainingContentRenderer';
 export { ActivityCalendar } from './ActivityCalendar';
 export { EmptyTrainingState } from './EmptyTrainingState';
+export { TrainingLoadingIndicator } from './TrainingLoadingIndicator';
+export { TrainingToastManager } from './TrainingToastManager';

@@ -7,9 +7,11 @@ import { Brain, BookOpen, Target, Trophy, Zap, Star } from 'lucide-react';
 
 interface TrainingHeroProps {
   onStartTraining: () => void;
+  onShowConfiguration: () => void;
+  isLoading?: boolean;
 }
 
-export const TrainingHero: React.FC<TrainingHeroProps> = ({ onStartTraining }) => {
+export const TrainingHero: React.FC<TrainingHeroProps> = ({ onStartTraining, onShowConfiguration, isLoading = false }) => {
   const [particleCount, setParticleCount] = useState(0);
   const [statsCounter, setStatsCounter] = useState({ sessions: 0, students: 0, success: 0 });
 
@@ -257,31 +259,56 @@ export const TrainingHero: React.FC<TrainingHeroProps> = ({ onStartTraining }) =
           ))}
         </motion.div>
 
-        {/* CTA Button */}
+        {/* CTA Buttons */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 1.8 }}
+          className="flex flex-col sm:flex-row gap-4 items-center justify-center"
         >
           <Button
             onClick={onStartTraining}
             size="lg"
-            className="px-12 py-4 text-lg font-semibold rounded-2xl gradient-primary hover-lift shadow-glow transform-3d"
+            disabled={isLoading}
+            className="px-12 py-4 text-lg font-semibold rounded-2xl gradient-primary hover-lift shadow-glow transform-3d relative"
           >
             <motion.div
               className="flex items-center gap-3"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              <Brain className="w-6 h-6" />
-              Commencer l'Entraînement
-              <motion.div
-                animate={{ x: [0, 5, 0] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
-              >
-                →
-              </motion.div>
+              {isLoading ? (
+                <>
+                  <motion.div
+                    className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full"
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                  />
+                  Démarrage...
+                </>
+              ) : (
+                <>
+                  <Brain className="w-6 h-6" />
+                  Commencer Maintenant
+                  <motion.div
+                    animate={{ x: [0, 5, 0] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                  >
+                    →
+                  </motion.div>
+                </>
+              )}
             </motion.div>
+          </Button>
+          
+          <Button
+            onClick={onShowConfiguration}
+            size="lg"
+            variant="outline"
+            className="px-8 py-4 text-lg font-medium rounded-2xl glass hover-lift"
+          >
+            <Target className="w-5 h-5 mr-2" />
+            Configuration Avancée
           </Button>
         </motion.div>
       </div>
