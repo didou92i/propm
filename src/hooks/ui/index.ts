@@ -3,6 +3,7 @@ export { useTheme } from '@/hooks/useTheme';
 export { useAgentTheme } from '@/hooks/useAgentTheme';
 export { useTypewriter } from '@/hooks/useTypewriter';
 export { useOptimizedTypewriter } from '@/hooks/useOptimizedTypewriter';
+export { useNaturalTypewriter } from '@/hooks/useNaturalTypewriter';
 export { useOptimizedInput } from '@/hooks/useOptimizedInput';
 export { useOptimizedCache } from '@/hooks/useOptimizedCache';
 export { useIncrementalSearch } from '@/hooks/useIncrementalSearch';

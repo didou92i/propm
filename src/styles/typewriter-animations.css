@@ -1,0 +1,141 @@
+/* Enhanced typewriter animations */
+
+@keyframes typewriter-cursor {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+@keyframes character-appear {
+  from {
+    opacity: 0;
+    transform: translateY(2px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes word-reveal {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes line-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+    height: 0;
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    height: auto;
+  }
+}
+
+/* Typewriter cursor classes */
+.typewriter-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1.2em;
+  background-color: hsl(var(--primary));
+  animation: typewriter-cursor 1s infinite;
+  vertical-align: text-top;
+  margin-left: 1px;
+}
+
+.typewriter-cursor-thin {
+  width: 1px;
+}
+
+.typewriter-cursor-thick {
+  width: 3px;
+}
+
+/* Character animation classes */
+.character-appear {
+  animation: character-appear 0.1s ease-out;
+}
+
+.word-reveal {
+  animation: word-reveal 0.2s ease-out;
+}
+
+.line-slide-in {
+  animation: line-slide-in 0.3s ease-out;
+}
+
+/* Special content animations */
+.code-block-reveal {
+  animation: line-slide-in 0.4s ease-out;
+}
+
+.list-item-reveal {
+  animation: word-reveal 0.25s ease-out;
+}
+
+.title-reveal {
+  animation: character-appear 0.15s ease-out;
+}
+
+/* Typing status indicators */
+.typing-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.typing-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: hsl(var(--primary));
+  animation: typing-dot-pulse 1.4s infinite ease-in-out;
+}
+
+.typing-dot:nth-child(1) { animation-delay: -0.32s; }
+.typing-dot:nth-child(2) { animation-delay: -0.16s; }
+.typing-dot:nth-child(3) { animation-delay: 0s; }
+
+@keyframes typing-dot-pulse {
+  0%, 80%, 100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Performance optimizations */
+.typewriter-content {
+  contain: layout;
+  will-change: auto;
+}
+
+.typewriter-active {
+  will-change: contents;
+}
+
+.typewriter-complete {
+  will-change: auto;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .typewriter-cursor {
+    width: 1px;
+  }
+  
+  .character-appear {
+    animation-duration: 0.08s;
+  }
+}
