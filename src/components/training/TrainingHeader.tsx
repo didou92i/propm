@@ -13,6 +13,8 @@ interface TrainingHeaderProps {
   timeElapsed: number;
   isActive: boolean;
   averageResponseTime: number;
+  diversityScore?: number;
+  cacheHitRate?: number;
   onExit: () => void;
 }
 
@@ -24,6 +26,8 @@ export function TrainingHeader({
   timeElapsed,
   isActive,
   averageResponseTime,
+  diversityScore,
+  cacheHitRate,
   onExit
 }: TrainingHeaderProps) {
   const formatTime = (seconds: number) => {
@@ -95,11 +99,17 @@ export function TrainingHeader({
             </div>
           )}
           
-          {averageResponseTime > 0 && (
-            <div className="text-xs text-muted-foreground">
-              Temps réponse: {Math.round(averageResponseTime)}ms
-            </div>
-          )}
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            {averageResponseTime > 0 && (
+              <span>Réponse: {Math.round(averageResponseTime)}ms</span>
+            )}
+            {diversityScore !== undefined && diversityScore > 0 && (
+              <span>Diversité: {Math.round(diversityScore)}%</span>
+            )}
+            {cacheHitRate !== undefined && cacheHitRate > 0 && (
+              <span>Cache: {Math.round(cacheHitRate * 100)}%</span>
+            )}
+          </div>
         </div>
       </div>
     </motion.div>

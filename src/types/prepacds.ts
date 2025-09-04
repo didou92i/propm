@@ -13,9 +13,12 @@ export type UserLevel = 'debutant' | 'intermediaire' | 'avance';
 // Canonical domains used by the Edge Function
 export type StudyDomain =
   | 'droit_administratif'
-  | 'droit_penal'
+  | 'police_municipale'
+  | 'securite_publique'
+  | 'reglementation'
+  | 'procedure_penale'
   | 'management'
-  | 'redaction_administrative';
+  | 'ethique_deontologie';
 
 // UI domains used in controls
 export type UiStudyDomain =
@@ -50,10 +53,10 @@ export const DEFAULT_PREPA_CDS_CONFIG: PrepaCdsConfig = {
 export function mapUiToEdge(domain: UiStudyDomain): StudyDomain {
   const map: Record<UiStudyDomain, StudyDomain> = {
     droit_public: 'droit_administratif',
-    procedures: 'droit_administratif',
-    redaction: 'redaction_administrative',
+    procedures: 'procedure_penale',
+    redaction: 'ethique_deontologie',
     culture_generale: 'droit_administratif',
-    droit_penal: 'droit_penal',
+    droit_penal: 'procedure_penale',
     management: 'management',
   };
   return map[domain] ?? 'droit_administratif';
@@ -62,9 +65,9 @@ export function mapUiToEdge(domain: UiStudyDomain): StudyDomain {
 export function mapServiceToEdge(domain: ServiceStudyDomain): StudyDomain {
   const map: Record<ServiceStudyDomain, StudyDomain> = {
     droit_public: 'droit_administratif',
-    redaction: 'redaction_administrative',
+    redaction: 'ethique_deontologie',
     general: 'droit_administratif',
-    droit_penal: 'droit_penal',
+    droit_penal: 'procedure_penale',
     management: 'management',
   };
   return map[domain] ?? 'droit_administratif';
@@ -73,9 +76,12 @@ export function mapServiceToEdge(domain: ServiceStudyDomain): StudyDomain {
 export function mapEdgeToUi(domain: StudyDomain): UiStudyDomain {
   const map: Record<StudyDomain, UiStudyDomain> = {
     droit_administratif: 'droit_public',
-    redaction_administrative: 'redaction',
-    droit_penal: 'droit_penal',
+    police_municipale: 'droit_public',
+    securite_publique: 'droit_public',
+    reglementation: 'procedures',
+    procedure_penale: 'droit_penal',
     management: 'management',
+    ethique_deontologie: 'redaction',
   };
   return map[domain] ?? 'droit_public';
 }

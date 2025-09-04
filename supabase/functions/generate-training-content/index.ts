@@ -80,9 +80,10 @@ Format JSON STRICT requis:
   }
 };
 
-// Cache simple en mémoire avec TTL
-const cache = new Map<string, { data: any; timestamp: number; ttl: number }>();
-const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+// Cache intelligent avec rotation pour éviter la répétition
+const cache = new Map<string, { data: any; timestamp: number; ttl: number; accessCount: number }>();
+const CACHE_TTL = 15 * 60 * 1000; // 15 minutes (réduit pour plus de diversité)
+const MAX_CACHE_ACCESS = 3; // Maximum 3 accès avant rotation forcée
 
 // Queue pour gérer les appels concurrents
 const requestQueue: Array<() => Promise<void>> = [];
@@ -127,10 +128,22 @@ function queueRequest<T>(fn: () => Promise<T>): Promise<T> {
   });
 }
 
-// Fonction pour gérer le cache
+// Fonction pour gérer le cache intelligent
 function getCachedContent(key: string): any | null {
   const cached = cache.get(key);
   if (cached && Date.now() - cached.timestamp < cached.ttl) {
+    // Vérifier si le contenu a été trop utilisé
+    if (cached.accessCount >= MAX_CACHE_ACCESS) {
+      console.log(`[CACHE] Rotation forcée pour: ${key} (${cached.accessCount} accès)`);
+      cache.delete(key);
+      return null;
+    }
+    
+    // Incrémenter le compteur d'accès
+    cached.accessCount += 1;
+    cache.set(key, cached);
+    
+    console.log(`[CACHE] Contenu trouvé: ${key} (accès: ${cached.accessCount}/${MAX_CACHE_ACCESS})`);
     return cached.data;
   }
   if (cached) {
@@ -143,8 +156,10 @@ function setCachedContent(key: string, data: any, ttl: number = CACHE_TTL) {
   cache.set(key, {
     data,
     timestamp: Date.now(),
-    ttl
+    ttl,
+    accessCount: 0
   });
+  console.log(`[CACHE] Contenu mis en cache: ${key} (TTL: ${ttl}ms)`);
 }
 
 // Fonction pour appeler l'Assistant PrepaCDS avec retry et backoff
@@ -313,8 +328,9 @@ async function generateTrainingContent(request: TrainingRequest): Promise<any> {
   
   console.log(`[GENERATION] Début pour: ${trainingType} - ${level} - ${domain}`);
   
-  // Vérifier le cache d'abord
-  const cacheKey = `${trainingType}-${level}-${domain}`;
+  // Vérifier le cache avec clé incluant une rotation temporelle
+  const hourlyRotation = Math.floor(Date.now() / (60 * 60 * 1000)); // Rotation toutes les heures
+  const cacheKey = `${trainingType}-${level}-${domain}-h${hourlyRotation}`;
   const cachedContent = getCachedContent(cacheKey);
   
   if (cachedContent) {
@@ -338,20 +354,28 @@ async function generateTrainingContent(request: TrainingRequest): Promise<any> {
     throw new Error(`Type d'entraînement non supporté: ${trainingType}`);
   }
 
-  // Construire le prompt contextuel
-  const contextualPrompt = `${template.systemPrompt}
+      // Générer un seed unique pour assurer la diversité
+      const diversitySeed = Math.random().toString(36).substring(2, 15);
+      const timeBasedSeed = Date.now().toString().slice(-6);
+      
+      // Construire le prompt contextuel avec diversité
+      const contextualPrompt = `${template.systemPrompt}
 
 CONTEXTE:
 - Niveau: ${level}
 - Domaine: ${domain}
 - Type: ${trainingType}
+- Seed de diversité: ${diversitySeed}-${timeBasedSeed}
 
 INSTRUCTIONS CRITIQUES:
 1. Respecte EXACTEMENT le format JSON demandé
 2. Génère du contenu de qualité professionnelle niveau ${level}
 3. Concentre-toi sur le domaine: ${domain}
-4. Assure-toi que le JSON est valide et parsable
-5. N'inclus AUCUN texte avant ou après le JSON`;
+4. ASSURE-TOI que le contenu est UNIQUE et VARIÉ - évite les questions répétitives
+5. Utilise le seed de diversité pour générer des questions originales
+6. Assure-toi que le JSON est valide et parsable
+7. N'inclus AUCUN texte avant ou après le JSON
+8. VARIATION OBLIGATOIRE : Change les angles d'approche, exemples concrets, et formulations`;
 
   const content = await queueRequest(() => 
     callPrepaCDSAssistantWithRetry(contextualPrompt, trainingType, level, domain)

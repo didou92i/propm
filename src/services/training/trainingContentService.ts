@@ -20,6 +20,9 @@ export interface GenerationMetrics {
   errorCount: number;
   lastRequest: number;
   averageResponseTime: number;
+  cacheHitRate: number;
+  diversityScore: number;
+  lastContentHash: string | null;
 }
 
 class TrainingContentService {
@@ -29,8 +32,13 @@ class TrainingContentService {
     successCount: 0,
     errorCount: 0,
     lastRequest: 0,
-    averageResponseTime: 0
+    averageResponseTime: 0,
+    cacheHitRate: 0,
+    diversityScore: 0,
+    lastContentHash: null
   };
+  
+  private contentHistory: string[] = [];
 
   static getInstance(): TrainingContentService {
     if (!TrainingContentService.instance) {
@@ -91,10 +99,21 @@ class TrainingContentService {
 
       // Validation du contenu
       this.validateContent(content, trainingType);
-
+      
+      // Calcul de la diversité du contenu
+      const contentHash = this.calculateContentHash(content);
+      const diversityScore = this.calculateDiversityScore(contentHash);
+      
       // Mise à jour des métriques de succès
       this.metrics.successCount++;
+      this.metrics.diversityScore = diversityScore;
+      this.metrics.lastContentHash = contentHash;
       this.updateAverageResponseTime(responseTime);
+      
+      // Mise à jour du taux de hit cache
+      this.metrics.cacheHitRate = source === 'cache' ? 
+        (this.metrics.cacheHitRate * (this.metrics.requestCount - 1) + 1) / this.metrics.requestCount :
+        (this.metrics.cacheHitRate * (this.metrics.requestCount - 1)) / this.metrics.requestCount;
 
       console.log(`[TrainingService] Génération réussie:`, {
         sessionId,
@@ -176,8 +195,32 @@ class TrainingContentService {
       successCount: 0,
       errorCount: 0,
       lastRequest: 0,
-      averageResponseTime: 0
+      averageResponseTime: 0,
+      cacheHitRate: 0,
+      diversityScore: 0,
+      lastContentHash: null
     };
+    this.contentHistory = [];
+  }
+  
+  private calculateContentHash(content: any): string {
+    // Calcul simple d'un hash basé sur le contenu principal
+    const contentStr = JSON.stringify(content?.questions || content?.steps || content);
+    return btoa(contentStr).substring(0, 16);
+  }
+  
+  private calculateDiversityScore(contentHash: string): number {
+    // Ajouter le hash à l'historique
+    this.contentHistory.push(contentHash);
+    
+    // Garder seulement les 10 derniers contenus
+    if (this.contentHistory.length > 10) {
+      this.contentHistory.shift();
+    }
+    
+    // Calculer le score de diversité (pourcentage de contenus uniques)
+    const uniqueHashes = new Set(this.contentHistory);
+    return (uniqueHashes.size / this.contentHistory.length) * 100;
   }
 }
 

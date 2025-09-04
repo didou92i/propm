@@ -171,6 +171,8 @@ export function SimpleTrainingPlayer({
         timeElapsed={timeElapsed}
         isActive={isActive}
         averageResponseTime={metrics.averageResponseTime}
+        diversityScore={metrics.diversityScore}
+        cacheHitRate={metrics.cacheHitRate}
         onExit={handleExit}
       />
 

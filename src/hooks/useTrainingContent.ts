@@ -25,7 +25,10 @@ export const useTrainingContent = () => {
     successCount: 0,
     errorCount: 0,
     lastRequest: 0,
-    averageResponseTime: 0
+    averageResponseTime: 0,
+    cacheHitRate: 0,
+    diversityScore: 0,
+    lastContentHash: null
   });
 
   const generateContent = useCallback(async (
@@ -119,7 +122,10 @@ export const useTrainingContent = () => {
       successCount: 0,
       errorCount: 0,
       lastRequest: 0,
-      averageResponseTime: 0
+      averageResponseTime: 0,
+      cacheHitRate: 0,
+      diversityScore: 0,
+      lastContentHash: null
     });
   }, []);
 
