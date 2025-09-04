@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { ProPM3DLogo } from './ProPM3DLogo';
 import { Brain, BookOpen, Target, Trophy, Zap, Star } from 'lucide-react';
 
 interface TrainingHeroProps {
@@ -89,63 +90,14 @@ export const TrainingHero: React.FC<TrainingHeroProps> = ({ onStartTraining }) =
       {/* Hero Content */}
       <div className="relative z-10 text-center max-w-6xl mx-auto px-6">
         
-        {/* Animated Logo ProPM */}
+        {/* Logo 3D ProPM */}
         <motion.div
-          className="mb-8 flex justify-center"
+          className="mb-8"
           initial={{ opacity: 0, scale: 0.8, rotateY: -180 }}
           animate={{ opacity: 1, scale: 1, rotateY: 0 }}
           transition={{ duration: 1.2, ease: [0.68, -0.55, 0.265, 1.55] }}
         >
-          <div className="relative">
-            <motion.div
-              className="w-32 h-32 rounded-full gradient-primary flex items-center justify-center shadow-glow"
-              animate={{ 
-                rotateY: [0, 360],
-                boxShadow: [
-                  "0 0 30px hsl(var(--primary) / 0.3)",
-                  "0 0 60px hsl(var(--primary) / 0.6)",
-                  "0 0 30px hsl(var(--primary) / 0.3)"
-                ]
-              }}
-              transition={{ 
-                rotateY: { duration: 4, repeat: Infinity, ease: "linear" },
-                boxShadow: { duration: 2, repeat: Infinity, ease: "easeInOut" }
-              }}
-            >
-              <motion.div
-                className="text-4xl font-bold text-primary-foreground"
-                animate={{ scale: [1, 1.1, 1] }}
-                transition={{ duration: 2, repeat: Infinity }}
-              >
-                ProPM
-              </motion.div>
-            </motion.div>
-            
-            {/* Orbital Elements */}
-            {[Brain, Target, BookOpen].map((Icon, index) => (
-              <motion.div
-                key={index}
-                className="absolute w-8 h-8 bg-background/90 rounded-full flex items-center justify-center shadow-lg"
-                style={{
-                  top: '50%',
-                  left: '50%',
-                  transformOrigin: '0 0',
-                }}
-                animate={{
-                  rotate: 360,
-                  x: Math.cos((index * 120) * Math.PI / 180) * 80,
-                  y: Math.sin((index * 120) * Math.PI / 180) * 80,
-                }}
-                transition={{
-                  duration: 6 + index,
-                  repeat: Infinity,
-                  ease: "linear"
-                }}
-              >
-                <Icon className="w-4 h-4 text-primary" />
-              </motion.div>
-            ))}
-          </div>
+          <ProPM3DLogo size={350} autoRotate={true} />
         </motion.div>
 
         {/* Main Title with Typewriter Effect */}

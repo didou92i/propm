@@ -1,4 +1,5 @@
 export { TrainingHero } from './TrainingHero';
+export { ProPM3DLogo } from './ProPM3DLogo';
 export { PerformanceDashboard } from './PerformanceDashboard';
 export { AnimatedQuizPlayer } from './AnimatedQuizPlayer';
 export { TrueFalseAnimated } from './TrueFalseAnimated';
