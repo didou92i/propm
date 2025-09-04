@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -472,9 +472,9 @@ export type Database = {
     Functions: {
       check_exercise_duplicate: {
         Args: {
-          p_session_id: string
           p_content_hash: string
           p_exercise_type: string
+          p_session_id: string
         }
         Returns: boolean
       }
@@ -496,8 +496,8 @@ export type Database = {
       }
       has_role: {
         Args: {
-          _user_id: string
           _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
         }
         Returns: boolean
       }
@@ -508,49 +508,49 @@ export type Database = {
       log_audit_action: {
         Args: {
           p_action: string
-          p_table_name?: string
-          p_record_id?: string
-          p_old_values?: Json
           p_new_values?: Json
+          p_old_values?: Json
+          p_record_id?: string
+          p_table_name?: string
         }
         Returns: string
       }
       match_documents: {
-        Args: { query_embedding: string; match_count?: number; filter?: Json }
+        Args: { filter?: Json; match_count?: number; query_embedding: string }
         Returns: {
-          id: string
           content: string
+          id: string
           metadata: Json
           similarity: number
         }[]
       }
       match_documents_hierarchical: {
         Args: {
-          query_embedding: string
-          match_count?: number
           level_filter?: string
+          match_count?: number
+          query_embedding: string
         }
         Returns: {
-          id: string
           content: string
+          id: string
           metadata: Json
           similarity: number
         }[]
       }
       match_job_posts: {
-        Args: { query_embedding: string; match_count?: number }
+        Args: { match_count?: number; query_embedding: string }
         Returns: {
-          id: string
-          title: string
           commune: string
-          description: string
-          skills: string[]
           contact: string
-          deadline: string
-          status: Database["public"]["Enums"]["job_post_status"]
           created_at: string
+          deadline: string
+          description: string
           expires_at: string
+          id: string
           similarity: number
+          skills: string[]
+          status: Database["public"]["Enums"]["job_post_status"]
+          title: string
         }[]
       }
       rechercher_code_natinf: {
