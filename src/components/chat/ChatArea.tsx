@@ -10,9 +10,6 @@ import { ChatMessageList } from "./ChatMessageList";
 import { ChatComposer } from "./ChatComposer";
 import { ArreteGenerationPrompt } from "./ArreteGenerationPrompt";
 import { agentInfo } from "./utils/chatUtils";
-import { TrainingExperiencePlayer } from "@/components/training/TrainingExperiencePlayer";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
 import { AgentAvatar } from "@/components/common/AgentAvatar";
 import { AgentSuggestions } from "./AgentSuggestions";
 
@@ -57,10 +54,7 @@ export function ChatArea({
     typingMessageId,
     streamingState,
     sendMessage,
-    setAttachmentError,
-    trainingContent,
-    showTraining,
-    setShowTraining
+    setAttachmentError
   } = useChatLogic(selectedAgent);
 
   // Calculate bottom padding for fixed composer
@@ -94,9 +88,7 @@ export function ChatArea({
       setMessages([]);
     }
     setContextShared(false);
-    // Reset training state when switching agents
-    setShowTraining(false);
-  }, [selectedAgent, getConversation, setShowTraining]);
+  }, [selectedAgent, getConversation]);
 
   // Sync threadId from localStorage when agent changes
   useEffect(() => {

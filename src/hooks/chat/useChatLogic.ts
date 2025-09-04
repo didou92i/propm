@@ -2,7 +2,6 @@ import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useStreamingChat } from "@/hooks/useStreamingChat";
 import { usePerformanceOptimization } from "@/hooks/usePerformanceOptimization";
-import { usePrepaCdsChat } from "@/hooks/usePrepaCdsChat";
 import { Message, MessageAttachment } from "@/types/chat";
 import { toast } from "sonner";
 import { logger } from "@/utils/logger";
@@ -18,12 +17,9 @@ export function useChatLogic(selectedAgent: string) {
   const [processingAttachment, setProcessingAttachment] = useState(false);
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
   const [typingMessageId, setTypingMessageId] = useState<string | null>(null);
-  const [trainingContent, setTrainingContent] = useState<any>(null);
-  const [showTraining, setShowTraining] = useState(false);
 
   const { streamingState, sendStreamingMessage } = useStreamingChat();
   const { optimizeMessages } = usePerformanceOptimization();
-  const { generateContent: generatePrepaContent } = usePrepaCdsChat();
 
   const processAttachments = useCallback(async (attachments: AttachedFile[]): Promise<MessageAttachment[]> => {
     const processedAttachments: MessageAttachment[] = [];
@@ -162,47 +158,6 @@ export function useChatLogic(selectedAgent: string) {
         }
       }
 
-      // Handle PrepaCDS agent with simplified logic
-      if (selectedAgent === "prepacds") {
-        try {
-          // Use defaults for simplified experience
-          const trainingType = 'qcm';
-          const level = 'intermediaire';
-          const domain = 'droit_administratif';
-          
-          const result = await generatePrepaContent(trainingType, level, domain);
-
-          // Store the training content and show training interface
-          setTrainingContent({
-            ...result,
-            trainingType,
-            level,
-            domain
-          });
-          setShowTraining(true);
-
-          // Show confirmation message in chat
-          onMessagesUpdate(prev => prev.map(msg => 
-            msg.id === assistantMessageId 
-              ? { ...msg, content: `✨ **Contenu d'entraînement généré avec succès !**\n\n*L'interface d'entraînement interactif va s'ouvrir...*` }
-              : msg
-          ));
-          setTypingMessageId(null);
-          setIsLoading(false);
-        } catch (err: any) {
-          onMessagesUpdate(prev => prev.map(msg => 
-            msg.id === assistantMessageId 
-              ? { ...msg, content: `❌ Une erreur s'est produite lors de la génération du contenu.\n\n**Détails:** ${err?.message || 'Erreur inconnue'}` }
-              : msg
-          ));
-          setTypingMessageId(null);
-          setIsLoading(false);
-          toast.error("Erreur Prepa CDS", {
-            description: "Erreur lors de la génération du contenu",
-          });
-        }
-        return;
-      }
 
       const messagesToSend = optimizedMessages;
 
@@ -264,7 +219,7 @@ export function useChatLogic(selectedAgent: string) {
         description: error.message || 'Erreur inconnue',
       });
     }
-  }, [selectedAgent, optimizeMessages, generatePrepaContent, sendStreamingMessage, processAttachments, processingAttachment]);
+  }, [selectedAgent, optimizeMessages, sendStreamingMessage, processAttachments, processingAttachment]);
 
   return {
     isLoading,
@@ -273,9 +228,6 @@ export function useChatLogic(selectedAgent: string) {
     typingMessageId,
     streamingState,
     sendMessage,
-    setAttachmentError,
-    trainingContent,
-    showTraining,
-    setShowTraining
+    setAttachmentError
   };
 }
