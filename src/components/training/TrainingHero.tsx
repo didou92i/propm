@@ -109,7 +109,7 @@ export const TrainingHero: React.FC<TrainingHeroProps> = ({ onStartTraining }) =
             
             {/* Logo Image with Background Removal Effects */}
             <motion.img
-              src="/lovable-uploads/c4c814bd-a9c4-4fd2-9d22-585a4e0b49b6.png"
+              src="/lovable-uploads/d7375b53-ed48-432a-a050-0211ec5585ea.png"
               alt="ProPM Logo"
               className="w-48 h-48 mx-auto relative z-10 object-contain"
               style={{
