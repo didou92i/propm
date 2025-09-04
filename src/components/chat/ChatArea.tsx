@@ -5,6 +5,7 @@ import { useConversationHistory } from "@/hooks/useConversationHistory";
 import { useChatLogic } from "@/hooks/chat/useChatLogic";
 import { useCdsProEnhancements } from "@/hooks/chat/useCdsProEnhancements";
 import { Message } from "@/types/chat";
+import { logger } from '@/utils/logger';
 import { toast } from "sonner";
 import { ChatMessageList } from "./ChatMessageList";
 import { ChatComposer } from "./ChatComposer";
@@ -133,7 +134,7 @@ export function ChatArea({
       // Clear messages
       setMessages([]);
     } catch (error) {
-      console.error('Erreur lors de la réinitialisation:', error);
+      logger.error('Erreur lors de la réinitialisation', error, 'ChatArea');
     }
   };
   const currentAgent = useAgent(selectedAgent);

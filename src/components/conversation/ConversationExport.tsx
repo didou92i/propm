@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Message } from "@/types/chat";
 import { useToast } from "@/hooks/use-toast";
+import { logger } from "@/utils/logger";
 
 interface ConversationExportProps {
   messages: Message[];
@@ -168,7 +169,7 @@ export function ConversationExport({ messages, agentName, children }: Conversati
       setTimeout(() => URL.revokeObjectURL(url), 1000);
       
     } catch (error) {
-      console.error('Erreur lors de la génération PDF:', error);
+      logger.error('Erreur lors de la génération PDF', error, 'ConversationExport');
       throw error;
     }
   };
@@ -212,7 +213,7 @@ export function ConversationExport({ messages, agentName, children }: Conversati
       });
       
     } catch (error) {
-      console.error('Erreur lors de l\'export:', error);
+      logger.error('Erreur lors de l\'export', error, 'ConversationExport');
       toast({
         title: "Erreur d'export",
         description: "Une erreur s'est produite lors de l'export",

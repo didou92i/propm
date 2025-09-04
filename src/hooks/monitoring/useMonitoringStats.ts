@@ -39,7 +39,7 @@ export function useMonitoringStats() {
   });
 
   const refreshStats = useCallback(async () => {
-    console.log('Actualisation des statistiques de monitoring...');
+    // Production: removed debug logging
     
     // Simulation de l'actualisation des données
     setStats(prevStats => ({

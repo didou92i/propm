@@ -250,7 +250,7 @@ export const PerformanceMonitor: React.FC = () => {
               onClick={() => {
                 const report = generateReport();
                 if (report) {
-                  console.log('Rapport de performance:', report);
+                  // Production: removed debug logging
                   // Vous pouvez ici implémenter l'export ou l'envoi du rapport
                 }
               }}

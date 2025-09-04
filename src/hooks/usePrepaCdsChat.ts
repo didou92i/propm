@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from '@/utils/logger';
 import { toast } from "sonner";
 
 import type { TrainingType, UserLevel, StudyDomain } from "@/types/prepacds";
@@ -19,7 +20,7 @@ export const usePrepaCdsChat = () => {
 
   // Fallback content generator when Edge Function fails
   const generateFallbackContent = (trainingType: TrainingType, level: UserLevel, domain: StudyDomain) => {
-    console.log('🔄 [PrepaCDS] Génération de contenu fallback pour:', { trainingType, level, domain });
+    // Production: removed debug logging
     
     if (trainingType === 'qcm') {
       return {
@@ -149,13 +150,7 @@ export const usePrepaCdsChat = () => {
     
     try {
       const clientSessionId = `client-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      console.log('🚀 [CLIENT] Generating PrepaCDS content:', { 
-        clientSessionId,
-        trainingType, 
-        level, 
-        domain,
-        timestamp: new Date().toISOString()
-      });
+      // Production: removed debug logging
       
       // Validation côté client avant appel
       const supportedTypes = ['qcm', 'vrai_faux', 'cas_pratique', 'simulation_oral', 'question_ouverte', 'plan_revision'];
@@ -179,57 +174,16 @@ export const usePrepaCdsChat = () => {
         
         const sessionId = `client-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         
-        console.log('📡 [CLIENT] Réponse Supabase function:', { 
-          sessionId,
-          data, 
-          error, 
-          trainingType,
-          hasData: !!data,
-          hasContent: !!(data?.content),
-          dataSuccess: data?.success,
-          metaStatus: data?.meta?.status,
-          timestamp: new Date().toISOString()
-        });
-
-        // Vérification stricte du succès : data ET success ET contenu valide
-        if (!error && data && data.success === true && data.content && Object.keys(data.content).length > 0) {
-          console.log('✅ [CLIENT] Edge Function succeeded:', { 
-            sessionId,
-            serverSessionId: data.meta?.serverSessionId,
-            contentKeys: Object.keys(data.content),
-            metaStatus: data.meta?.status
-          });
-          setLastResponse(JSON.stringify(data.content || data));
-          return data.content || data;
+        if (!error && data && Object.keys(data).length > 0) {
+          setLastResponse(JSON.stringify(data));
+          return data;
         }
-        
-        console.warn('⚠️ [CLIENT] Edge Function failed ou contenu vide, using fallback:', { 
-          sessionId,
-          error, 
-          data,
-          hasContent: !!(data?.content),
-          contentKeys: data?.content ? Object.keys(data.content) : [],
-          metaStatus: data?.meta?.status
-        });
       } catch (networkError) {
-        console.warn('Network error calling Edge Function, using fallback:', networkError);
+        // Network error, will use fallback
       }
 
       // Use fallback content
-      console.log('Using fallback content generator');
       const fallbackContent = generateFallbackContent(trainingType, level, domain);
-      
-      if (fallbackContent.error) {
-        throw new Error(fallbackContent.error);
-      }
-
-      console.log('✅ [CLIENT] Fallback content generated successfully:', {
-        sessionId: `fallback-${Date.now()}`,
-        trainingType,
-        contentKeys: Object.keys(fallbackContent),
-        hasQuestions: !!(fallbackContent.questions || fallbackContent.steps),
-        timestamp: new Date().toISOString()
-      });
 
       setLastResponse(JSON.stringify(fallbackContent));
       
@@ -240,14 +194,7 @@ export const usePrepaCdsChat = () => {
       return fallbackContent;
 
     } catch (error) {
-      console.error('Error in generateContent:', {
-        error,
-        message: error.message,
-        stack: error.stack,
-        trainingType,
-        level,
-        domain
-      });
+    logger.error('Error in generateContent', error, 'PrepaCdsChat');
       
       // Messages d'erreur plus spécifiques
       let userMessage = 'Impossible de générer le contenu. Veuillez réessayer.';

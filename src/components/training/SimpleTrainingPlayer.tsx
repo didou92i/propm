@@ -7,6 +7,7 @@ import { useTrainingContent } from '@/hooks/useTrainingContent';
 import { getStaticContent } from '@/data/trainingData';
 import { validateTrainingContent, normalizeTrainingContent } from '@/utils/trainingValidation';
 import type { TrainingType, UserLevel, StudyDomain } from '@/types/prepacds';
+import { logger } from '@/utils/logger';
 
 interface SimpleTrainingPlayerProps {
   trainingType: TrainingType;
@@ -44,17 +45,16 @@ export function SimpleTrainingPlayer({
 
   // Charger le contenu au montage
   useEffect(() => {
-    console.log('🎮 [SimpleTrainingPlayer] Initialisation:', { trainingType, level, domain, sessionId });
+    // Production: removed debug logging
     
     const loadContent = async () => {
       try {
         await generateContent(trainingType, level, domain, { sessionId });
         setIsActive(true);
       } catch (error) {
-        console.error('❌ [SimpleTrainingPlayer] Échec génération primaire:', error);
+        logger.error('Échec génération primaire', error, 'SimpleTrainingPlayer');
         
         // Fallback vers contenu statique uniquement en cas d'échec complet
-        console.log('📚 [SimpleTrainingPlayer] Tentative fallback statique');
         const staticContent = getStaticContent(trainingType, domain, level);
         
         if (staticContent) {
@@ -70,10 +70,9 @@ export function SimpleTrainingPlayer({
           
           if (validation.isValid) {
             // On utilise directement les données statiques sans passer par le hook
-            console.log('✅ [SimpleTrainingPlayer] Fallback statique chargé');
             setIsActive(true);
           } else {
-            console.error('❌ [SimpleTrainingPlayer] Fallback statique invalide:', validation.errors);
+            logger.error('Fallback statique invalide', validation.errors, 'SimpleTrainingPlayer');
           }
         }
       }
@@ -94,26 +93,20 @@ export function SimpleTrainingPlayer({
   }, [isActive, isLoading]);
 
   const handleComplete = (score: number, answers: any[]) => {
-    console.log('🎯 SimpleTrainingPlayer - Entraînement terminé:', { 
-      score, 
-      answers, 
-      timeElapsed,
-      source,
-      metrics 
-    });
+    // Production: removed debug logging
     setIsActive(false);
     onComplete(score, answers);
   };
 
   const handleExit = () => {
-    console.log('🚪 SimpleTrainingPlayer - Sortie utilisateur');
+    // Production: removed debug logging
     setIsActive(false);
     resetState();
     onExit();
   };
 
   const handleRetry = async () => {
-    console.log('🔄 SimpleTrainingPlayer - Retry demandé');
+    // Production: removed debug logging
     setTimeElapsed(0);
     try {
       await generateContent(trainingType, level, domain, { 
@@ -122,7 +115,7 @@ export function SimpleTrainingPlayer({
       });
       setIsActive(true);
     } catch (error) {
-      console.error('❌ Retry failed:', error);
+      logger.error('Retry failed', error, 'SimpleTrainingPlayer');
     }
   };
 

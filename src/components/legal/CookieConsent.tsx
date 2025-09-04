@@ -44,11 +44,7 @@ export function CookieConsent() {
     localStorage.setItem('cookie-preferences', JSON.stringify(prefs));
     
     // Log consent for audit purposes
-    console.log('Cookie consent saved:', {
-      timestamp: new Date().toISOString(),
-      preferences: prefs,
-      userAgent: navigator.userAgent,
-    });
+    // Production: removed debug logging
     
     setIsVisible(false);
     setShowPreferences(false);

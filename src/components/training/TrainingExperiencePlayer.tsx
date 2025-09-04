@@ -47,7 +47,7 @@ export function TrainingExperiencePlayer({
   const [timeElapsed, setTimeElapsed] = useState(false);
   const [content, setContent] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
-  const [debugMode, setDebugMode] = useState<boolean>(true);
+  const [debugMode, setDebugMode] = useState<boolean>(false);
   const [preparingTimeLeft, setPreparingTimeLeft] = useState(8);
   const [countdown, setCountdown] = useState(3);
   
@@ -252,17 +252,9 @@ export function TrainingExperiencePlayer({
   };
 
   const renderTrainingComponent = () => {
-    console.log('🎯 DEBUG renderTrainingComponent:', { 
-      hasContent: !!content, 
-      content: content,
-      sessionActive: session.isActive,
-      displayState,
-      trainingType,
-      timestamp: new Date().toISOString()
-    });
+    // Debug info removed for production
     
     if (!content) {
-      console.log('❌ Pas de contenu disponible');
       return <div className="flex items-center justify-center h-full text-white text-xl">Aucun contenu généré</div>;
     }
     
@@ -281,15 +273,11 @@ export function TrainingExperiencePlayer({
     }
 
     if (displayState !== 'active') {
-      console.log('❌ DisplayState pas actif:', displayState);
       return null;
     }
 
-    console.log('🎮 Rendu du composant:', trainingType);
-
     switch (trainingType) {
       case 'qcm':
-        console.log('📝 Rendu QCM avec questions:', content.questions);
         if (!content.questions || !Array.isArray(content.questions)) {
           return <div className="flex items-center justify-center h-full text-white text-xl">Questions QCM non valides</div>;
         }
@@ -303,7 +291,6 @@ export function TrainingExperiencePlayer({
         );
         
       case 'vrai_faux':
-        console.log('✅ Rendu Vrai/Faux avec questions:', content.questions);
         if (!content.questions || !Array.isArray(content.questions)) {
           return <div className="flex items-center justify-center h-full text-white text-xl">Questions Vrai/Faux non valides</div>;
         }
@@ -317,7 +304,6 @@ export function TrainingExperiencePlayer({
         );
         
       case 'cas_pratique':
-        console.log('🏛️ Rendu Cas Pratique avec données:', content);
         return (
           <CasePracticeSimulator
             caseData={content}
@@ -327,7 +313,6 @@ export function TrainingExperiencePlayer({
         );
         
       default:
-        console.log('🔧 Utilisation du composant de test pour:', trainingType);
         return (
           <TestTrainingComponent
             trainingType={trainingType}

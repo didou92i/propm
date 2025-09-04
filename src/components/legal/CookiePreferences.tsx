@@ -35,11 +35,7 @@ export function CookiePreferences() {
     localStorage.setItem('cookie-consent-date', Date.now().toString());
     
     // Log for audit
-    console.log('Cookie preferences updated:', {
-      timestamp: new Date().toISOString(),
-      preferences,
-      userAgent: navigator.userAgent,
-    });
+    // Production: removed debug logging
 
     toast({
       title: "Préférences sauvegardées",
