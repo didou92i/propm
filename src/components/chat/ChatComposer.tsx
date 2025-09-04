@@ -111,8 +111,8 @@ export const ChatComposer = forwardRef<HTMLDivElement, ChatComposerProps>(
     };
 
     return (
-      <div ref={ref} className="px-4 py-4 pb-6 bg-background/60 backdrop-blur-sm border-t border-white/10">
-        <div className="max-w-full mx-auto">
+      <div ref={ref} className="px-3 py-2 pb-4 bg-background/20 backdrop-blur-md border-t border-white/5">
+        <div className="max-w-3xl mx-auto">
           {/* Attachments Display */}
           {attachments.length > 0 && (
             <div className="mb-3 flex flex-wrap gap-2">
@@ -144,7 +144,7 @@ export const ChatComposer = forwardRef<HTMLDivElement, ChatComposerProps>(
 
           {/* Main Input Container */}
           <form onSubmit={onSubmit}>
-            <div className="relative flex items-end gap-2 p-3 border border-white/10 rounded-2xl bg-background/40 backdrop-blur-sm shadow-lg hover:border-white/20 transition-all duration-300">
+            <div className="relative flex items-end gap-1 p-2 border border-white/5 rounded-full bg-background/30 backdrop-blur-md shadow-sm hover:border-white/10 transition-all duration-300">
               {/* Attachment Button */}
               <input
                 type="file"
@@ -160,13 +160,13 @@ export const ChatComposer = forwardRef<HTMLDivElement, ChatComposerProps>(
                 size="sm"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isLoading || processingAttachment}
-                className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground shrink-0"
               >
-                <Paperclip className="w-4 h-4" />
+                <Paperclip className="w-3 h-3" />
               </Button>
 
               {/* Text Input */}
-              <div className="flex-1">
+              <div className="flex-1 px-1">
                 <textarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
@@ -174,7 +174,7 @@ export const ChatComposer = forwardRef<HTMLDivElement, ChatComposerProps>(
                   className={cn(
                     "w-full resize-none bg-transparent border-0 outline-none",
                     "text-sm placeholder:text-muted-foreground",
-                    "min-h-[20px] max-h-32 py-0 px-0",
+                    "min-h-[18px] max-h-32 py-0 px-0",
                     "focus:ring-0 focus:border-0"
                   )}
                   onKeyDown={(e) => {
@@ -186,7 +186,7 @@ export const ChatComposer = forwardRef<HTMLDivElement, ChatComposerProps>(
                   rows={1}
                   style={{
                     height: 'auto',
-                    minHeight: '20px'
+                    minHeight: '18px'
                   }}
                   onInput={(e) => {
                     const target = e.target as HTMLTextAreaElement;
@@ -195,21 +195,19 @@ export const ChatComposer = forwardRef<HTMLDivElement, ChatComposerProps>(
                   }}
                 />
               </div>
-
-              {/* Send Button */}
               <Button
                 type="submit"
                 size="sm"
                 disabled={(!input.trim() && attachments.length === 0) || isLoading || processingAttachment}
                 onClick={handleSendClick}
                 className={cn(
-                  "h-8 w-8 p-0 rounded-lg",
+                  "h-6 w-6 p-0 rounded-full shrink-0",
                   (!input.trim() && attachments.length === 0) || isLoading || processingAttachment
                     ? "bg-muted text-muted-foreground cursor-not-allowed"
                     : "bg-foreground text-background hover:bg-foreground/90"
                 )}
               >
-                <Send className="w-4 h-4" />
+                <Send className="w-3 h-3" />
               </Button>
             </div>
 
