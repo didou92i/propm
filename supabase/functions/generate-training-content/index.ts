@@ -147,67 +147,152 @@ function setCachedContent(key: string, data: any, ttl: number = CACHE_TTL) {
   });
 }
 
-// Fonction pour appeler OpenAI avec retry et backoff
-async function callOpenAIWithRetry(
+// Fonction pour appeler l'Assistant PrepaCDS avec retry et backoff
+async function callPrepaCDSAssistantWithRetry(
   prompt: string, 
-  maxTokens: number,
+  trainingType: TrainingType,
+  level: UserLevel,
+  domain: StudyDomain,
   retries: number = 3
 ): Promise<string> {
   const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+  const assistantId = Deno.env.get('PREPACDS_ASSISTANT_ID');
+  
   if (!openAIApiKey) {
     throw new Error('OpenAI API key not configured');
+  }
+  
+  if (!assistantId) {
+    throw new Error('PrepaCDS Assistant ID not configured');
   }
 
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      console.log(`[OpenAI] Tentative ${attempt}/${retries}`);
+      console.log(`[PrepaCDS Assistant] Tentative ${attempt}/${retries}`);
       
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      // 1. Créer un thread
+      const threadResponse = await fetch('https://api.openai.com/v1/threads', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${openAIApiKey}`,
           'Content-Type': 'application/json',
+          'OpenAI-Beta': 'assistants=v2'
         },
-        body: JSON.stringify({
-          model: 'gpt-4.1-2025-04-14',
-          messages: [
-            { role: 'system', content: prompt },
-            { role: 'user', content: 'Génère le contenu demandé en respectant exactement le format JSON.' }
-          ],
-          max_completion_tokens: maxTokens,
-          temperature: 0.7,
-        }),
+        body: JSON.stringify({})
       });
 
-      if (response.status === 429) {
-        const retryAfter = response.headers.get('retry-after');
-        const delay = retryAfter ? parseInt(retryAfter) * 1000 : Math.pow(2, attempt) * 1000;
-        
-        console.log(`[OpenAI] Rate limit atteint. Attente de ${delay}ms avant retry.`);
-        
-        if (attempt < retries) {
-          await new Promise(resolve => setTimeout(resolve, delay));
-          continue;
-        } else {
-          throw new Error(`Rate limit exceeded après ${retries} tentatives`);
+      if (!threadResponse.ok) {
+        throw new Error(`Failed to create thread: ${threadResponse.status}`);
+      }
+
+      const thread = await threadResponse.json();
+      console.log(`[PrepaCDS Assistant] Thread créé: ${thread.id}`);
+
+      // 2. Ajouter le message au thread
+      const messageBody = `DEMANDE DE GÉNÉRATION D'ENTRAÎNEMENT PREPACDS
+
+Type d'entraînement: ${trainingType}
+Niveau: ${level}
+Domaine: ${domain}
+
+${prompt}
+
+IMPORTANT: Réponds UNIQUEMENT avec le JSON demandé, sans texte supplémentaire.`;
+
+      const messageResponse = await fetch(`https://api.openai.com/v1/threads/${thread.id}/messages`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'Content-Type': 'application/json',
+          'OpenAI-Beta': 'assistants=v2'
+        },
+        body: JSON.stringify({
+          role: 'user',
+          content: messageBody
+        })
+      });
+
+      if (!messageResponse.ok) {
+        throw new Error(`Failed to add message: ${messageResponse.status}`);
+      }
+
+      // 3. Lancer le run avec l'assistant PrepaCDS
+      const runResponse = await fetch(`https://api.openai.com/v1/threads/${thread.id}/runs`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'Content-Type': 'application/json',
+          'OpenAI-Beta': 'assistants=v2'
+        },
+        body: JSON.stringify({
+          assistant_id: assistantId,
+          instructions: `Tu es l'assistant PrepaCDS spécialisé dans la génération de contenu d'entraînement pour les concours administratifs et de police municipale. Génère du contenu de qualité professionnelle en respectant exactement le format JSON demandé.`
+        })
+      });
+
+      if (!runResponse.ok) {
+        throw new Error(`Failed to create run: ${runResponse.status}`);
+      }
+
+      const run = await runResponse.json();
+      console.log(`[PrepaCDS Assistant] Run créé: ${run.id}`);
+
+      // 4. Attendre que le run soit complété
+      let runStatus = run.status;
+      let maxWaitTime = 60000; // 60 secondes max
+      let waitTime = 0;
+      const pollInterval = 1000; // 1 seconde
+
+      while (runStatus !== 'completed' && runStatus !== 'failed' && runStatus !== 'cancelled' && waitTime < maxWaitTime) {
+        await new Promise(resolve => setTimeout(resolve, pollInterval));
+        waitTime += pollInterval;
+
+        const statusResponse = await fetch(`https://api.openai.com/v1/threads/${thread.id}/runs/${run.id}`, {
+          headers: {
+            'Authorization': `Bearer ${openAIApiKey}`,
+            'OpenAI-Beta': 'assistants=v2'
+          }
+        });
+
+        if (statusResponse.ok) {
+          const statusData = await statusResponse.json();
+          runStatus = statusData.status;
+          console.log(`[PrepaCDS Assistant] Status: ${runStatus}`);
         }
       }
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`OpenAI API error (${response.status}): ${errorText}`);
+      if (runStatus !== 'completed') {
+        throw new Error(`Run failed or timed out. Status: ${runStatus}`);
       }
 
-      const data = await response.json();
+      // 5. Récupérer les messages du thread
+      const messagesResponse = await fetch(`https://api.openai.com/v1/threads/${thread.id}/messages`, {
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'OpenAI-Beta': 'assistants=v2'
+        }
+      });
+
+      if (!messagesResponse.ok) {
+        throw new Error(`Failed to get messages: ${messagesResponse.status}`);
+      }
+
+      const messages = await messagesResponse.json();
       
-      if (!data.choices?.[0]?.message?.content) {
-        throw new Error('Réponse OpenAI invalide');
+      // Trouver la réponse de l'assistant
+      const assistantMessage = messages.data.find((msg: any) => msg.role === 'assistant');
+      
+      if (!assistantMessage?.content?.[0]?.text?.value) {
+        throw new Error('No response from PrepaCDS Assistant');
       }
 
-      return data.choices[0].message.content;
+      const responseText = assistantMessage.content[0].text.value;
+      console.log(`[PrepaCDS Assistant] Réponse reçue`);
+
+      return responseText;
 
     } catch (error) {
-      console.error(`[OpenAI] Erreur tentative ${attempt}:`, error);
+      console.error(`[PrepaCDS Assistant] Erreur tentative ${attempt}:`, error);
       
       if (attempt === retries) {
         throw error;
@@ -219,7 +304,7 @@ async function callOpenAIWithRetry(
     }
   }
 
-  throw new Error('Toutes les tentatives OpenAI ont échoué');
+  throw new Error('Toutes les tentatives PrepaCDS Assistant ont échoué');
 }
 
 // Fonction principale de génération
@@ -265,19 +350,40 @@ INSTRUCTIONS CRITIQUES:
 1. Respecte EXACTEMENT le format JSON demandé
 2. Génère du contenu de qualité professionnelle niveau ${level}
 3. Concentre-toi sur le domaine: ${domain}
-4. Assure-toi que le JSON est valide et parsable`;
+4. Assure-toi que le JSON est valide et parsable
+5. N'inclus AUCUN texte avant ou après le JSON`;
 
   const content = await queueRequest(() => 
-    callOpenAIWithRetry(contextualPrompt, template.maxTokens)
+    callPrepaCDSAssistantWithRetry(contextualPrompt, trainingType, level, domain)
   );
 
-  // Parser et valider le contenu
+  // Parser et valider le contenu (nettoyer le texte si nécessaire)
   let parsedContent;
   try {
-    parsedContent = JSON.parse(content);
+    // Nettoyer la réponse pour extraire uniquement le JSON
+    let cleanContent = content.trim();
+    
+    // Supprimer les blocs de code markdown si présents
+    if (cleanContent.startsWith('```json')) {
+      cleanContent = cleanContent.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+    } else if (cleanContent.startsWith('```')) {
+      cleanContent = cleanContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
+    }
+    
+    // Chercher le premier { et le dernier } pour extraire le JSON
+    const firstBrace = cleanContent.indexOf('{');
+    const lastBrace = cleanContent.lastIndexOf('}');
+    
+    if (firstBrace !== -1 && lastBrace !== -1 && firstBrace < lastBrace) {
+      cleanContent = cleanContent.substring(firstBrace, lastBrace + 1);
+    }
+    
+    parsedContent = JSON.parse(cleanContent);
+    console.log(`[PrepaCDS Assistant] JSON parsé avec succès`);
   } catch (error) {
     console.error('[PARSING] Erreur parsing JSON:', error);
-    throw new Error('Contenu généré invalide (JSON malformé)');
+    console.error('[PARSING] Contenu reçu:', content);
+    throw new Error('Contenu généré par PrepaCDS Assistant invalide (JSON malformé)');
   }
 
   // Validation basique
@@ -296,7 +402,7 @@ INSTRUCTIONS CRITIQUES:
     ...parsedContent,
     sessionInfo: {
       id: sessionId || `session-${Date.now()}`,
-      source: 'ai',
+      source: 'prepacds_assistant',
       trainingType,
       level,
       domain,
@@ -308,7 +414,7 @@ INSTRUCTIONS CRITIQUES:
   // Mettre en cache
   setCachedContent(cacheKey, finalContent, CACHE_TTL);
   
-  console.log(`[GENERATION] Succès pour: ${trainingType} - ${level} - ${domain}`);
+  console.log(`[PrepaCDS Assistant] Succès pour: ${trainingType} - ${level} - ${domain}`);
   
   return finalContent;
 }
