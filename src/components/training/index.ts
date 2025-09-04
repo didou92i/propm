@@ -1,3 +1,5 @@
+export { TrainingHero } from './TrainingHero';
+export { PerformanceDashboard } from './PerformanceDashboard';
 export { AnimatedQuizPlayer } from './AnimatedQuizPlayer';
 export { TrueFalseAnimated } from './TrueFalseAnimated';
 export { CasePracticeSimulator } from './CasePracticeSimulator';
