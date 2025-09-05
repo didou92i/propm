@@ -288,7 +288,7 @@ export class TrainingSessionService {
         };
       }
 
-      // Récupérer les sessions avec leurs progressions
+      // Récupérer TOUTES les sessions avec leurs progressions (complétées ET en cours)
       const { data: sessions } = await supabase
         .from('prepa_cds_sessions')
         .select(`
@@ -296,7 +296,7 @@ export class TrainingSessionService {
           prepa_cds_progress_logs(evaluation_score)
         `)
         .eq('user_id', user.id)
-        .not('completed_at', 'is', null);
+        .order('created_at', { ascending: false });
 
       if (!sessions) {
         return {
@@ -309,8 +309,9 @@ export class TrainingSessionService {
         };
       }
 
-      // Calculer les statistiques
+      // Calculer les statistiques (séparer sessions complétées et totales)
       const totalSessions = sessions.length;
+      const completedSessions = sessions.filter(s => s.completed_at !== null);
       const totalTimeMinutes = sessions.reduce((sum, session) => sum + (session.session_duration || 0), 0);
       
       // Calculer le score moyen
@@ -328,16 +329,16 @@ export class TrainingSessionService {
       });
       const averageScore = scoreCount > 0 ? Math.round(totalScores / scoreCount) : 0;
 
-      // Calculer la série (streak) de jours consécutifs
-      const streakDays = this.calculateStreak(sessions as any);
+      // Calculer la série (streak) de jours consécutifs (uniquement sessions complétées)
+      const streakDays = this.calculateStreak(completedSessions as any);
 
-      // Sessions par domaine
+      // Sessions par domaine (toutes les sessions)
       const sessionsByDomain = sessions.reduce((acc, session) => {
         acc[session.domain] = (acc[session.domain] || 0) + 1;
         return acc;
       }, {} as Record<string, number>);
 
-      // Activité récente (30 derniers jours)
+      // Activité récente (30 derniers jours) - toutes les sessions
       const recentActivity = this.calculateRecentActivity(sessions as any);
 
       return {

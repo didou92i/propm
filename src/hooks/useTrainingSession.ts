@@ -244,6 +244,6 @@ export const useTrainingSession = () => {
     hasData: !!sessionData,
     
     // Statistiques calculées
-    isEmpty: sessionData ? sessionData.totalSessions === 0 : true
+    isEmpty: sessionData ? sessionData.totalSessions === 0 : false
   };
 };
