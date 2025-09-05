@@ -180,6 +180,8 @@ export const ChatComposer = forwardRef<HTMLDivElement, ChatComposerProps>(
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.altKey) {
                       e.preventDefault();
+                      // Debug log pour identifier le problème
+                      console.log('Enter pressed, submitting form', { input: input.trim(), attachments: attachments.length });
                       onSubmit(e);
                     }
                   }}

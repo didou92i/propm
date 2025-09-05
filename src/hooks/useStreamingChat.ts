@@ -55,28 +55,45 @@ export function useStreamingChat() {
       // Immediate user feedback
       onMessageUpdate('L\'assistant traite votre demande...', false);
 
-      // Use new ultra-fast streaming endpoint
-      const response = await fetch(`https://yulhsufpnjkiozkrgyoq.supabase.co/functions/v1/chat-completions-stream`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-          'Content-Type': 'application/json',
-          'Accept': 'text/event-stream',
-        },
-        body: JSON.stringify({
+      // Use Supabase functions.invoke for better error handling
+      const { data, error } = await supabase.functions.invoke('chat-completions-stream', {
+        body: {
           messages,
           selectedAgent,
           userSession
-        }),
-        signal: abortControllerRef.current.signal
+        }
       });
 
-      if (!response.ok) {
-        throw new Error(`Erreur de réseau: ${response.status}`);
+      if (error) {
+        throw new Error(`Erreur de streaming: ${error.message}`);
       }
 
-      // Handle real-time streaming
-      await handleRealTimeStream(response, onMessageUpdate, onComplete, sessionId);
+      // If we got a direct response, handle it
+      if (data && data.content) {
+        onComplete(data.content, data.threadId);
+        setStreamingState(prev => ({
+          ...prev,
+          isStreaming: false,
+          isTyping: false
+        }));
+        endSession(sessionId, true);
+        return;
+      }
+
+      // If we got a direct response, handle it
+      if (data && data.content) {
+        onComplete(data.content, data.threadId);
+        setStreamingState(prev => ({
+          ...prev,
+          isStreaming: false,
+          isTyping: false
+        }));
+        endSession(sessionId, true);
+        return;
+      }
+
+      // Handle streaming response (this would need more implementation for SSE)
+      throw new Error("Streaming non supporté via invoke");
 
     } catch (error) {
       endSession(sessionId, false);

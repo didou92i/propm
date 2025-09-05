@@ -9,7 +9,8 @@ export interface MessageAttachment {
   preview?: string;
   extractedText?: string;
   documentIds?: string[];
-  error?: string;
+  error?: string; // Pour les erreurs de traitement
+  warning?: string; // Pour les avertissements
 }
 
 export interface Message {

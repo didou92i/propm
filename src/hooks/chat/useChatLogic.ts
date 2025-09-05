@@ -2,9 +2,11 @@ import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useStreamingChat } from "@/hooks/useStreamingChat";
 import { usePerformanceOptimization } from "@/hooks/usePerformanceOptimization";
+import { useDocumentCache } from "./useDocumentCache";
 import { Message, MessageAttachment } from "@/types/chat";
 import { toast } from "sonner";
 import { logger } from "@/utils/logger";
+import { redacproFallbackPrompt } from "@/config/prompts/redacpro-fallback";
 
 interface AttachedFile {
   id: string;
@@ -20,6 +22,7 @@ export function useChatLogic(selectedAgent: string) {
 
   const { streamingState, sendStreamingMessage } = useStreamingChat();
   const { optimizeMessages } = usePerformanceOptimization();
+  const { getCachedDocument, cacheDocument } = useDocumentCache();
 
   const processAttachments = useCallback(async (attachments: AttachedFile[]): Promise<MessageAttachment[]> => {
     const processedAttachments: MessageAttachment[] = [];
@@ -28,6 +31,23 @@ export function useChatLogic(selectedAgent: string) {
 
     for (const attachment of attachments) {
       try {
+        // Check cache first
+        const cached = getCachedDocument(attachment.file);
+        if (cached) {
+          processedAttachments.push({
+            id: cached.id,
+            name: cached.filename,
+            type: 'document',
+            size: attachment.file.size,
+            content: cached.extractedText
+          } as MessageAttachment);
+          
+          toast.success("Document trouvé en cache", {
+            description: `${attachment.file.name} déjà traité récemment`,
+          });
+          continue;
+        }
+
         const formData = new FormData();
         formData.append('file', attachment.file);
 
@@ -37,13 +57,43 @@ export function useChatLogic(selectedAgent: string) {
 
         if (error) {
           logger.error('Supabase function error', error, 'ChatLogic');
+          
+          // Gestion spécifique des erreurs de rate limit
+          if (error.message?.includes('rate limit') || error.message?.includes('429')) {
+            throw new Error('🚦 L\'API est temporairement saturée. Réessayez dans quelques secondes ou copiez-collez le texte directement.');
+          }
+          
           throw new Error(`Erreur de traitement: ${error.message}`);
         }
 
         if (!data || !data.success) {
           logger.error('Document processing failed', data, 'ChatLogic');
+          
+          // Si c'est un problème de processing mais qu'on a du texte extrait
+          if (data?.extractedText && data.extractedText.length > 0) {
+            // Cache même les documents partiellement traités
+            const cachedResult = cacheDocument(attachment.file, data);
+            
+            processedAttachments.push({
+              id: cachedResult.id,
+              name: attachment.file.name,
+              type: attachment.file.type,
+              size: attachment.file.size,
+              content: data.extractedText,
+              warning: 'Traitement partiel réussi'
+            } as MessageAttachment);
+            
+            toast.warning("Document partiellement traité", {
+              description: `${attachment.file.name} - Contenu extrait disponible`,
+            });
+            continue;
+          }
+          
           throw new Error(data?.error || 'Échec du traitement du document');
         }
+
+        // Cache successful result
+        cacheDocument(attachment.file, data);
 
         toast.success("Document traité avec succès", {
           description: `${attachment.file.name} est maintenant prêt pour l'analyse`,

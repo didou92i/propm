@@ -4,3 +4,4 @@ export { DocumentTemplates } from './DocumentTemplates';
 export { DocumentCluster } from './DocumentCluster';
 export { LogoUpload } from './LogoUpload';
 export { ArreteDocumentGenerator } from './ArreteDocumentGenerator';
+export { DocumentProcessingIndicator } from './DocumentProcessingIndicator';

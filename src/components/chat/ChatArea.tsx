@@ -13,6 +13,7 @@ import { ArreteGenerationPrompt } from "./ArreteGenerationPrompt";
 import { agentInfo } from "./utils/chatUtils";
 import { AgentAvatar } from "@/components/common/AgentAvatar";
 import { AgentSuggestions } from "./AgentSuggestions";
+import { DocumentProcessingIndicator } from "@/components/document";
 import { StreamingPerformanceIndicator } from "./StreamingPerformanceIndicator";
 
 interface ChatAreaProps {
@@ -111,6 +112,25 @@ export function ChatArea({
   }, [messages, selectedAgent, updateConversation, contextShared]);
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Debug log pour tracer les problèmes
+    console.log('ChatArea handleSubmit called', {
+      input: input.trim(),
+      attachments: attachments.length,
+      isLoading,
+      processingAttachment
+    });
+    
+    // Vérifications de sécurité
+    if ((!input.trim() && attachments.length === 0) || isLoading || processingAttachment) {
+      console.log('Submit blocked:', { 
+        noInput: !input.trim() && attachments.length === 0,
+        isLoading,
+        processingAttachment
+      });
+      return;
+    }
+    
     sendMessage(input, attachments, messages, userSession, setMessages);
   };
   const handleMessageEdit = (messageId: string, newContent: string) => {
@@ -151,6 +171,21 @@ export function ChatArea({
             <AgentSuggestions
               agentId={selectedAgent}
               onSuggestionClick={(suggestion) => setInput(suggestion)}
+            />
+          </div>
+        )}
+
+        {/* Document Processing Indicator */}
+        {processingAttachment && (
+          <div className="px-6 py-4 flex-shrink-0">
+            <DocumentProcessingIndicator
+              isProcessing={processingAttachment}
+              error={attachmentError}
+              onRetry={() => {
+                // Retry logic would be implemented in useChatLogic
+                setAttachmentError(null);
+              }}
+              fileName={attachments[0]?.file.name}
             />
           </div>
         )}
