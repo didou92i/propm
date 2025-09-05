@@ -11,8 +11,7 @@ import { logger } from '@/utils/logger';
 interface TrueFalseQuestion {
   id: string;
   statement: string;
-  isCorrect?: boolean; // Support both isCorrect and isTrue
-  isTrue?: boolean;
+  isCorrect: boolean; // Standardisation sur isCorrect uniquement
   explanation: string;
   domain: string;
 }
@@ -94,7 +93,7 @@ export function TrueFalseAnimated({
     
     logger.info("Début handleAnswer", { 
       answer, 
-      isCorrect: answer === currentQuestion.isTrue,
+      isCorrect: answer === currentQuestion.isCorrect,
       currentQuestionIndex,
       questionId: currentQuestion.id 
     }, "TrueFalseAnimated");
@@ -105,7 +104,7 @@ export function TrueFalseAnimated({
     // Animation immédiate sur le bouton sélectionné
     const selectedBtn = answer ? trueBtnRef.current : falseBtnRef.current;
     const otherBtn = answer ? falseBtnRef.current : trueBtnRef.current;
-    const questionCorrectAnswer = currentQuestion.isCorrect ?? currentQuestion.isTrue ?? false;
+    const questionCorrectAnswer = currentQuestion.isCorrect;
     const isCorrect = answer === questionCorrectAnswer;
     
     if (selectedBtn) {
@@ -264,7 +263,7 @@ export function TrueFalseAnimated({
     }, "TrueFalseAnimated");
   };
 
-  const questionCorrectAnswer = currentQuestion?.isCorrect ?? currentQuestion?.isTrue ?? false;
+  const questionCorrectAnswer = currentQuestion?.isCorrect ?? false;
   const isCorrect = selectedAnswer === questionCorrectAnswer;
 
   return (

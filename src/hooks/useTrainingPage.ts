@@ -60,15 +60,20 @@ export const useTrainingPage = (initialConfig: TrainingConfig) => {
           const result = await realDataService.ensureDataCompleteness();
           console.log('✅ Génération forcée terminée:', result);
           
-          // Attendre puis rafraîchir DEUX fois pour garantir la cohérence
+          // Triple refresh avec délais progressifs pour garantir la cohérence
           setTimeout(async () => {
             await refreshSessionData();
             console.log('🔄 Premier refresh terminé');
             
-            // Second refresh pour s'assurer que les scores sont pris en compte
             setTimeout(async () => {
               await refreshSessionData();
-              console.log('🔄 Second refresh - données finalisées');
+              console.log('🔄 Second refresh terminé');
+              
+              // Troisième refresh final
+              setTimeout(async () => {
+                await refreshSessionData();
+                console.log('🔄 Refresh final - données complètement synchronisées');
+              }, 1500);
             }, 1000);
           }, 2000);
         } catch (error) {
@@ -132,8 +137,28 @@ export const useTrainingPage = (initialConfig: TrainingConfig) => {
           description: `Score: ${score}% • Durée: ${Math.floor(duration / 60)}min`
         });
         
-        // Rafraîchir les données
-        await refreshSessionData();
+        // Forcer la génération de progress logs après completion
+        try {
+          console.log('🔄 Génération progress logs post-training...');
+          await realDataService.generateProgressLogsForExistingSessions();
+          console.log('✅ Progress logs post-training générés');
+        } catch (error) {
+          console.error('❌ Erreur génération progress logs post-training:', error);
+        }
+        
+        // Triple refresh des données après training avec délais progressifs
+        setTimeout(async () => {
+          console.log('🔄 Premier refresh post-training...');
+          await refreshSessionData();
+          setTimeout(async () => {
+            console.log('🔄 Second refresh post-training...');
+            await refreshSessionData();
+            setTimeout(async () => {
+              console.log('🔄 Troisième refresh post-training...');
+              await refreshSessionData();
+            }, 1000);
+          }, 1000);
+        }, 500);
       }
     } catch (error) {
       console.error('❌ Erreur finalisation:', error);
