@@ -341,16 +341,29 @@ class TrainingSessionService {
       let totalScore = 0;
       let scoreCount = 0;
       
-      Object.values(progressBySession).forEach((logs: any) => {
-        if (logs.length > 0) {
-          const sessionAvgScore = logs.reduce((sum: number, log: any) => 
-            sum + (log.evaluation_score || 0), 0) / logs.length;
-          totalScore += sessionAvgScore;
-          scoreCount++;
+      // Debug: vérifier les données
+      console.log('📊 Debug Progress:', {
+        sessionsCount: allSessions.length,
+        progressLogsCount: Object.keys(progressBySession).length,
+        sampleSession: allSessions[0]?.session_id,
+        sampleProgressKeys: Object.keys(progressBySession).slice(0, 5)
+      });
+      
+      // Calculer le score moyen à partir des progress logs
+      Object.entries(progressBySession).forEach(([sessionId, logs]: [string, any]) => {
+        if (Array.isArray(logs) && logs.length > 0) {
+          logs.forEach(log => {
+            if (log.evaluation_score !== null && log.evaluation_score !== undefined) {
+              totalScore += log.evaluation_score;
+              scoreCount++;
+            }
+          });
         }
       });
       
       const averageScore = scoreCount > 0 ? Math.round(totalScore / scoreCount) : 0;
+      
+      console.log('🎯 Score Calculation:', { totalScore, scoreCount, averageScore });
 
       // Calculer le temps total (minutes)
       const totalTimeMinutes = Math.round(

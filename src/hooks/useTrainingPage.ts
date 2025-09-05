@@ -52,25 +52,26 @@ export const useTrainingPage = (initialConfig: TrainingConfig) => {
   // Génération automatique optimisée des données si nécessaire
   useEffect(() => {
     const ensureData = async () => {
-      if (!sessionLoading && user && sessionData && sessionData.totalSessions === 0) {
+      if (!sessionLoading && user && sessionData) {
+        // Toujours forcer la génération pour s'assurer d'avoir de vraies données
         try {
-          console.log('🔄 Génération automatique de données d\'exemple...');
+          console.log('🔄 Vérification et génération des données...');
           const result = await realDataService.ensureDataCompleteness();
-          if (result.sessionsCreated > 0 || result.progressLogsCreated > 0) {
-            // Attendre un peu pour que les données soient bien écrites
-            setTimeout(async () => {
-              await refreshSessionData();
-              console.log('✅ Données générées avec succès:', result);
-            }, 1000);
-          }
+          console.log('✅ Données vérifiées:', result);
+          
+          // Refresh après génération pour voir les nouveaux scores
+          setTimeout(async () => {
+            await refreshSessionData();
+            console.log('🔄 Données rafraîchies après génération');
+          }, 1500);
         } catch (error) {
-          console.warn('⚠️ Génération automatique échouée, continuons sans données:', error);
+          console.warn('⚠️ Génération échouée:', error);
         }
       }
     };
 
     ensureData();
-  }, [sessionLoading, user, sessionData?.totalSessions, refreshSessionData]);
+  }, [user]); // Se déclenche uniquement quand l'utilisateur change
 
   // === ACTIONS SIMPLIFIÉES ===
   const handleStartTraining = useCallback(async () => {

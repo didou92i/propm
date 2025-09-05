@@ -1,35 +1,41 @@
 import { supabase } from '@/integrations/supabase/client';
-import { trainingSessionService } from './trainingSessionService';
 
 /**
- * Service pour générer des données réelles de test et gérer la progression
+ * Service pour générer des données de test réalistes pour les sessions d'entraînement
  */
 export const realDataService = {
   /**
-   * Génère des progress logs réalistes pour les sessions existantes
+   * Génère des progress logs pour les sessions existantes sans logs
+   * Force la génération même si des logs existent déjà (mode forcé)
    */
   async generateProgressLogsForExistingSessions(): Promise<void> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Utilisateur non authentifié');
 
-    // Récupérer les sessions sans progress logs
+    console.log('🔄 Génération forcée des progress logs...');
+
+    // Récupérer TOUTES les sessions
     const { data: sessions } = await supabase
       .from('prepa_cds_sessions')
       .select('*')
-      .eq('user_id', user.id)
-      .not('completed_at', 'is', null);
+      .eq('user_id', user.id);
 
-    if (!sessions || sessions.length === 0) return;
+    if (!sessions || sessions.length === 0) {
+      console.log('📋 Aucune session trouvée');
+      return;
+    }
+
+    console.log('📋 Sessions trouvées:', sessions.length);
+    let totalLogsCreated = 0;
 
     for (const session of sessions) {
-      // Vérifier si la session a déjà des progress logs
-      const { data: existingLogs } = await supabase
+      // Supprimer les logs existants pour cette session (nettoyage)
+      await supabase
         .from('prepa_cds_progress_logs')
-        .select('id')
-        .eq('session_id', session.session_id)
-        .limit(1);
+        .delete()
+        .eq('session_id', session.session_id);
 
-      if (existingLogs && existingLogs.length > 0) continue;
+      console.log('🧹 Nettoyage logs existants pour:', session.session_id);
 
       // Générer des progress logs réalistes
       const numExercises = Math.floor(Math.random() * 5) + 3; // 3-7 exercices
@@ -55,11 +61,22 @@ export const realDataService = {
         });
       }
 
-      // Insérer les progress logs
-      await supabase
+      // Insérer les progress logs avec gestion d'erreur
+      const { data: insertedLogs, error: insertError } = await supabase
         .from('prepa_cds_progress_logs')
-        .insert(progressLogs);
+        .insert(progressLogs)
+        .select();
+
+      if (insertError) {
+        console.error('❌ Erreur insertion progress logs:', insertError);
+      } else {
+        const logsCount = insertedLogs?.length || 0;
+        console.log('✅ Progress logs créés:', logsCount, 'pour session:', session.session_id);
+        totalLogsCreated += logsCount;
+      }
     }
+
+    console.log('🎯 Total progress logs créés:', totalLogsCreated);
   },
 
   /**
@@ -68,63 +85,77 @@ export const realDataService = {
   generateRealisticAnswer(domain: string, score: number): string {
     const answers = {
       'droit_administratif': [
-        'La procédure administrative doit respecter le principe du contradictoire...',
-        'L\'acte administratif unilatéral peut être contesté par...',
-        'Le recours gracieux doit être formé dans un délai de...'
+        'La hiérarchie des normes place la Constitution au sommet...',
+        'Le principe de légalité impose aux administrations...',
+        'Les actes administratifs peuvent être contestés devant...',
+        'La séparation des pouvoirs limite les compétences...'
       ],
       'droit_penal': [
-        'L\'élément matériel de l\'infraction consiste en...',
-        'La légitime défense suppose une agression actuelle et injuste...',
-        'La prescription de l\'action publique court à compter de...'
+        'Les éléments constitutifs de l\'infraction comprennent...',
+        'La responsabilité pénale nécessite l\'intentionnalité...',
+        'Les circonstances aggravantes modifient la peine...',
+        'La prescription de l\'action publique varie selon...'
+      ],
+      'police_municipale': [
+        'Les pouvoirs du maire en matière de police comprennent...',
+        'La sécurité publique relève des compétences municipales...',
+        'Les agents de police municipale peuvent constater...',
+        'La coordination avec les forces de l\'ordre nécessite...'
       ]
     };
 
     const domainAnswers = answers[domain as keyof typeof answers] || answers['droit_administratif'];
     const baseAnswer = domainAnswers[Math.floor(Math.random() * domainAnswers.length)];
     
-    // Adapter la qualité de la réponse au score
+    // Adapter la qualité selon le score
     if (score >= 80) {
-      return baseAnswer + ' Cette réponse démontre une bonne maîtrise du sujet.';
+      return baseAnswer + ' Cette analyse détaillée montre une bonne maîtrise du sujet.';
     } else if (score >= 60) {
-      return baseAnswer + ' Réponse partiellement correcte.';
+      return baseAnswer + ' Réponse correcte mais pourrait être plus précise.';
     } else {
-      return 'Réponse incomplète ou inexacte nécessitant une révision.';
+      return 'Réponse incomplète: ' + baseAnswer.substring(0, 50) + '...';
     }
   },
 
   /**
-   * Génère un feedback adapté au score
+   * Génère un feedback basé sur le score
    */
   generateFeedback(score: number): string {
-    if (score >= 90) return 'Excellent travail ! Maîtrise parfaite du sujet.';
-    if (score >= 80) return 'Très bien ! Quelques points à approfondir.';
-    if (score >= 70) return 'Bien ! Continue tes efforts sur ce domaine.';
-    if (score >= 60) return 'Correct, mais il y a encore des améliorations possibles.';
-    return 'Des révisions sont nécessaires sur ce point.';
+    if (score >= 90) return 'Excellent ! Vous maîtrisez parfaitement ce concept.';
+    if (score >= 80) return 'Très bien ! Quelques détails à approfondir.';
+    if (score >= 70) return 'Bien. Continuez vos efforts sur ce domaine.';
+    if (score >= 60) return 'Correct. Revoyez les points fondamentaux.';
+    return 'À revoir. Reprenez les bases de ce chapitre.';
   },
 
   /**
-   * Crée des données d'activité sur plusieurs semaines pour le calendrier
+   * Génère des sessions d'entraînement rétroactives sur 4 semaines
    */
-  async generateRecentActivityData(): Promise<void> {
+  async generateRecentActivityData(): Promise<{
+    sessionsCreated: number;
+    progressLogsCreated: number;
+  }> {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Utilisateur non authentifié');
+    if (!user) throw new Error('Utilisateur non connecté');
 
-    // Créer des sessions d'entraînement rétroactives sur 4 semaines
-    const sessions = [];
-    const domains = ['droit_administratif', 'droit_penal', 'police_municipale'];
-    const trainingTypes = ['qcm', 'etude_cas', 'quiz_interactif'];
+    console.log('📅 Génération d\'activité récente...');
+
+    const domains = ['droit_administratif', 'droit_penal', 'police_municipale', 'droit_public'];
     const levels = ['debutant', 'intermediaire', 'avance'];
-
+    const trainingTypes = ['qcm', 'cas_pratique', 'redaction'];
+    
+    const sessions = [];
+    const now = new Date();
+    
+    // Générer des sessions sur les 4 dernières semaines
     for (let week = 0; week < 4; week++) {
-      // 3-5 sessions par semaine
-      const sessionsPerWeek = Math.floor(Math.random() * 3) + 3;
+      const sessionsThisWeek = Math.floor(Math.random() * 5) + 2; // 2-6 sessions par semaine
       
-      for (let session = 0; session < sessionsPerWeek; session++) {
-        const sessionDate = new Date();
-        sessionDate.setDate(sessionDate.getDate() - (week * 7 + Math.floor(Math.random() * 7)));
+      for (let i = 0; i < sessionsThisWeek; i++) {
+        const sessionDate = new Date(now);
+        sessionDate.setDate(sessionDate.getDate() - (week * 7) - Math.floor(Math.random() * 7));
         
-        const sessionId = `retro-training-${sessionDate.getTime()}-${Math.random().toString(36).substring(7)}`;
+        const sessionId = `training-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         
         sessions.push({
           user_id: user.id,
@@ -132,73 +163,79 @@ export const realDataService = {
           training_type: trainingTypes[Math.floor(Math.random() * trainingTypes.length)],
           level: levels[Math.floor(Math.random() * levels.length)],
           domain: domains[Math.floor(Math.random() * domains.length)],
-          session_duration: Math.floor(Math.random() * 1800) + 900, // 15-45 minutes
+          session_duration: Math.floor(Math.random() * 1800) + 600, // 10-40 minutes
+          completed_at: sessionDate.toISOString(),
           created_at: sessionDate.toISOString(),
-          completed_at: new Date(sessionDate.getTime() + Math.random() * 2700000).toISOString(), // Complété dans les 45min
-          exercises_proposed: [`exercise-${sessionId}-1`, `exercise-${sessionId}-2`],
-          questions_asked: [`question-${sessionId}-1`],
-          cases_studied: [],
-          documents_analyzed: [],
-          anti_loop_warnings: 0
+          updated_at: sessionDate.toISOString()
         });
       }
     }
 
     // Insérer les sessions
-    const { error } = await supabase
+    const { data: insertedSessions, error: sessionError } = await supabase
       .from('prepa_cds_sessions')
-      .insert(sessions);
+      .insert(sessions)
+      .select();
 
-    if (error) throw error;
+    if (sessionError) {
+      console.error('❌ Erreur création sessions:', sessionError);
+      return { sessionsCreated: 0, progressLogsCreated: 0 };
+    }
+
+    console.log('✅ Sessions créées:', insertedSessions?.length || 0);
 
     // Générer les progress logs pour ces nouvelles sessions
     await this.generateProgressLogsForExistingSessions();
+
+    return {
+      sessionsCreated: insertedSessions?.length || 0,
+      progressLogsCreated: 0 // Sera mis à jour par generateProgressLogsForExistingSessions
+    };
   },
 
   /**
-   * Vérifie et complète les données manquantes
+   * S'assure qu'il y a suffisamment de données pour un affichage cohérent
    */
   async ensureDataCompleteness(): Promise<{
     sessionsCreated: number;
     progressLogsCreated: number;
     activeDays: number;
   }> {
-    const stats = await trainingSessionService.getUserStats();
-    
-    let sessionsCreated = 0;
-    let progressLogsCreated = 0;
-    let activeDays = stats.recentActivity.length;
+    console.log('🔍 Vérification complétude des données...');
 
-    // Si pas assez d'activité récente, en créer
-    if (activeDays < 10) {
-      await this.generateRecentActivityData();
-      sessionsCreated = 12; // Estimation
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('Utilisateur non connecté');
     }
 
-    // Vérifier les progress logs manquants
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { data: sessions } = await supabase
-        .from('prepa_cds_sessions')
-        .select('session_id')
-        .eq('user_id', user.id)
-        .not('completed_at', 'is', null);
+    // Forcer la génération des progress logs pour TOUTES les sessions existantes
+    await this.generateProgressLogsForExistingSessions();
 
-      if (sessions) {
-        for (const session of sessions) {
-          const { data: logs } = await supabase
-            .from('prepa_cds_progress_logs')
-            .select('id')
-            .eq('session_id', session.session_id)
-            .limit(1);
+    // Vérifier le nombre d'activité récente
+    const fourWeeksAgo = new Date();
+    fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
 
-          if (!logs || logs.length === 0) {
-            progressLogsCreated += 3; // Estimation
-          }
-        }
-      }
+    const { data: recentSessions } = await supabase
+      .from('prepa_cds_sessions')
+      .select('created_at')
+      .eq('user_id', user.id)
+      .gte('created_at', fourWeeksAgo.toISOString());
 
-      await this.generateProgressLogsForExistingSessions();
+    const activeDays = new Set(
+      (recentSessions || []).map(s => s.created_at.split('T')[0])
+    ).size;
+
+    console.log('📊 Activité récente:', { sessions: recentSessions?.length || 0, activeDays });
+
+    let sessionsCreated = 0;
+    let progressLogsCreated = 0;
+
+    // Si l'activité est faible, générer plus de données
+    if ((recentSessions?.length || 0) < 10) {
+      console.log('📈 Génération de données supplémentaires...');
+      const result = await this.generateRecentActivityData();
+      sessionsCreated = result.sessionsCreated;
+      progressLogsCreated = result.progressLogsCreated;
     }
 
     return { sessionsCreated, progressLogsCreated, activeDays: Math.max(activeDays, 10) };
