@@ -209,7 +209,15 @@ export function useChatLogic(selectedAgent: string) {
       }
 
 
-      const messagesToSend = optimizedMessages;
+      const messagesToSend: Message[] = [...optimizedMessages];
+      
+      // Remplacer le dernier message utilisateur avec le contenu enrichi des documents
+      if (messagesToSend.length > 0 && messageContent !== content) {
+        messagesToSend[messagesToSend.length - 1] = {
+          ...messagesToSend[messagesToSend.length - 1],
+          content: messageContent
+        };
+      }
 
       await sendStreamingMessage(
         messagesToSend,

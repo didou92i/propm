@@ -166,21 +166,20 @@ serve(async (req) => {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              model: 'gpt-4o',
+              model: 'gpt-4.1-2025-04-14',
               messages: [
                 {
                   role: 'system',
-                  content: 'Vous êtes un expert en extraction de texte de documents PDF. Analysez le contenu du PDF fourni et extrayez tout le texte de manière structurée et précise.'
+                  content: 'Vous êtes un expert en extraction de texte de documents PDF. Analysez le contenu du PDF fourni et extrayez tout le texte de manière structurée et précise. Retournez UNIQUEMENT le texte extrait sans commentaires additionnels.'
                 },
                 {
                   role: 'user',
-                  content: `Analysez ce document PDF (encodé en base64) et extrayez tout le contenu textuel. Conservez la structure, les titres, les paragraphes et toute information importante. Retournez uniquement le texte extrait de manière claire et organisée.
+                  content: `Extrayez tout le contenu textuel de ce document PDF. Conservez la structure, les titres et les paragraphes.
 
-Document PDF: ${base64.substring(0, 100000)}...` // Limiter la taille pour éviter les erreurs
+Document PDF (base64): ${base64.substring(0, 150000)}` // Augmenté à 150k pour GPT-4.1
                 }
               ],
-              max_tokens: 4000,
-              temperature: 0.1
+              max_completion_tokens: 4000
             }),
           });
         }, 3);
@@ -193,10 +192,16 @@ Document PDF: ${base64.substring(0, 100000)}...` // Limiter la taille pour évit
 
         const result = await response.json();
         
-        if (result?.choices?.[0]?.message?.content) {
-          extractedText = result.choices[0].message.content;
-        } else {
-          throw new Error('Réponse invalide de l\'API OpenAI pour le PDF');
+        // Valider la réponse OpenAI
+        if (!result?.choices?.[0]?.message?.content) {
+          throw new Error('Réponse invalide de OpenAI - contenu manquant');
+        }
+        
+        extractedText = result.choices[0].message.content.trim();
+        
+        // Validation supplémentaire du contenu
+        if (extractedText.length < 50 || extractedText.includes('[Erreur') || extractedText.includes('Je ne peux pas')) {
+          throw new Error('Contenu PDF non exploitable - extraction échouée');
         }
         
       } catch (pdfError) {
@@ -252,21 +257,20 @@ Vous pouvez maintenant poser vos questions sur ce document et je vous guiderai p
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'gpt-4o',
+            model: 'gpt-4.1-2025-04-14',
             messages: [
               {
                 role: 'system',
-                content: 'Vous êtes un expert en extraction de texte de documents Word. Analysez le contenu du document fourni et extrayez tout le texte de manière structurée et précise.'
+                content: 'Vous êtes un expert en extraction de texte de documents Word. Analysez le contenu du document fourni et extrayez tout le texte de manière structurée et précise. Retournez UNIQUEMENT le texte extrait.'
               },
               {
                 role: 'user',
-                content: `Analysez ce document Word (encodé en base64) et extrayez tout le contenu textuel. Conservez la structure, les titres, les paragraphes et toute information importante. Retournez uniquement le texte extrait de manière claire et organisée.
+                content: `Extrayez tout le contenu textuel de ce document Word. Conservez la structure, les titres et les paragraphes.
 
-Document Word: ${base64.substring(0, 100000)}...` // Limiter la taille pour éviter les erreurs
+Document Word (base64): ${base64.substring(0, 150000)}`
               }
             ],
-            max_tokens: 4000,
-            temperature: 0.1
+            max_completion_tokens: 4000
           }),
         });
 
@@ -314,7 +318,7 @@ Taille: ${Math.round(file.size / 1024)} KB`;
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4o',
+          model: 'gpt-4.1-2025-04-14',
           messages: [
             {
               role: 'user',
@@ -332,7 +336,7 @@ Taille: ${Math.round(file.size / 1024)} KB`;
               ]
             }
           ],
-          max_tokens: 4000
+          max_completion_tokens: 4000
         }),
       });
 
@@ -361,8 +365,10 @@ Taille: ${Math.round(file.size / 1024)} KB`;
       throw new Error(`Unsupported file type: ${file.type}`);
     }
 
-    if (!extractedText || !extractedText.trim()) {
-      throw new Error('No text could be extracted from the document');
+    // Valider que le contenu extrait est utilisable
+    if (!extractedText || extractedText.trim().length < 50) {
+      console.error('Contenu extrait trop court ou invalide:', extractedText?.substring(0, 100));
+      throw new Error('Le contenu du document est trop court ou non exploitable');
     }
 
     console.log(`Successfully extracted text: ${extractedText.length} characters`);
