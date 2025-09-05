@@ -22,6 +22,7 @@ const Training = () => {
     user,
     currentSessionId,
     sessionData,
+    isEmpty,
     setConfiguration,
     handleStartTraining,
     handleTrainingComplete,
@@ -66,8 +67,8 @@ const Training = () => {
         onShowConfiguration={handleShowConfiguration}
         onSignOut={handleSignOut}
       >
-        {/* Hero Section - Toujours visible sauf en mode configuration */}
-        {!state.showConfiguration && (
+        {/* Hero Section - Visible seulement pour nouveaux utilisateurs */}
+        {!state.showConfiguration && isEmpty && (
           <HeroSection 
             onStartTraining={handleStartTraining}
             onShowConfiguration={handleShowConfiguration}
@@ -76,16 +77,22 @@ const Training = () => {
         )}
 
         {/* Performance Dashboard - Toujours visible avec vraies données */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: state.showConfiguration ? 0 : 0.3 }}
-          className="p-6"
-        >
-          <div className="max-w-7xl mx-auto">
-            <TrainingDashboard sessionData={sessionData} />
-          </div>
-        </motion.div>
+        {!state.showConfiguration && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="p-6"
+          >
+            <div className="max-w-7xl mx-auto">
+              <TrainingDashboard 
+                sessionData={sessionData} 
+                onStartTraining={handleStartTraining}
+                isEmpty={isEmpty}
+              />
+            </div>
+          </motion.div>
+        )}
 
         {/* Configuration Section */}
         {state.showConfiguration && (

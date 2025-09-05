@@ -23,6 +23,7 @@ export const useTrainingManager = (initialConfig: TrainingConfig) => {
     currentSessionId, 
     isLoading: sessionLoading,
     sessionData,
+    isEmpty,
     refreshSessionData 
   } = useTrainingSession();
 
@@ -96,6 +97,7 @@ export const useTrainingManager = (initialConfig: TrainingConfig) => {
     currentSessionId,
     sessionLoading,
     sessionData,
+    isEmpty,
     
     // Actions
     setConfiguration,

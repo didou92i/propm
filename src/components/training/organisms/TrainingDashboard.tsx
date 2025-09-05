@@ -6,13 +6,22 @@ import { AchievementsList } from '../molecules/AchievementsList';
 import { ActivityCalendar } from '../ActivityCalendar';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trophy, Star, Target, Zap, Medal, Crown } from 'lucide-react';
+import { ActionButton } from '../atoms/ActionButton';
+import { Trophy, Star, Target, Zap, Medal, Crown, Play, BookOpen } from 'lucide-react';
+import { EmptyTrainingState } from '../EmptyTrainingState';
+import type { TrainingSessionData } from '@/hooks/useTrainingSession';
 
 interface TrainingDashboardProps {
-  sessionData: any;
+  sessionData: TrainingSessionData | null;
+  onStartTraining?: () => Promise<void>;
+  isEmpty?: boolean;
 }
 
-export const TrainingDashboard: React.FC<TrainingDashboardProps> = ({ sessionData }) => {
+export const TrainingDashboard: React.FC<TrainingDashboardProps> = ({ 
+  sessionData,
+  onStartTraining,
+  isEmpty = false 
+}) => {
   const [selectedPeriod, setSelectedPeriod] = useState('month');
 
   // Transformation des données pour les graphiques
@@ -103,8 +112,63 @@ export const TrainingDashboard: React.FC<TrainingDashboardProps> = ({ sessionDat
   const performanceData = transformDataForChart(sessionData, selectedPeriod);
   const achievements = calculateAchievements(sessionData);
 
+  // Gestion de l'état vide
+  if (isEmpty) {
+    return (
+      <div className="space-y-8">
+        <EmptyTrainingState onStartTraining={onStartTraining || (() => {})} />
+        
+        {/* Bouton d'action principal pour utilisateurs sans données */}
+        {onStartTraining && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="flex justify-center"
+          >
+            <ActionButton
+              variant="primary"
+              onClick={onStartTraining}
+              icon={<Play className="h-5 w-5" />}
+              className="px-8 py-4 text-lg font-semibold min-w-[250px]"
+            >
+              Commencer votre Premier Entraînement
+            </ActionButton>
+          </motion.div>
+        )}
+      </div>
+    );
+  }
+
+  // Dashboard principal avec données
   return (
     <div className="space-y-8">
+      {/* En-tête avec action rapide */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="flex justify-between items-center mb-6"
+      >
+        <div>
+          <h2 className="text-2xl font-bold gradient-text">Tableau de Bord</h2>
+          <p className="text-muted-foreground mt-1">
+            Suivez vos progrès et vos performances
+          </p>
+        </div>
+        
+        {onStartTraining && (
+          <ActionButton
+            variant="outline"
+            onClick={onStartTraining}
+            icon={<BookOpen className="h-4 w-4" />}
+            className="px-6 py-2"
+          >
+            Nouvel Entraînement
+          </ActionButton>
+        )}
+      </motion.div>
+
       {/* Statistiques rapides */}
       <QuickStats sessionData={sessionData} />
 
