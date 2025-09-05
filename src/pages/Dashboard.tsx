@@ -4,6 +4,7 @@ import { MonitoringDashboard } from '@/components/monitoring';
 import { ArrowLeft, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { BetaIndicator } from '@/components/common/BetaIndicator';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -38,6 +39,7 @@ const Dashboard = () => {
                 <h1 className="text-2xl font-bold text-foreground">
                   Dashboard Complet
                 </h1>
+                <BetaIndicator showMetrics />
               </div>
             </div>
           </div>

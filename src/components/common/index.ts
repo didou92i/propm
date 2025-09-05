@@ -8,3 +8,4 @@ export { OptimizedVirtualizedMessageList } from './OptimizedVirtualizedMessageLi
 export { StreamingProgress } from './StreamingProgress';
 export { AgentAvatar } from './AgentAvatar';
 export { PerformanceIndicator } from './PerformanceIndicator';
+export { BetaIndicator } from './BetaIndicator';

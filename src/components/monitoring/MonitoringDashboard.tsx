@@ -4,6 +4,7 @@ import { MonitoringHeader } from './MonitoringHeader';
 import { MonitoringMetrics } from './MonitoringMetrics';
 import { MonitoringAnalytics } from './MonitoringAnalytics';
 import { SecurityPanel } from './SecurityPanel';
+import { BetaLogsViewer } from './BetaLogsViewer';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export function MonitoringDashboard() {
@@ -27,9 +28,10 @@ export function MonitoringDashboard() {
       />
       
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="beta-logs">Beta Logs</TabsTrigger>
           <TabsTrigger value="security">Sécurité</TabsTrigger>
         </TabsList>
         
@@ -42,6 +44,10 @@ export function MonitoringDashboard() {
             stats={stats} 
             getSeverityColor={getSeverityColor}
           />
+        </TabsContent>
+        
+        <TabsContent value="beta-logs" className="space-y-6">
+          <BetaLogsViewer />
         </TabsContent>
         
         <TabsContent value="security" className="space-y-6">
