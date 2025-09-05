@@ -289,16 +289,39 @@ export class TrainingSessionService {
       }
 
       // Récupérer TOUTES les sessions avec leurs progressions (complétées ET en cours)
-      const { data: sessions } = await supabase
+      const { data: sessions, error: sessionsError } = await supabase
         .from('prepa_cds_sessions')
         .select(`
           *,
-          prepa_cds_progress_logs(evaluation_score)
+          prepa_cds_progress_logs!session_id(evaluation_score)
         `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (!sessions) {
+      // Debug: Log pour vérifier les données
+      logger.info('Sessions récupérées', { 
+        count: sessions?.length || 0, 
+        error: sessionsError,
+        sessions: sessions?.slice(0, 2) // Premier 2 pour debug
+      }, 'TrainingSessionService');
+
+      if (sessionsError) {
+        logger.error('Erreur requête sessions avec progressions', sessionsError, 'TrainingSessionService');
+        // Fallback: récupérer seulement les sessions sans progressions
+        const { data: fallbackSessions } = await supabase
+          .from('prepa_cds_sessions')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+        
+        if (fallbackSessions) {
+          logger.info('Fallback: sessions sans progressions', { count: fallbackSessions.length }, 'TrainingSessionService');
+          return this.calculateBasicStats(fallbackSessions);
+        }
+      }
+
+      if (!sessions || sessions.length === 0) {
+        logger.info('Aucune session trouvée', { userId: user.id }, 'TrainingSessionService');
         return {
           totalSessions: 0,
           averageScore: 0,
@@ -470,6 +493,29 @@ export class TrainingSessionService {
         averageScore: activityData.scoreCount > 0 ? Math.round(activityData.totalScore / activityData.scoreCount) : 0
       };
     });
+  }
+
+  /**
+   * Calculer les stats de base sans progressions
+   */
+  private calculateBasicStats(sessions: DbTrainingSession[]) {
+    const totalSessions = sessions.length;
+    const completedSessions = sessions.filter(s => s.completed_at !== null);
+    const totalTimeMinutes = sessions.reduce((sum, session) => sum + (session.session_duration || 0), 0);
+    
+    const sessionsByDomain = sessions.reduce((acc, session) => {
+      acc[session.domain] = (acc[session.domain] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return {
+      totalSessions,
+      averageScore: 0, // Pas de progressions disponibles
+      totalTimeMinutes,
+      streakDays: this.calculateStreak(completedSessions as any),
+      sessionsByDomain,
+      recentActivity: []
+    };
   }
 
   /**
