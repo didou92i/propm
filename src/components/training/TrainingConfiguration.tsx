@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Target, BookOpen, Trophy, Brain, Settings, ArrowLeft, Play } from 'lucide-react';
+import { Settings, ArrowLeft, Play } from 'lucide-react';
 import { TRAINING_TYPES, USER_LEVELS, STUDY_DOMAINS } from '@/config/training';
 import type { TrainingConfig } from '@/types/training';
 import type { TrainingType, UserLevel, StudyDomain } from '@/types/prepacds';
@@ -54,7 +54,7 @@ export const TrainingConfiguration: React.FC<TrainingConfigurationProps> = ({
         <Card className="glass neomorphism interactive-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-xl">
-              <Target className="w-6 h-6 text-primary" />
+              <Settings className="w-6 h-6 text-primary" />
               Configuration Avancée d'Entraînement
             </CardTitle>
           </CardHeader>
@@ -66,10 +66,7 @@ export const TrainingConfiguration: React.FC<TrainingConfigurationProps> = ({
                 whileHover={{ scale: 1.01 }}
                 transition={{ type: "spring", stiffness: 400 }}
               >
-                <label className="text-sm font-bold text-foreground flex items-center gap-3">
-                  <div className="select-icon-container">
-                    <BookOpen className="w-4 h-4 text-primary" />
-                  </div>
+                <label className="text-sm font-bold text-foreground">
                   Type d'entraînement
                 </label>
                 <Select value={configuration.trainingType} onValueChange={handleTrainingTypeChange}>
@@ -107,17 +104,17 @@ export const TrainingConfiguration: React.FC<TrainingConfigurationProps> = ({
                 whileHover={{ scale: 1.01 }}
                 transition={{ type: "spring", stiffness: 400 }}
               >
-                <label className="text-sm font-bold text-foreground flex items-center gap-3">
-                  <div className="select-icon-container">
-                    <Trophy className="w-4 h-4 text-primary" />
-                  </div>
+                <label className="text-sm font-bold text-foreground">
                   Niveau de Difficulté
                 </label>
                 <Select value={configuration.level} onValueChange={handleLevelChange}>
                   <SelectTrigger className="select-category-level">
                     <div className="flex items-center gap-3">
                       <div className="select-icon-container">
-                        <Trophy className="w-4 h-4 text-primary" />
+                        {(() => {
+                          const selectedLevel = USER_LEVELS.find(l => l.value === configuration.level);
+                          return selectedLevel ? <selectedLevel.icon className="w-4 h-4 text-primary" /> : null;
+                        })()}
                       </div>
                       <SelectValue />
                     </div>
@@ -125,9 +122,14 @@ export const TrainingConfiguration: React.FC<TrainingConfigurationProps> = ({
                   <SelectContent>
                     {USER_LEVELS.map((lvl) => (
                       <SelectItem key={lvl.value} value={lvl.value}>
-                        <div className="py-1">
-                          <div className="font-semibold">{lvl.label}</div>
-                          <div className="text-sm text-muted-foreground opacity-80">{lvl.description}</div>
+                        <div className="flex items-start gap-3 py-1">
+                          <div className="select-icon-container mt-0.5">
+                            <lvl.icon className="w-4 h-4 text-primary" />
+                          </div>
+                          <div>
+                            <div className="font-semibold">{lvl.label}</div>
+                            <div className="text-sm text-muted-foreground opacity-80">{lvl.description}</div>
+                          </div>
                         </div>
                       </SelectItem>
                     ))}
@@ -141,20 +143,12 @@ export const TrainingConfiguration: React.FC<TrainingConfigurationProps> = ({
                 whileHover={{ scale: 1.01 }}
                 transition={{ type: "spring", stiffness: 400 }}
               >
-                <label className="text-sm font-bold text-foreground flex items-center gap-3">
-                  <div className="select-icon-container">
-                    <Brain className="w-4 h-4 text-primary" />
-                  </div>
+                <label className="text-sm font-bold text-foreground">
                   Domaine d'Étude
                 </label>
                 <Select value={configuration.domain} onValueChange={handleDomainChange}>
                   <SelectTrigger className="select-category-domain">
-                    <div className="flex items-center gap-3">
-                      <div className="select-icon-container">
-                        <Brain className="w-4 h-4 text-primary" />
-                      </div>
-                      <SelectValue />
-                    </div>
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {STUDY_DOMAINS.map((dom) => (

@@ -1,18 +1,19 @@
-import { Target, BookOpen, Brain, Trophy } from 'lucide-react';
+import { CheckCircle, ToggleLeft, FileText, PenTool, Star, BarChart3, Scale } from 'lucide-react';
 import type { TrainingType, UserLevel, StudyDomain } from '@/types/prepacds';
 
 export const TRAINING_TYPES = [
-  { value: 'qcm' as TrainingType, label: 'QCM - Questions à Choix Multiple', icon: Target },
-  { value: 'vrai_faux' as TrainingType, label: 'Vrai/Faux - Affirmations', icon: BookOpen },
-  { value: 'cas_pratique' as TrainingType, label: 'Cas Pratiques - Simulations', icon: Brain },
-  { value: 'question_ouverte' as TrainingType, label: 'Questions Ouvertes - Rédaction', icon: Trophy }
+  { value: 'qcm' as TrainingType, label: 'QCM - Questions à Choix Multiple', icon: CheckCircle },
+  { value: 'vrai_faux' as TrainingType, label: 'Vrai/Faux - Affirmations', icon: ToggleLeft },
+  { value: 'cas_pratique' as TrainingType, label: 'Cas Pratiques - Simulations', icon: FileText },
+  { value: 'question_ouverte' as TrainingType, label: 'Questions Ouvertes - Rédaction', icon: PenTool }
 ];
 
 export const USER_LEVELS = [
-  { value: 'debutant' as UserLevel, label: 'Débutant', description: 'Bases et fondamentaux' },
-  { value: 'intermediaire' as UserLevel, label: 'Intermédiaire', description: 'Approfondissement' },
-  { value: 'avance' as UserLevel, label: 'Avancé', description: 'Expertise et cas complexes' }
+  { value: 'debutant' as UserLevel, label: 'Débutant', description: 'Bases et fondamentaux', icon: Star },
+  { value: 'intermediaire' as UserLevel, label: 'Intermédiaire', description: 'Approfondissement', icon: BarChart3 },
+  { value: 'avance' as UserLevel, label: 'Avancé', description: 'Expertise et cas complexes', icon: Scale }
 ];
+
 
 export const STUDY_DOMAINS = [
   { value: 'droit_administratif' as StudyDomain, label: 'Droit Administratif' },
