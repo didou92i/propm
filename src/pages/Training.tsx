@@ -2,13 +2,11 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { SimpleTrainingPlayer } from '@/components/training/SimpleTrainingPlayer';
 import { 
-  HeroSection, 
-  TrainingDashboard, 
   TrainingConfiguration, 
   TrainingLayout 
 } from '@/components/training';
+import { SimplifiedTrainingDashboard } from '@/components/training/SimplifiedTrainingDashboard';
 import { DebugPanel } from '@/components/training/DebugPanel';
-
 import { ProtectedTrainingRoute } from '@/components/ProtectedTrainingRoute';
 import { useAgentTheme } from "@/hooks/useAgentTheme";
 import { useTrainingPage } from '@/hooks/useTrainingPage';
@@ -82,39 +80,11 @@ const Training = () => {
         onShowConfiguration={handleShowConfiguration}
         onSignOut={handleSignOut}
       >
-        {/* NOUVELLE LOGIQUE SIMPLIFIÉE */}
-        {shouldShowHero && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="p-6"
-          >
-            <div className="max-w-7xl mx-auto">
-              <HeroSection 
-                onStartTraining={handleStartTraining}
-                onShowConfiguration={handleShowConfiguration}
-                isLoading={isLoading}
-                hasSessionData={hasSessionData}
-              />
-            </div>
-          </motion.div>
-        )}
-
-        {shouldShowDashboard && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="p-6"
-          >
-            <div className="max-w-7xl mx-auto">
-              <TrainingDashboard 
-                sessionData={sessionData} 
-                onStartTraining={handleStartTraining}
-              />
-            </div>
-          </motion.div>
+        {/* DASHBOARD SIMPLIFIÉ */}
+        {!showConfiguration && (
+          <SimplifiedTrainingDashboard 
+            onStartTraining={handleStartTraining}
+          />
         )}
 
         {/* Configuration Section */}

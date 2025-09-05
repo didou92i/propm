@@ -314,33 +314,32 @@ class TrainingSessionService {
         throw sessionError;
       }
 
-      // Récupérer les progress logs séparément
-      const { data: progressLogs, error: progressError } = await supabase
+      // Récupérer tous les progress logs une seule fois
+      const { data: allProgressLogs, error: progressError } = await supabase
         .from('prepa_cds_progress_logs')
-        .select('*')
+        .select('session_id, evaluation_score, time_spent_seconds')
         .eq('user_id', user.id);
 
       if (progressError) {
         Logger.error('Erreur récupération progress logs', progressError);
+        // Continue sans erreur pour éviter de bloquer l'interface
       }
 
+      // Organiser les progress logs par session
+      const progressBySession = (allProgressLogs || []).reduce((acc: Record<string, any[]>, progress) => {
+        if (!acc[progress.session_id]) {
+          acc[progress.session_id] = [];
+        }
+        acc[progress.session_id].push(progress);
+        return acc;
+      }, {});
+
       const allSessions = sessions || [];
-      const allProgressLogs = progressLogs || [];
       
       // Calculer les statistiques principales
       const totalSessions = allSessions.length;
-      const completedSessions = allSessions.filter(s => s.completed_at).length;
-      
-      // Calculer le score moyen basé sur les progress logs
       let totalScore = 0;
       let scoreCount = 0;
-      
-      // Grouper les progress logs par session
-      const progressBySession = allProgressLogs.reduce((acc: any, log: any) => {
-        if (!acc[log.session_id]) acc[log.session_id] = [];
-        acc[log.session_id].push(log);
-        return acc;
-      }, {});
       
       Object.values(progressBySession).forEach((logs: any) => {
         if (logs.length > 0) {

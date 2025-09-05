@@ -5,7 +5,7 @@ import { chartDataTransformer } from '@/services/training/chartDataTransformer';
 import { achievementCalculator } from '@/services/training/achievementCalculator';
 
 /**
- * Hook pour gérer les calculs et transformations de données de formation
+ * Hook simplifié pour les statistiques de formation
  * Responsabilité : Agrégation et transformation des métriques
  */
 export const useTrainingStats = () => {
@@ -16,37 +16,60 @@ export const useTrainingStats = () => {
     refreshSessionData 
   } = useTrainingSession();
 
-  // Métriques calculées avec memoization
+  // Métriques calculées avec memoization optimisée
   const metrics = useMemo(() => {
-    if (!sessionData) return null;
+    if (!sessionData || sessionData.totalSessions === 0) {
+      return {
+        totalSessions: 0,
+        averageScore: 0,
+        totalTimeMinutes: 0,
+        streakDays: 0,
+        improvementRate: 0,
+        efficiency: 0,
+        completedSessions: 0,
+        inProgressSessions: 0
+      };
+    }
     return statisticsService.calculateMetrics(sessionData);
   }, [sessionData]);
 
-  // Données pour graphiques avec memoization
+  // Données pour graphiques simplifiées
   const chartData = useMemo(() => {
-    if (!sessionData) return { performance: [], domains: [] };
+    if (!sessionData || sessionData.totalSessions === 0) {
+      return { 
+        performance: [], 
+        domains: Object.entries(sessionData?.sessionsByDomain || {}).map(([name, value]) => ({ name, value }))
+      };
+    }
     return {
       performance: chartDataTransformer.transformPerformanceData(sessionData),
-      domains: chartDataTransformer.transformDomainData(sessionData)
+      domains: Object.entries(sessionData.sessionsByDomain || {}).map(([name, value]) => ({ name, value }))
     };
   }, [sessionData]);
 
-  // Achievements calculés avec memoization
+  // Achievements simplifiés
   const achievements = useMemo(() => {
-    if (!sessionData) return [];
+    if (!sessionData || sessionData.totalSessions === 0) return [];
     return achievementCalculator.calculateAchievements(sessionData);
   }, [sessionData]);
 
   // Métriques de progression
   const progressMetrics = useMemo(() => {
-    if (!sessionData) return null;
+    if (!sessionData || sessionData.totalSessions === 0) {
+      return {
+        weeklyProgress: 0,
+        monthlyProgress: 0,
+        learningVelocity: 0,
+        consistencyScore: 0
+      };
+    }
     return statisticsService.calculateProgressMetrics(sessionData);
   }, [sessionData]);
 
   return {
     // Données brutes
     sessionData,
-    isEmpty,
+    isEmpty: isEmpty || sessionData?.totalSessions === 0,
     
     // Données transformées
     metrics,

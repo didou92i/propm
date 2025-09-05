@@ -206,7 +206,13 @@ class TrainingContentService {
   private calculateContentHash(content: any): string {
     // Calcul simple d'un hash basé sur le contenu principal
     const contentStr = JSON.stringify(content?.questions || content?.steps || content);
-    return btoa(contentStr).substring(0, 16);
+    let hash = 0;
+    for (let i = 0; i < contentStr.length; i++) {
+      const char = contentStr.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32bit integer
+    }
+    return Math.abs(hash).toString(16).substring(0, 16);
   }
   
   private calculateDiversityScore(contentHash: string): number {

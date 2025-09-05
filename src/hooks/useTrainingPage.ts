@@ -49,15 +49,20 @@ export const useTrainingPage = (initialConfig: TrainingConfig) => {
     logDebugInfo();
   }, [logDebugInfo]);
 
-  // Génération automatique silencieuse des données si nécessaire
+  // Génération automatique optimisée des données si nécessaire
   useEffect(() => {
     const ensureData = async () => {
-      if (!sessionLoading && isEmpty && user && sessionData?.totalSessions === 0) {
+      if (!sessionLoading && user && sessionData && sessionData.totalSessions === 0) {
         try {
           console.log('🔄 Génération automatique de données d\'exemple...');
-          await realDataService.ensureDataCompleteness();
-          await refreshSessionData();
-          console.log('✅ Données générées avec succès');
+          const result = await realDataService.ensureDataCompleteness();
+          if (result.sessionsCreated > 0 || result.progressLogsCreated > 0) {
+            // Attendre un peu pour que les données soient bien écrites
+            setTimeout(async () => {
+              await refreshSessionData();
+              console.log('✅ Données générées avec succès:', result);
+            }, 1000);
+          }
         } catch (error) {
           console.warn('⚠️ Génération automatique échouée, continuons sans données:', error);
         }
@@ -65,7 +70,7 @@ export const useTrainingPage = (initialConfig: TrainingConfig) => {
     };
 
     ensureData();
-  }, [sessionLoading, isEmpty, user, sessionData?.totalSessions, refreshSessionData]);
+  }, [sessionLoading, user, sessionData?.totalSessions, refreshSessionData]);
 
   // === ACTIONS SIMPLIFIÉES ===
   const handleStartTraining = useCallback(async () => {
