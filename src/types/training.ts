@@ -31,3 +31,37 @@ export interface TrainingState {
   sessionStartTime: number;
   isStarting: boolean;
 }
+
+// Nouveaux types pour l'optimisation
+export interface OptimizedTrainingMetrics {
+  totalSessions: number;
+  completedSessions: number;
+  inProgressSessions: number;
+  averageScore: number;
+  totalTimeMinutes: number;
+  streakDays: number;
+  improvementRate: number;
+  efficiency: number;
+}
+
+export interface TrainingChartData {
+  performance: Array<{
+    date: string;
+    score: number;
+    sessions?: number;
+    time?: number;
+  }>;
+  domains: Array<{
+    name: string;
+    value: number;
+    fill: string;
+    color: string;
+  }>;
+}
+
+export interface TrainingProgressMetrics {
+  weeklyProgress: number;
+  monthlyProgress: number;
+  consistencyScore: number;
+  learningVelocity: number;
+}

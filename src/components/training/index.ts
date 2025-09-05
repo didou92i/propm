@@ -15,9 +15,7 @@ export { ActionButton } from './atoms/ActionButton';
 export { StatCard } from './atoms/StatCard';
 export { MetricCard } from './atoms/MetricCard';
 
-// Legacy components (to be refactored)
-export { PerformanceDashboard } from './PerformanceDashboard';
-export { TrainingHero } from './TrainingHero';
+// Legacy components (to be refactored) - Removed: PerformanceDashboard, TrainingHero
 export { AnimatedQuizPlayer } from './AnimatedQuizPlayer';
 export { TrueFalseAnimated } from './TrueFalseAnimated';
 export { CasePracticeSimulator } from './CasePracticeSimulator';
