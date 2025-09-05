@@ -1,0 +1,59 @@
+{
+  "qcm": [
+    {
+      "id": "q1",
+      "question": "Qu'est-ce que la déontologie ?",
+      "options": [
+        "L'étude des dents",
+        "L'ensemble des règles de conduite professionnelle",
+        "La science des comportements",
+        "L'art de négocier"
+      ],
+      "correctAnswer": 1,
+      "explanation": "La déontologie désigne l'ensemble des règles et devoirs qui régissent une profession.",
+      "difficulty": "facile"
+    },
+    {
+      "id": "q2",
+      "question": "Quel principe guide l'action du fonctionnaire ?",
+      "options": [
+        "L'intérêt personnel",
+        "L'intérêt général",
+        "L'intérêt de son administration",
+        "L'intérêt de ses collègues"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Le fonctionnaire doit servir l'intérêt général avant toute autre considération.",
+      "difficulty": "facile"
+    }
+  ],
+  "trueFalse": [
+    {
+      "id": "tf1",
+      "statement": "Un courrier administratif doit toujours utiliser la forme passive.",
+      "isCorrect": false,
+      "explanation": "Faux. Il faut privilégier la forme active pour plus de clarté et de dynamisme.",
+      "domain": "Éthique & Déontologie"
+    }
+  ],
+  "casePractice": {
+    "title": "Conflit d'intérêts",
+    "context": "Un agent public se trouve dans une situation de conflit d'intérêts potentiel.",
+    "totalTime": 25,
+    "steps": [
+      {
+        "id": "step1", 
+        "title": "Analyse éthique",
+        "scenario": "Un agent de la mairie découvre que sa sœur a déposé un dossier de permis de construire qu'il doit instruire.",
+        "question": "Quelle conduite adopter selon les règles déontologiques ?",
+        "expectedPoints": [
+          "Signalement hiérarchique",
+          "Abstention",
+          "Déclaration de conflit d'intérêts",
+          "Réassignation du dossier"
+        ],
+        "timeLimit": 15
+      }
+    ]
+  }
+}

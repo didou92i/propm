@@ -5,7 +5,7 @@ import { TrainingErrorState } from './TrainingErrorState';
 import { TrainingContentRenderer } from './TrainingContentRenderer';
 import { useTrainingContent } from '@/hooks/useTrainingContent';
 import { useTrainingSession } from '@/hooks/useTrainingSession';
-import { getStaticContent } from '@/data/trainingData';
+import { getStaticContent } from '@/services/training';
 import { validateTrainingContent, normalizeTrainingContent } from '@/utils/trainingValidation';
 import type { TrainingType, UserLevel, StudyDomain } from '@/types/prepacds';
 import { logger } from '@/utils/logger';
@@ -64,25 +64,29 @@ export function SimpleTrainingPlayer({
         logger.error('Échec génération primaire', error, 'SimpleTrainingPlayer');
         
         // Fallback vers contenu statique uniquement en cas d'échec complet
-        const staticContent = getStaticContent(trainingType, domain, level);
-        
-        if (staticContent) {
-          let formattedContent;
-          if (trainingType === 'qcm' || trainingType === 'vrai_faux') {
-            formattedContent = { questions: staticContent };
-          } else {
-            formattedContent = staticContent;
-          }
+        try {
+          const staticContent = await getStaticContent(trainingType, domain, level);
           
-          const normalizedContent = normalizeTrainingContent(formattedContent, trainingType);
-          const validation = validateTrainingContent(normalizedContent, trainingType);
-          
-          if (validation.isValid) {
-            // On utilise directement les données statiques sans passer par le hook
-            setIsActive(true);
-          } else {
-            logger.error('Fallback statique invalide', validation.errors, 'SimpleTrainingPlayer');
+          if (staticContent) {
+            let formattedContent;
+            if (trainingType === 'qcm' || trainingType === 'vrai_faux') {
+              formattedContent = { questions: staticContent };
+            } else {
+              formattedContent = staticContent;
+            }
+            
+            const normalizedContent = normalizeTrainingContent(formattedContent, trainingType);
+            const validation = validateTrainingContent(normalizedContent, trainingType);
+            
+            if (validation.isValid) {
+              // On utilise directement les données statiques sans passer par le hook
+              setIsActive(true);
+            } else {
+              logger.error('Fallback statique invalide', validation.errors, 'SimpleTrainingPlayer');
+            }
           }
+        } catch (fallbackError) {
+          logger.error('Échec du fallback statique', fallbackError, 'SimpleTrainingPlayer');
         }
       }
     };

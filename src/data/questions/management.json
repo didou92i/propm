@@ -1,0 +1,72 @@
+{
+  "qcm": [
+    {
+      "id": "q1",
+      "question": "Quels sont les quatre fonctions principales du management ?",
+      "options": [
+        "Planifier, organiser, diriger, contrôler",
+        "Vendre, acheter, produire, distribuer",
+        "Recruter, former, évaluer, licencier",
+        "Innover, créer, développer, investir"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Les quatre fonctions du management selon Fayol sont : planifier, organiser, diriger et contrôler.",
+      "difficulty": "moyen"
+    },
+    {
+      "id": "q2",
+      "question": "Qu'est-ce que le leadership transformationnel ?",
+      "options": [
+        "Un style autoritaire",
+        "Un style qui inspire et motive l'équipe vers une vision",
+        "Un style laissez-faire",
+        "Un style purement administratif"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Le leadership transformationnel inspire et motive les collaborateurs vers une vision partagée.",
+      "difficulty": "difficile"
+    },
+    {
+      "id": "q3",
+      "question": "Quelle est la différence entre efficacité et efficience ?",
+      "options": [
+        "Il n'y en a pas",
+        "L'efficacité c'est faire les bonnes choses, l'efficience c'est bien faire les choses",
+        "L'efficience c'est faire les bonnes choses, l'efficacité c'est bien faire les choses",
+        "Les deux termes sont synonymes"
+      ],
+      "correctAnswer": 1,
+      "explanation": "L'efficacité concerne l'atteinte des objectifs, l'efficience concerne l'optimisation des moyens.",
+      "difficulty": "moyen"
+    }
+  ],
+  "trueFalse": [
+    {
+      "id": "tf1",
+      "statement": "Le leadership et le management sont exactement la même chose.",
+      "isCorrect": false,
+      "explanation": "Faux. Le leadership concerne l'influence et la vision, tandis que le management concerne l'organisation et le contrôle.",
+      "domain": "Management"
+    }
+  ],
+  "casePractice": {
+    "title": "Gestion d'équipe en conflit",
+    "context": "Deux membres d'une équipe sont en conflit ouvert depuis plusieurs semaines, affectant l'ambiance et la productivité.",
+    "totalTime": 25,
+    "steps": [
+      {
+        "id": "step1",
+        "title": "Diagnostic de la situation",
+        "scenario": "Deux membres d'une équipe sont en conflit ouvert depuis plusieurs semaines. Cela affecte l'ambiance et la productivité de toute l'équipe.",
+        "question": "Quelles actions managériales mettre en place ?",
+        "expectedPoints": [
+          "Écoute active des parties",
+          "Médiation",
+          "Clarification des rôles",
+          "Suivi régulier"
+        ],
+        "timeLimit": 15
+      }
+    ]
+  }
+}

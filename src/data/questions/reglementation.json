@@ -1,0 +1,59 @@
+{
+  "qcm": [
+    {
+      "id": "q1",
+      "question": "Qu'est-ce qu'un règlement dans la hiérarchie des normes ?",
+      "options": [
+        "Une norme supérieure à la loi",
+        "Une norme inférieure à la loi",
+        "Une norme égale à la loi",
+        "Une norme sans valeur juridique"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Le règlement est une norme inférieure à la loi dans la hiérarchie des normes.",
+      "difficulty": "moyen"
+    },
+    {
+      "id": "q2",
+      "question": "Qui peut prendre un règlement ?",
+      "options": [
+        "Uniquement le Parlement",
+        "Uniquement le Président",
+        "L'autorité administrative compétente",
+        "Uniquement les juges"
+      ],
+      "correctAnswer": 2,
+      "explanation": "Les règlements sont pris par les autorités administratives dans leurs domaines de compétence.",
+      "difficulty": "moyen"
+    }
+  ],
+  "trueFalse": [
+    {
+      "id": "tf1",
+      "statement": "Un règlement peut contredire une loi.",
+      "isCorrect": false,
+      "explanation": "Faux. Le règlement doit respecter la hiérarchie des normes et ne peut contredire une loi.",
+      "domain": "Réglementation"
+    }
+  ],
+  "casePractice": {
+    "title": "Élaboration d'un règlement",
+    "context": "Création d'un règlement municipal pour l'usage des espaces verts.",
+    "totalTime": 35,
+    "steps": [
+      {
+        "id": "step1",
+        "title": "Rédaction du règlement",
+        "scenario": "La commune souhaite réglementer l'usage de ses parcs et jardins publics.",
+        "question": "Quelle procédure suivre pour adopter ce règlement ?",
+        "expectedPoints": [
+          "Consultation publique",
+          "Délibération du conseil municipal", 
+          "Publication et affichage",
+          "Contrôle de légalité"
+        ],
+        "timeLimit": 20
+      }
+    ]
+  }
+}

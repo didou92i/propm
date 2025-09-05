@@ -1,0 +1,59 @@
+{
+  "qcm": [
+    {
+      "id": "q1",
+      "question": "Quelle est la mission première des forces de sécurité publique ?",
+      "options": [
+        "Maintenir l'ordre public",
+        "Collecter des impôts",
+        "Gérer les élections",
+        "Organiser les transports"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Le maintien de l'ordre public est la mission fondamentale des forces de sécurité.",
+      "difficulty": "facile"
+    },
+    {
+      "id": "q2",
+      "question": "Qu'est-ce qu'une infraction pénale ?",
+      "options": [
+        "Une erreur administrative",
+        "Un comportement contraire à la loi pénale",
+        "Un conflit civil",
+        "Une négligence professionnelle"
+      ],
+      "correctAnswer": 1,
+      "explanation": "L'infraction pénale est tout comportement prohibé par la loi pénale et sanctionné.",
+      "difficulty": "facile"
+    }
+  ],
+  "trueFalse": [
+    {
+      "id": "tf1",
+      "statement": "La sécurité publique est uniquement une mission de l'État.",
+      "isCorrect": false,
+      "explanation": "Faux. La sécurité publique est une mission partagée entre l'État et les collectivités territoriales.",
+      "domain": "Sécurité publique"
+    }
+  ],
+  "casePractice": {
+    "title": "Gestion d'un événement public",
+    "context": "Organisation d'un festival dans le centre-ville avec risques pour la sécurité publique.",
+    "totalTime": 30,
+    "steps": [
+      {
+        "id": "step1",
+        "title": "Évaluation des risques",
+        "scenario": "Un festival de musique doit se tenir sur la place principale avec 5000 participants attendus.",
+        "question": "Quelles mesures de sécurité mettre en place ?",
+        "expectedPoints": [
+          "Plan de circulation",
+          "Dispositif de sécurité",
+          "Évacuation d'urgence",
+          "Coordination avec forces de l'ordre"
+        ],
+        "timeLimit": 20
+      }
+    ]
+  }
+}

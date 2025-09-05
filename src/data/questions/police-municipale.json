@@ -1,0 +1,72 @@
+{
+  "qcm": [
+    {
+      "id": "q1",
+      "question": "Qui exerce le pouvoir de police municipale ?",
+      "options": [
+        "Le préfet",
+        "Le maire",
+        "Le conseil municipal",
+        "Le commissaire de police"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Le maire détient le pouvoir de police municipale en tant qu'agent de l'État.",
+      "difficulty": "facile"
+    },
+    {
+      "id": "q2",
+      "question": "Quels sont les trois objectifs de la police municipale ?",
+      "options": [
+        "Sécurité, salubrité, tranquillité publiques",
+        "Ordre, discipline, contrôle",
+        "Surveillance, répression, prévention",
+        "Information, communication, médiation"
+      ],
+      "correctAnswer": 0,
+      "explanation": "La police municipale vise à assurer la sécurité, la salubrité et la tranquillité publiques.",
+      "difficulty": "moyen"
+    },
+    {
+      "id": "q3",
+      "question": "Quel texte encadre les pouvoirs de police du maire ?",
+      "options": [
+        "Code civil",
+        "Code général des collectivités territoriales",
+        "Code de procédure pénale",
+        "Code de l'urbanisme"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Le CGCT, notamment l'article L. 2212-2, définit les pouvoirs de police du maire.",
+      "difficulty": "moyen"
+    }
+  ],
+  "trueFalse": [
+    {
+      "id": "tf1",
+      "statement": "Le maire peut déléguer ses pouvoirs de police municipale à un adjoint.",
+      "isCorrect": true,
+      "explanation": "Vrai. Le maire peut déléguer certains de ses pouvoirs de police municipale à ses adjoints par arrêté.",
+      "domain": "Police municipale"
+    }
+  ],
+  "casePractice": {
+    "title": "Contrôle des terrasses",
+    "context": "Un restaurant installe une terrasse sur le domaine public sans autorisation. Le maire doit intervenir.",
+    "totalTime": 25,
+    "steps": [
+      {
+        "id": "step1",
+        "title": "Analyse de la situation",
+        "scenario": "Un restaurateur a installé une terrasse sur le trottoir devant son établissement sans autorisation d'occupation du domaine public.",
+        "question": "Quelles mesures le maire peut-il prendre ?",
+        "expectedPoints": [
+          "Mise en demeure de régulariser",
+          "Arrêté de police",
+          "Évacuation forcée si nécessaire",
+          "Sanctions pécuniaires"
+        ],
+        "timeLimit": 15
+      }
+    ]
+  }
+}

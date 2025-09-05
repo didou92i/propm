@@ -1,0 +1,72 @@
+{
+  "qcm": [
+    {
+      "id": "q1",
+      "question": "Quelles sont les trois catégories d'infractions en droit pénal ?",
+      "options": [
+        "Crimes, délits, contraventions",
+        "Majeur, mineur, négligeable",
+        "Civil, pénal, administratif", 
+        "Public, privé, mixte"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Le droit pénal distingue trois catégories : crimes (les plus graves), délits, et contraventions.",
+      "difficulty": "facile"
+    },
+    {
+      "id": "q2",
+      "question": "Quel est le principe fondamental de la responsabilité pénale ?",
+      "options": [
+        "Responsabilité collective",
+        "Responsabilité personnelle",
+        "Responsabilité familiale",
+        "Responsabilité d'entreprise"
+      ],
+      "correctAnswer": 1,
+      "explanation": "La responsabilité pénale est personnelle : chacun ne répond que de ses propres actes.",
+      "difficulty": "moyen"
+    },
+    {
+      "id": "q3",
+      "question": "Qu'est-ce que la présomption d'innocence ?",
+      "options": [
+        "Tout accusé est coupable jusqu'à preuve du contraire",
+        "Tout accusé est innocent jusqu'à preuve du contraire",
+        "La culpabilité doit être prouvée par l'accusé",
+        "L'innocence n'existe pas en droit pénal"
+      ],
+      "correctAnswer": 1,
+      "explanation": "La présomption d'innocence est un principe fondamental : toute personne est présumée innocente tant que sa culpabilité n'a pas été établie.",
+      "difficulty": "facile"
+    }
+  ],
+  "trueFalse": [
+    {
+      "id": "tf1",
+      "statement": "Une personne peut être condamnée pour un acte qui n'était pas punissable au moment où elle l'a commis.",
+      "isCorrect": false,
+      "explanation": "Faux. C'est le principe de non-rétroactivité de la loi pénale : nulla poena sine lege.",
+      "domain": "Procédure pénale"
+    }
+  ],
+  "casePractice": {
+    "title": "Analyse d'une infraction",
+    "context": "Une personne subtilise un objet dans un magasin d'une valeur de 50 euros et est interpellée à la sortie.",
+    "totalTime": 20,
+    "steps": [
+      {
+        "id": "step1",
+        "title": "Qualification des faits",
+        "scenario": "Une personne subtilise un objet dans un magasin d'une valeur de 50 euros. Elle est interpellée à la sortie du magasin.",
+        "question": "Quelle qualification pénale donner à ces faits ?",
+        "expectedPoints": [
+          "Vol simple",
+          "Article 311-1 du Code pénal",
+          "Délit punissable",
+          "Éléments constitutifs"
+        ],
+        "timeLimit": 10
+      }
+    ]
+  }
+}
