@@ -1,0 +1,62 @@
+  /* Performance optimizations avec will-change */
+  .will-change-transform {
+    will-change: transform;
+  }
+  
+  .will-change-scroll {
+    will-change: scroll-position;
+  }
+  
+  .will-change-contents {
+    will-change: contents;
+  }
+  
+  .will-change-opacity {
+    will-change: opacity;
+  }
+
+  /* Optimisations spécifiques pour les animations */
+  .animate-optimized {
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+    perspective: 1000px;
+  }
+
+  .animate-optimized.animate-complete {
+    will-change: auto;
+  }
+
+  /* Optimisations pour les listes virtualisées */
+  .virtualized-list {
+    will-change: scroll-position;
+    contain: layout style paint;
+    overflow-anchor: none;
+  }
+
+  .virtualized-item {
+    will-change: transform;
+    contain: layout style paint;
+  }
+
+  /* Optimisations pour les composants de chat */
+  .chat-message {
+    will-change: transform, opacity;
+    contain: layout style paint;
+  }
+
+  .chat-input {
+    will-change: contents;
+    contain: layout style;
+  }
+
+  /* Optimisations pour les modals et overlays */
+  .modal-overlay {
+    will-change: opacity;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  .modal-content {
+    will-change: transform, opacity;
+    contain: layout style paint;
+  }

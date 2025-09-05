@@ -1,0 +1,151 @@
+  /* Advanced hover effects */
+  .hover-glow {
+    transition: var(--transition-smooth);
+  }
+  .hover-glow:hover {
+    box-shadow: var(--shadow-glow);
+    transform: translateY(-2px);
+  }
+
+  .hover-lift {
+    transition: var(--transition-bounce);
+  }
+  .hover-lift:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: var(--shadow-hover);
+  }
+
+  .hover-lift:active {
+    transform: translateY(0) scale(0.98);
+    box-shadow: var(--shadow-active);
+  }
+
+  /* 3D Transform effects */
+  .transform-3d {
+    transform-style: preserve-3d;
+    perspective: 1000px;
+  }
+
+  .hover-tilt:hover {
+    transform: rotateX(5deg) rotateY(5deg) scale(1.02);
+  }
+
+  /* Enhanced ripple effects */
+  .ripple-container {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ripple-effect {
+    position: absolute;
+    border-radius: 50%;
+    background: radial-gradient(circle, hsl(var(--agent-primary) / 0.4) 0%, hsl(var(--agent-primary) / 0.1) 50%, transparent 70%);
+    pointer-events: none;
+    animation: ripple-enhanced 0.8s ease-out;
+    transform-origin: center;
+  }
+
+  .ripple-effect-intense {
+    position: absolute;
+    border-radius: 50%;
+    background: radial-gradient(circle, hsl(var(--agent-primary) / 0.6) 0%, hsl(var(--agent-accent) / 0.3) 40%, transparent 70%);
+    pointer-events: none;
+    animation: ripple-intense 1s ease-out;
+    box-shadow: 0 0 20px hsl(var(--agent-primary) / 0.3);
+  }
+
+  /* Shimmer loading effect */
+  .shimmer {
+    position: relative;
+    overflow: hidden;
+    background: hsl(var(--muted));
+  }
+
+  .shimmer::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      hsl(var(--background) / 0.4),
+      transparent
+    );
+    animation: shimmer 2s infinite;
+  }
+
+  /* Skeleton loaders */
+  .skeleton-text {
+    height: 1rem;
+    background: hsl(var(--muted));
+    border-radius: 0.25rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .skeleton-text::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      hsl(var(--background) / 0.6),
+      transparent
+    );
+    animation: shimmer 1.5s infinite;
+  }
+
+  /* Message animations */
+  .message-enter {
+    animation: slide-in-right 0.4s ease-out;
+  }
+
+  .message-enter-assistant {
+    animation: slide-in-left 0.4s ease-out;
+  }
+
+  /* Agent transition effect */
+  .agent-transition {
+    transition: var(--transition-smooth);
+  }
+
+  /* Floating animation for special elements */
+  .float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  /* Pulse for active states */
+  .pulse-glow {
+    animation: glow 15s ease-in-out infinite;
+  }
+
+  /* Advanced hover effects for glass elements */
+  .glass-hover {
+    transition: var(--theme-transition);
+  }
+  .glass-hover:hover {
+    background: rgba(var(--glass-bg));
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    transform: translateY(-2px);
+    box-shadow: var(--glass-shadow), 0 12px 40px rgba(var(--agent-primary) / 0.2);
+  }
+
+  /* Neomorphism hover effects */
+  .neomorphism-hover {
+    transition: var(--theme-transition);
+  }
+  .neomorphism-hover:hover {
+    box-shadow: 
+      12px 12px 24px rgba(var(--neomorphism-dark)),
+      -12px -12px 24px rgba(var(--neomorphism-light)),
+      0 0 20px hsl(var(--agent-primary) / 0.1);
+    transform: translateY(-1px);
+  }

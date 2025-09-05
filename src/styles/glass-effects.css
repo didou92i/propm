@@ -1,0 +1,60 @@
+  /* Glassmorphism effects */
+  .glass {
+    background: rgba(var(--glass-bg));
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(var(--glass-border));
+    box-shadow: var(--glass-shadow);
+    transition: var(--theme-transition);
+  }
+
+  .glass-intense {
+    background: rgba(var(--glass-bg));
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(var(--glass-border));
+    box-shadow: var(--glass-shadow), 0 0 0 1px rgba(var(--glass-border));
+    transition: var(--theme-transition);
+  }
+
+  .glass-subtle {
+    background: rgba(var(--glass-bg));
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(var(--glass-border));
+    transition: var(--theme-transition);
+  }
+
+  /* Neumorphism effects */
+  .neomorphism {
+    background: hsl(var(--background));
+    box-shadow: 
+      8px 8px 16px rgba(var(--neomorphism-dark)),
+      -8px -8px 16px rgba(var(--neomorphism-light));
+    transition: var(--theme-transition);
+  }
+
+  .neomorphism-inset {
+    background: hsl(var(--background));
+    box-shadow: 
+      inset 4px 4px 8px rgba(var(--neomorphism-dark)),
+      inset -4px -4px 8px rgba(var(--neomorphism-light));
+    transition: var(--theme-transition);
+  }
+
+  .neomorphism-subtle {
+    background: hsl(var(--background));
+    box-shadow: 
+      4px 4px 8px rgba(var(--neomorphism-dark)),
+      -4px -4px 8px rgba(var(--neomorphism-light));
+    transition: var(--theme-transition);
+  }
+
+  /* Theme adaptive transition */
+  .theme-transition {
+    transition: var(--theme-transition);
+  }
+
+  .theme-transition * {
+    transition: var(--theme-transition);
+  }

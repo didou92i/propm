@@ -5,3 +5,6 @@ export { DocumentCluster } from './DocumentCluster';
 export { LogoUpload } from './LogoUpload';
 export { ArreteDocumentGenerator } from './ArreteDocumentGenerator';
 export { DocumentProcessingIndicator } from './DocumentProcessingIndicator';
+export { DocumentCard } from './DocumentCard';
+export { DocumentSearchBar } from './DocumentSearchBar';
+export { DocumentViewModeSelector } from './DocumentViewModeSelector';
