@@ -56,7 +56,7 @@ export const SimplifiedTrainingDashboard: React.FC<SimplifiedTrainingDashboardPr
         <Button 
           onClick={onStartTraining}
           size="lg"
-          className="w-full sm:w-auto"
+          className="w-full sm:w-auto gradient-agent glass-subtle hover-lift ripple-container shadow-glow transform-3d transition-all duration-300 font-semibold text-white border-0 px-8 py-4"
         >
           <Play className="w-4 h-4 mr-2" />
           Nouvel Entraînement
