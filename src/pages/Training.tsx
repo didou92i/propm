@@ -1,7 +1,12 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { SimpleTrainingPlayer } from '@/components/training/SimpleTrainingPlayer';
-import { TrainingHero, PerformanceDashboard, TrainingConfiguration, TrainingLayout } from '@/components/training';
+import { 
+  HeroSection, 
+  TrainingDashboard, 
+  TrainingConfiguration, 
+  TrainingLayout 
+} from '@/components/training';
 import { ProtectedTrainingRoute } from '@/components/ProtectedTrainingRoute';
 import { useAgentTheme } from "@/hooks/useAgentTheme";
 import { useTrainingManager } from '@/hooks/training';
@@ -16,6 +21,7 @@ const Training = () => {
     configuration,
     user,
     currentSessionId,
+    sessionData,
     setConfiguration,
     handleStartTraining,
     handleTrainingComplete,
@@ -60,16 +66,16 @@ const Training = () => {
         onShowConfiguration={handleShowConfiguration}
         onSignOut={handleSignOut}
       >
-        {/* Hero Section */}
+        {/* Hero Section - Toujours visible sauf en mode configuration */}
         {!state.showConfiguration && (
-          <TrainingHero 
+          <HeroSection 
             onStartTraining={handleStartTraining}
             onShowConfiguration={handleShowConfiguration}
             isLoading={isLoading}
           />
         )}
 
-        {/* Performance Dashboard - Toujours visible */}
+        {/* Performance Dashboard - Toujours visible avec vraies données */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -77,7 +83,7 @@ const Training = () => {
           className="p-6"
         >
           <div className="max-w-7xl mx-auto">
-            <PerformanceDashboard onStartTraining={handleStartTraining} />
+            <TrainingDashboard sessionData={sessionData} />
           </div>
         </motion.div>
 

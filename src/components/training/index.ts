@@ -1,5 +1,23 @@
-export { TrainingHero } from './TrainingHero';
+// Organisms (Complex components)
+export { HeroSection } from './organisms/HeroSection';
+export { TrainingDashboard } from './organisms/TrainingDashboard';
+
+// Molecules (Component combinations)
+export { HeroHeader } from './molecules/HeroHeader';
+export { HeroStats } from './molecules/HeroStats';
+export { HeroActions } from './molecules/HeroActions';
+export { QuickStats } from './molecules/QuickStats';
+export { PerformanceChart } from './molecules/PerformanceChart';
+export { AchievementsList } from './molecules/AchievementsList';
+
+// Atoms (Base components)
+export { ActionButton } from './atoms/ActionButton';
+export { StatCard } from './atoms/StatCard';
+export { MetricCard } from './atoms/MetricCard';
+
+// Legacy components (to be refactored)
 export { PerformanceDashboard } from './PerformanceDashboard';
+export { TrainingHero } from './TrainingHero';
 export { AnimatedQuizPlayer } from './AnimatedQuizPlayer';
 export { TrueFalseAnimated } from './TrueFalseAnimated';
 export { CasePracticeSimulator } from './CasePracticeSimulator';
