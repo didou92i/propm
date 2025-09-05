@@ -131,15 +131,6 @@ export const TrainingDashboard: React.FC<TrainingDashboardProps> = ({
         </div>
         
         <div className="flex items-center space-x-3">
-          <Button
-            variant="outline"
-            onClick={() => navigate('/dashboard')}
-            className="flex items-center space-x-2 px-4 py-2"
-          >
-            <BarChart3 className="h-4 w-4" />
-            <span>Dashboard Complet</span>
-          </Button>
-          
           {onStartTraining && (
             <ActionButton
               variant="outline"

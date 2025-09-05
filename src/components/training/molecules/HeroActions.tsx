@@ -1,19 +1,24 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { ActionButton } from '../atoms/ActionButton';
-import { Play, Settings } from 'lucide-react';
+import { Play, Settings, BarChart3 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface HeroActionsProps {
   onStartTraining: () => void;
   onShowConfiguration: () => void;
   isLoading?: boolean;
+  hasSessionData?: boolean;
 }
 
 export const HeroActions: React.FC<HeroActionsProps> = ({
   onStartTraining,
   onShowConfiguration,
-  isLoading = false
+  isLoading = false,
+  hasSessionData = false
 }) => {
+  const navigate = useNavigate();
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 30 }}
@@ -28,7 +33,7 @@ export const HeroActions: React.FC<HeroActionsProps> = ({
         icon={<Play className="h-5 w-5" />}
         className="px-8 py-3 text-lg font-semibold min-w-[200px]"
       >
-        Commencer Maintenant
+        Nouvel Entraînement
       </ActionButton>
 
       <ActionButton
@@ -37,8 +42,19 @@ export const HeroActions: React.FC<HeroActionsProps> = ({
         icon={<Settings className="h-4 w-4" />}
         className="px-6 py-3"
       >
-        Configuration Avancée
+        Entraînement Personnalisé
       </ActionButton>
+
+      {hasSessionData && (
+        <ActionButton
+          variant="secondary"
+          onClick={() => navigate('/dashboard')}
+          icon={<BarChart3 className="h-4 w-4" />}
+          className="px-6 py-3"
+        >
+          Mes Statistiques
+        </ActionButton>
+      )}
     </motion.div>
   );
 };

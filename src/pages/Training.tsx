@@ -95,6 +95,7 @@ const Training = () => {
                 onStartTraining={handleStartTraining}
                 onShowConfiguration={handleShowConfiguration}
                 isLoading={isLoading}
+                hasSessionData={hasSessionData}
               />
             </div>
           </motion.div>

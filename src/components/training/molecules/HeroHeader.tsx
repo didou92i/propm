@@ -13,14 +13,18 @@ export const HeroHeader: React.FC = () => {
 
   return (
     <div className="text-center space-y-8">
-      {/* Logo animé */}
+      {/* Logo ProPM */}
       <motion.div
         initial={{ scale: 0, rotate: -180 }}
         animate={{ scale: 1, rotate: 0 }}
         transition={{ duration: 1, type: "spring", stiffness: 100 }}
-        className="mx-auto w-20 h-20 bg-gradient-to-br from-primary to-primary/60 rounded-2xl shadow-2xl flex items-center justify-center"
+        className="mx-auto w-24 h-24 rounded-2xl shadow-2xl flex items-center justify-center overflow-hidden"
       >
-        <Brain className="h-10 w-10 text-white" />
+        <img 
+          src="/redacpro-avatar.png" 
+          alt="ProPM Logo" 
+          className="w-full h-full object-cover rounded-2xl"
+        />
       </motion.div>
 
       {/* Titre avec effet typewriter */}

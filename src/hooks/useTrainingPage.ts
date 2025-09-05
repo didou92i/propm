@@ -137,8 +137,8 @@ export const useTrainingPage = (initialConfig: TrainingConfig) => {
 
   // === DONNÉES CALCULÉES ===
   const hasSessionData = !!sessionData && sessionData.totalSessions > 0;
-  const shouldShowDashboard = hasSessionData && !showConfiguration;
-  const shouldShowHero = !hasSessionData && !showConfiguration;
+  const shouldShowDashboard = hasSessionData && !showConfiguration && !isTrainingActive;
+  const shouldShowHero = !showConfiguration && !isTrainingActive;
 
   console.log('🎯 Display Logic:', {
     hasSessionData,

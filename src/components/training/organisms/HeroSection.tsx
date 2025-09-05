@@ -9,12 +9,14 @@ interface HeroSectionProps {
   onStartTraining: () => void;
   onShowConfiguration: () => void;
   isLoading?: boolean;
+  hasSessionData?: boolean;
 }
 
 export const HeroSection: React.FC<HeroSectionProps> = ({
   onStartTraining,
   onShowConfiguration,
-  isLoading = false
+  isLoading = false,
+  hasSessionData = false
 }) => {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
@@ -37,6 +39,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             onStartTraining={onStartTraining}
             onShowConfiguration={onShowConfiguration}
             isLoading={isLoading}
+            hasSessionData={hasSessionData}
           />
         </div>
       </div>
