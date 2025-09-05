@@ -3,8 +3,9 @@ import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Settings, ArrowLeft, Play } from 'lucide-react';
+import { Select, SelectValue } from '@/components/ui/select';
+import { ModernSelectTrigger, ModernSelectContent, ModernSelectItem } from '@/components/ui/modern-select';
+import { Settings, ArrowLeft, Play, BookOpen, TrendingUp } from 'lucide-react';
 import { TRAINING_TYPES, USER_LEVELS, STUDY_DOMAINS } from '@/config/training';
 import type { TrainingConfig } from '@/types/training';
 import type { TrainingType, UserLevel, StudyDomain } from '@/types/prepacds';
@@ -70,31 +71,26 @@ export const TrainingConfiguration: React.FC<TrainingConfigurationProps> = ({
                   Type d'entraînement
                 </label>
                 <Select value={configuration.trainingType} onValueChange={handleTrainingTypeChange}>
-                  <SelectTrigger className="select-category-training">
-                    <div className="flex items-center gap-3">
-                      <div className="select-icon-container">
-                        {(() => {
-                          const selectedType = TRAINING_TYPES.find(t => t.value === configuration.trainingType);
-                          return selectedType ? <selectedType.icon className="w-4 h-4 text-primary" /> : null;
-                        })()}
-                      </div>
-                      <SelectValue />
-                    </div>
-                  </SelectTrigger>
-                  <SelectContent>
+                  <ModernSelectTrigger 
+                    category="training" 
+                    icon={(() => {
+                      const selectedType = TRAINING_TYPES.find(t => t.value === configuration.trainingType);
+                      return selectedType ? <selectedType.icon className="w-4 h-4 text-primary" /> : <Settings className="w-4 h-4 text-primary" />;
+                    })()}
+                  >
+                    <SelectValue placeholder="Sélectionner un type d'entraînement" />
+                  </ModernSelectTrigger>
+                  <ModernSelectContent>
                     {TRAINING_TYPES.map((type) => (
-                      <SelectItem key={type.value} value={type.value}>
-                        <div className="flex items-center gap-3 py-1">
-                          <div className="select-icon-container">
-                            <type.icon className="w-4 h-4 text-primary" />
-                          </div>
-                          <div>
-                            <div className="font-semibold">{type.label}</div>
-                          </div>
-                        </div>
-                      </SelectItem>
+                      <ModernSelectItem 
+                        key={type.value} 
+                        value={type.value}
+                        icon={<type.icon className="w-4 h-4 text-primary" />}
+                      >
+                        {type.label}
+                      </ModernSelectItem>
                     ))}
-                  </SelectContent>
+                  </ModernSelectContent>
                 </Select>
               </motion.div>
 
@@ -108,32 +104,29 @@ export const TrainingConfiguration: React.FC<TrainingConfigurationProps> = ({
                   Niveau de Difficulté
                 </label>
                 <Select value={configuration.level} onValueChange={handleLevelChange}>
-                  <SelectTrigger className="select-category-level">
-                    <div className="flex items-center gap-3">
-                      <div className="select-icon-container">
-                        {(() => {
-                          const selectedLevel = USER_LEVELS.find(l => l.value === configuration.level);
-                          return selectedLevel ? <selectedLevel.icon className="w-4 h-4 text-primary" /> : null;
-                        })()}
-                      </div>
-                      <SelectValue />
-                    </div>
-                  </SelectTrigger>
-                  <SelectContent>
+                  <ModernSelectTrigger 
+                    category="level"
+                    icon={(() => {
+                      const selectedLevel = USER_LEVELS.find(l => l.value === configuration.level);
+                      return selectedLevel ? <selectedLevel.icon className="w-4 h-4 text-primary" /> : <TrendingUp className="w-4 h-4 text-primary" />;
+                    })()}
+                  >
+                    <SelectValue placeholder="Sélectionner votre niveau" />
+                  </ModernSelectTrigger>
+                  <ModernSelectContent>
                     {USER_LEVELS.map((lvl) => (
-                      <SelectItem key={lvl.value} value={lvl.value}>
-                        <div className="flex items-start gap-3 py-1">
-                          <div className="select-icon-container mt-0.5">
-                            <lvl.icon className="w-4 h-4 text-primary" />
-                          </div>
-                          <div>
-                            <div className="font-semibold">{lvl.label}</div>
-                            <div className="text-sm text-muted-foreground opacity-80">{lvl.description}</div>
-                          </div>
+                      <ModernSelectItem 
+                        key={lvl.value} 
+                        value={lvl.value}
+                        icon={<lvl.icon className="w-4 h-4 text-primary" />}
+                      >
+                        <div>
+                          <div className="font-medium">{lvl.label}</div>
+                          <div className="text-xs text-muted-foreground">{lvl.description}</div>
                         </div>
-                      </SelectItem>
+                      </ModernSelectItem>
                     ))}
-                  </SelectContent>
+                  </ModernSelectContent>
                 </Select>
               </motion.div>
 
@@ -147,18 +140,19 @@ export const TrainingConfiguration: React.FC<TrainingConfigurationProps> = ({
                   Domaine d'Étude
                 </label>
                 <Select value={configuration.domain} onValueChange={handleDomainChange}>
-                  <SelectTrigger className="select-category-domain">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
+                  <ModernSelectTrigger 
+                    category="domain"
+                    icon={<BookOpen className="w-4 h-4 text-primary" />}
+                  >
+                    <SelectValue placeholder="Sélectionner un domaine d'étude" />
+                  </ModernSelectTrigger>
+                  <ModernSelectContent>
                     {STUDY_DOMAINS.map((dom) => (
-                      <SelectItem key={dom.value} value={dom.value}>
-                        <div className="py-1">
-                          <div className="font-semibold">{dom.label}</div>
-                        </div>
-                      </SelectItem>
+                      <ModernSelectItem key={dom.value} value={dom.value}>
+                        {dom.label}
+                      </ModernSelectItem>
                     ))}
-                  </SelectContent>
+                  </ModernSelectContent>
                 </Select>
               </motion.div>
             </div>
