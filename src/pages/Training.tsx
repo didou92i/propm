@@ -7,21 +7,29 @@ import {
   TrainingConfiguration, 
   TrainingLayout 
 } from '@/components/training';
+import { DebugPanel } from '@/components/training/DebugPanel';
 import { ProtectedTrainingRoute } from '@/components/ProtectedTrainingRoute';
 import { useAgentTheme } from "@/hooks/useAgentTheme";
-import { useOptimizedTrainingManager } from '@/hooks/training';
+import { useTrainingPage } from '@/hooks/useTrainingPage';
+import { createTestTrainingData } from '@/utils/createTestTrainingData';
 import { DEFAULT_TRAINING_CONFIG } from '@/config/training';
 
 const Training = () => {
   const [selectedAgent, setSelectedAgent] = useState("prepacds");
   
-  // Hook principal pour gérer l'entraînement
+  // Hook simplifié pour gérer l'entraînement (NOUVELLE ARCHITECTURE)
   const {
-    state,
     configuration,
+    showConfiguration,
+    isTrainingActive,
     user,
     currentSessionId,
     sessionData,
+    isEmpty,
+    hasSessionData,
+    shouldShowDashboard,
+    shouldShowHero,
+    isLoading,
     setConfiguration,
     handleStartTraining,
     handleTrainingComplete,
@@ -29,8 +37,9 @@ const Training = () => {
     handleShowConfiguration,
     handleConfigurationBack,
     handleSignOut,
-    isLoading
-  } = useOptimizedTrainingManager(DEFAULT_TRAINING_CONFIG);
+    refreshSessionData,
+    logDebugInfo
+  } = useTrainingPage(DEFAULT_TRAINING_CONFIG);
 
   useAgentTheme(selectedAgent);
 
@@ -38,8 +47,15 @@ const Training = () => {
     setSelectedAgent(agentId);
   };
 
+  const handleCreateTestData = async () => {
+    const success = await createTestTrainingData();
+    if (success) {
+      await refreshSessionData();
+    }
+  };
+
   // Mode entraînement actif
-  if (state.isTrainingActive && currentSessionId) {
+  if (isTrainingActive && currentSessionId) {
     return (
       <ProtectedTrainingRoute>
         <div className="fixed inset-0 z-50 bg-background">
@@ -62,12 +78,12 @@ const Training = () => {
         selectedAgent={selectedAgent}
         onAgentSelect={handleAgentSelect}
         user={user}
-        showConfiguration={state.showConfiguration}
+        showConfiguration={showConfiguration}
         onShowConfiguration={handleShowConfiguration}
         onSignOut={handleSignOut}
       >
-        {/* Affichage conditionnel : Hero OU Dashboard, jamais les deux */}
-        {!state.showConfiguration && (
+        {/* NOUVELLE LOGIQUE SIMPLIFIÉE */}
+        {shouldShowHero && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -75,24 +91,33 @@ const Training = () => {
             className="p-6"
           >
             <div className="max-w-7xl mx-auto">
-              {state.isEmpty ? (
-                <HeroSection 
-                  onStartTraining={handleStartTraining}
-                  onShowConfiguration={handleShowConfiguration}
-                  isLoading={isLoading}
-                />
-              ) : (
-                <TrainingDashboard 
-                  sessionData={sessionData} 
-                  onStartTraining={handleStartTraining}
-                />
-              )}
+              <HeroSection 
+                onStartTraining={handleStartTraining}
+                onShowConfiguration={handleShowConfiguration}
+                isLoading={isLoading}
+              />
+            </div>
+          </motion.div>
+        )}
+
+        {shouldShowDashboard && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="p-6"
+          >
+            <div className="max-w-7xl mx-auto">
+              <TrainingDashboard 
+                sessionData={sessionData} 
+                onStartTraining={handleStartTraining}
+              />
             </div>
           </motion.div>
         )}
 
         {/* Configuration Section */}
-        {state.showConfiguration && (
+        {showConfiguration && (
           <TrainingConfiguration
             configuration={configuration}
             onConfigurationChange={setConfiguration}
@@ -100,6 +125,19 @@ const Training = () => {
             onBack={handleConfigurationBack}
           />
         )}
+
+        {/* DEBUG PANEL (Développement uniquement) */}
+        <DebugPanel
+          sessionData={sessionData}
+          isEmpty={isEmpty}
+          user={user}
+          configuration={configuration}
+          isTrainingActive={isTrainingActive}
+          showConfiguration={showConfiguration}
+          isLoading={isLoading}
+          onRefresh={refreshSessionData}
+          onCreateTestData={handleCreateTestData}
+        />
       </TrainingLayout>
     </ProtectedTrainingRoute>
   );

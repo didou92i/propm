@@ -35,3 +35,9 @@ export { ActivityCalendar } from './ActivityCalendar';
 export { EmptyTrainingState } from './EmptyTrainingState';
 export { TrainingLoadingIndicator } from './TrainingLoadingIndicator';
 export { TrainingToastManager } from './TrainingToastManager';
+
+// Lazy components pour optimisation
+export { LazyTrainingDashboard } from './LazyTrainingDashboard';
+
+// Debug components (développement)
+export { DebugPanel } from './DebugPanel';

@@ -1,4 +1,7 @@
-// Hooks optimisés
+// Hook principal simplifié (NOUVELLE ARCHITECTURE)
+export { useTrainingPage } from '../useTrainingPage';
+
+// Hooks optimisés (legacy mais toujours utilisés)
 export { useOptimizedTrainingManager } from './useOptimizedTrainingManager';
 export { useTrainingFlow } from './useTrainingFlow';
 export { useTrainingActions } from './useTrainingActions';
