@@ -5,8 +5,8 @@ import { supabase } from '@/integrations/supabase/client';
  */
 export const realDataService = {
   /**
-   * Génère des progress logs pour les sessions existantes
-   * Supprime et recréer les progress logs pour garantir des données cohérentes
+   * Génère des données complètes : exercise_history + progress_logs
+   * Assure la cohérence entre toutes les tables liées
    */
   async generateProgressLogsForExistingSessions(): Promise<{ logsCreated: number }> {
     const { data: { user } } = await supabase.auth.getUser();
@@ -15,7 +15,7 @@ export const realDataService = {
       return { logsCreated: 0 };
     }
 
-    console.log('🔄 Génération progress logs pour utilisateur:', user.id);
+    console.log('🔄 Génération complète des données pour utilisateur:', user.id);
 
     // Récupérer toutes les sessions de l'utilisateur
     const { data: sessions, error: sessionsError } = await supabase
@@ -36,33 +36,48 @@ export const realDataService = {
 
     console.log('📋 Sessions trouvées:', sessions.length);
 
-    // Nettoyage complet des anciens progress logs
-    const { error: deleteError } = await supabase
-      .from('prepa_cds_progress_logs')
-      .delete()
-      .eq('user_id', user.id);
+    // ÉTAPE 1 : Nettoyage complet des données existantes
+    console.log('🧹 Nettoyage des données existantes...');
+    
+    await supabase.from('prepa_cds_progress_logs').delete().eq('user_id', user.id);
+    await supabase.from('prepa_cds_exercise_history').delete().eq('user_id', user.id);
+    
+    console.log('✅ Nettoyage terminé');
 
-    if (deleteError) {
-      console.error('❌ Erreur suppression anciens logs:', deleteError);
-    } else {
-      console.log('🧹 Anciens progress logs supprimés');
-    }
-
-    let totalLogsCreated = 0;
+    // ÉTAPE 2 : Créer les exercise_history pour chaque session
+    console.log('📝 Création des exercise_history...');
+    
+    const allExercises = [];
     const allProgressLogs = [];
-
-    // Générer les progress logs pour chaque session
+    
     for (const session of sessions) {
       const numExercises = Math.floor(Math.random() * 4) + 3; // 3-6 exercices
       
       for (let i = 0; i < numExercises; i++) {
-        // Score progressif réaliste
+        const exerciseId = crypto.randomUUID();
+        const exerciseType = this.getExerciseType(session.training_type);
+        const contentPreview = this.generateContentPreview(session.domain, exerciseType);
+        
+        // Créer l'exercise_history
+        allExercises.push({
+          id: exerciseId,
+          user_id: user.id,
+          session_id: session.session_id,
+          exercise_type: exerciseType,
+          content_hash: this.generateContentHash(contentPreview),
+          content_preview: contentPreview,
+          difficulty_level: session.level,
+          domain: session.domain,
+          was_alternative: Math.random() > 0.8, // 20% d'exercices alternatifs
+          generated_at: new Date(
+            new Date(session.created_at).getTime() + i * 180000 // +3min par exercice
+          ).toISOString()
+        });
+
+        // Créer le progress_log correspondant
         const baseScore = 65 + Math.random() * 25; // 65-90
         const progressBonus = (i / numExercises) * 8; // Amélioration graduelle
         const score = Math.min(100, Math.round(baseScore + progressBonus));
-
-        // Créer un exercise_id unique et cohérent
-        const exerciseId = crypto.randomUUID();
 
         allProgressLogs.push({
           user_id: user.id,
@@ -73,15 +88,35 @@ export const realDataService = {
           time_spent_seconds: Math.floor(Math.random() * 120) + 60, // 1-3 minutes
           feedback_provided: this.generateFeedback(score),
           created_at: new Date(
-            new Date(session.created_at).getTime() + i * 180000 // +3min par exercice
+            new Date(session.created_at).getTime() + i * 240000 // +4min par exercice
           ).toISOString()
         });
       }
     }
 
-    // Insertion par batch pour optimiser les performances
+    let totalLogsCreated = 0;
+
+    // ÉTAPE 3 : Insérer les exercise_history en premier
+    if (allExercises.length > 0) {
+      console.log(`📝 Insertion de ${allExercises.length} exercises...`);
+      
+      const { error: exerciseError } = await supabase
+        .from('prepa_cds_exercise_history')
+        .insert(allExercises);
+
+      if (exerciseError) {
+        console.error('❌ Erreur insertion exercises:', exerciseError);
+        return { logsCreated: 0 };
+      }
+      
+      console.log('✅ Exercise_history créés avec succès');
+    }
+
+    // ÉTAPE 4 : Insérer les progress_logs
     if (allProgressLogs.length > 0) {
-      const batchSize = 100;
+      console.log(`📊 Insertion de ${allProgressLogs.length} progress logs...`);
+      
+      const batchSize = 50; // Réduit pour éviter les timeouts
       for (let i = 0; i < allProgressLogs.length; i += batchSize) {
         const batch = allProgressLogs.slice(i, i + batchSize);
         
@@ -92,6 +127,7 @@ export const realDataService = {
 
         if (insertError) {
           console.error('❌ Erreur insertion batch progress logs:', insertError);
+          break; // Arrêter en cas d'erreur
         } else {
           const batchCount = insertedLogs?.length || 0;
           totalLogsCreated += batchCount;
@@ -102,6 +138,56 @@ export const realDataService = {
 
     console.log('🎯 Total progress logs créés:', totalLogsCreated);
     return { logsCreated: totalLogsCreated };
+  },
+
+  /**
+   * Génère un type d'exercice selon le type d'entraînement
+   */
+  getExerciseType(trainingType: string): string {
+    const types = {
+      'qcm': ['question_multiple_choice', 'vrai_faux', 'qcm_simple'],
+      'cas_pratique': ['cas_pratique', 'analyse_situation', 'resolution_probleme'],
+      'redaction': ['redaction_note', 'synthese_document', 'commentaire_arret']
+    };
+    
+    const typeOptions = types[trainingType as keyof typeof types] || types['qcm'];
+    return typeOptions[Math.floor(Math.random() * typeOptions.length)];
+  },
+
+  /**
+   * Génère un aperçu de contenu réaliste
+   */
+  generateContentPreview(domain: string, exerciseType: string): string {
+    const previews = {
+      droit_administratif: [
+        'Analyse du principe de légalité dans le contentieux administratif',
+        'Étude de la hiérarchie des normes en droit public',
+        'Cas pratique sur les actes administratifs unilatéraux',
+        'QCM sur les recours contentieux devant le tribunal administratif'
+      ],
+      droit_penal: [
+        'Exercice sur les éléments constitutifs de l\'infraction',
+        'Cas pratique de qualification pénale',
+        'QCM sur la responsabilité pénale des personnes morales',
+        'Analyse des circonstances aggravantes'
+      ],
+      police_municipale: [
+        'Étude des pouvoirs de police du maire',
+        'Cas pratique sur les contraventions de voirie',
+        'QCM sur les compétences des agents de police municipale',
+        'Analyse d\'une situation de trouble à l\'ordre public'
+      ]
+    };
+
+    const domainPreviews = previews[domain as keyof typeof previews] || previews['droit_administratif'];
+    return domainPreviews[Math.floor(Math.random() * domainPreviews.length)];
+  },
+
+  /**
+   * Génère un hash simple pour le contenu
+   */
+  generateContentHash(content: string): string {
+    return btoa(content).substring(0, 16);
   },
 
   /**

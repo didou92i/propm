@@ -49,24 +49,31 @@ export const useTrainingPage = (initialConfig: TrainingConfig) => {
     logDebugInfo();
   }, [logDebugInfo]);
 
-  // Génération automatique des données au chargement initial
+  // Génération automatique des données au chargement initial - FORCE COMPLÈTE
   useEffect(() => {
     const ensureData = async () => {
       if (user && !sessionLoading) {
         try {
-          console.log('🔧 Vérification données pour:', user.email);
+          console.log('🔧 GÉNÉRATION FORCÉE pour:', user.email);
           
-          // Forcer la génération complète pour assurer la cohérence
+          // Forcer la génération complète avec nettoyage
           const result = await realDataService.ensureDataCompleteness();
-          console.log('✅ Génération terminée:', result);
+          console.log('✅ Génération forcée terminée:', result);
           
-          // Attendre puis rafraîchir pour voir les nouveaux scores
+          // Attendre puis rafraîchir DEUX fois pour garantir la cohérence
           setTimeout(async () => {
             await refreshSessionData();
-            console.log('🔄 Interface mise à jour avec nouveaux scores');
-          }, 1500);
+            console.log('🔄 Premier refresh terminé');
+            
+            // Second refresh pour s'assurer que les scores sont pris en compte
+            setTimeout(async () => {
+              await refreshSessionData();
+              console.log('🔄 Second refresh - données finalisées');
+            }, 1000);
+          }, 2000);
         } catch (error) {
-          console.warn('⚠️ Génération échouée:', error);
+          console.error('❌ Génération forcée échouée:', error);
+          toast.error('Erreur lors de la génération des données');
         }
       }
     };
