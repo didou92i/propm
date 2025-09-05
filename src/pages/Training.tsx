@@ -8,6 +8,7 @@ import {
   TrainingLayout 
 } from '@/components/training';
 import { DebugPanel } from '@/components/training/DebugPanel';
+import { DataInitializer } from '@/components/training/DataInitializer';
 import { ProtectedTrainingRoute } from '@/components/ProtectedTrainingRoute';
 import { useAgentTheme } from "@/hooks/useAgentTheme";
 import { useTrainingPage } from '@/hooks/useTrainingPage';
@@ -16,6 +17,7 @@ import { DEFAULT_TRAINING_CONFIG } from '@/config/training';
 
 const Training = () => {
   const [selectedAgent, setSelectedAgent] = useState("prepacds");
+  const [showDataInitializer, setShowDataInitializer] = useState(false);
   
   // Hook simplifié pour gérer l'entraînement (NOUVELLE ARCHITECTURE)
   const {
@@ -42,6 +44,13 @@ const Training = () => {
   } = useTrainingPage(DEFAULT_TRAINING_CONFIG);
 
   useAgentTheme(selectedAgent);
+
+  // Afficher l'initialiseur de données si pas de données et première visite
+  React.useEffect(() => {
+    if (!isLoading && isEmpty && !sessionData) {
+      setShowDataInitializer(true);
+    }
+  }, [isLoading, isEmpty, sessionData]);
 
   const handleAgentSelect = (agentId: string) => {
     setSelectedAgent(agentId);
@@ -74,6 +83,14 @@ const Training = () => {
   // Interface principale
   return (
     <ProtectedTrainingRoute>
+      <DataInitializer 
+        isVisible={showDataInitializer}
+        onComplete={() => {
+          setShowDataInitializer(false);
+          window.location.reload(); // Recharger pour récupérer les nouvelles données
+        }}
+      />
+      
       <TrainingLayout
         selectedAgent={selectedAgent}
         onAgentSelect={handleAgentSelect}

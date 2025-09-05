@@ -165,7 +165,7 @@ export const useTrainingSession = () => {
         wasAlternative
       );
 
-      return exercise?.id || null;
+      return exercise ? `exercise-${sessionId}-${Date.now()}` : null;
 
     } catch (error) {
       logger.error('Échec enregistrement exercice', error, 'useTrainingSession');

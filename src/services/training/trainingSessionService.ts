@@ -1,30 +1,45 @@
 import { supabase } from '@/integrations/supabase/client';
-import { logger } from '@/utils/logger';
+import { logger as Logger } from '@/utils/logger';
 import type { TrainingType, UserLevel, StudyDomain } from '@/types/prepacds';
 import type { Database } from '@/integrations/supabase/types';
 
 type DbTrainingSession = Database['public']['Tables']['prepa_cds_sessions']['Row'];
-type DbTrainingProgress = Database['public']['Tables']['prepa_cds_progress_logs']['Row'];
-type DbExerciseHistory = Database['public']['Tables']['prepa_cds_exercise_history']['Row'];
 
-export interface TrainingSession extends Omit<DbTrainingSession, 'training_type' | 'level' | 'domain'> {
-  training_type: TrainingType;
+interface TrainingSession {
+  sessionId: string;
+  trainingType: TrainingType;
   level: UserLevel;
   domain: StudyDomain;
 }
 
-export interface TrainingProgress extends DbTrainingProgress {}
-
-export interface ExerciseHistory extends DbExerciseHistory {}
-
-export interface TrainingSessionWithProgress extends DbTrainingSession {
-  prepa_cds_progress_logs: Array<{
-    evaluation_score: number | null;
-  }>;
+interface TrainingProgress {
+  sessionId: string;
+  exerciseId: string;
+  userAnswer: string;
+  evaluationScore: number;
+  timeSpentSeconds: number;
+  feedbackProvided?: string;
 }
 
-export class TrainingSessionService {
-  private static instance: TrainingSessionService;
+interface ExerciseHistory {
+  sessionId: string;
+  exerciseType: string;
+  contentHash: string;
+  contentPreview: string;
+  difficultyLevel: string;
+  domain: string;
+  wasAlternative: boolean;
+}
+
+interface TrainingSessionWithProgress extends DbTrainingSession {
+  prepa_cds_progress_logs?: Array<{ evaluation_score: number }>;
+}
+
+/**
+ * Service pour gérer les sessions d'entraînement et le progrès utilisateur
+ */
+class TrainingSessionService {
+  private static instance: TrainingSessionService | null = null;
 
   static getInstance(): TrainingSessionService {
     if (!TrainingSessionService.instance) {
@@ -34,7 +49,7 @@ export class TrainingSessionService {
   }
 
   /**
-   * Créer une nouvelle session d'entraînement
+   * Crée une nouvelle session d'entraînement
    */
   async createSession(
     sessionId: string,
@@ -53,8 +68,8 @@ export class TrainingSessionService {
         user_id: user.id,
         session_id: sessionId,
         training_type: trainingType,
-        level: level,
-        domain: domain,
+        level,
+        domain,
         exercises_proposed: [],
         questions_asked: [],
         cases_studied: [],
@@ -69,73 +84,67 @@ export class TrainingSessionService {
         .select()
         .single();
 
-      if (error) {
-        logger.error('Erreur création session', error, 'TrainingSessionService');
-        throw error;
-      }
+      if (error) throw error;
 
-      logger.info('Session créée avec succès', { sessionId, trainingType }, 'TrainingSessionService');
+      Logger.info('Session créée avec succès', { sessionId, trainingType, level, domain });
       return data;
 
     } catch (error) {
-      logger.error('Échec création session', error, 'TrainingSessionService');
+      Logger.error('Erreur création session', error);
       return null;
     }
   }
 
   /**
-   * Mettre à jour une session existante
+   * Met à jour une session d'entraînement
    */
   async updateSession(
     sessionId: string,
     updates: Partial<Omit<TrainingSession, 'id' | 'user_id' | 'created_at'>>
   ): Promise<boolean> {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        throw new Error('Utilisateur non authentifié');
-      }
-
       const { error } = await supabase
         .from('prepa_cds_sessions')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString()
-        })
-        .eq('session_id', sessionId)
-        .eq('user_id', user.id);
+        .update(updates)
+        .eq('session_id', sessionId);
 
-      if (error) {
-        logger.error('Erreur mise à jour session', error, 'TrainingSessionService');
-        return false;
-      }
+      if (error) throw error;
 
+      Logger.info('Session mise à jour', { sessionId, updates });
       return true;
 
     } catch (error) {
-      logger.error('Échec mise à jour session', error, 'TrainingSessionService');
+      Logger.error('Erreur mise à jour session', error);
       return false;
     }
   }
 
   /**
-   * Marquer une session comme terminée
+   * Termine une session d'entraînement
    */
   async completeSession(sessionId: string, duration: number): Promise<boolean> {
     try {
-      return await this.updateSession(sessionId, {
-        session_duration: duration,
-        completed_at: new Date().toISOString()
-      });
+      const { error } = await supabase
+        .from('prepa_cds_sessions')
+        .update({
+          completed_at: new Date().toISOString(),
+          session_duration: duration
+        })
+        .eq('session_id', sessionId);
+
+      if (error) throw error;
+
+      Logger.info('Session terminée', { sessionId, duration });
+      return true;
+
     } catch (error) {
-      logger.error('Échec finalisation session', error, 'TrainingSessionService');
+      Logger.error('Erreur finalisation session', error);
       return false;
     }
   }
 
   /**
-   * Enregistrer un exercice dans l'historique
+   * Enregistre un exercice dans l'historique
    */
   async recordExercise(
     sessionId: string,
@@ -162,7 +171,7 @@ export class TrainingSessionService {
         content_hash: contentHash,
         content_preview: contentPreview,
         difficulty_level: difficultyLevel,
-        domain: domain,
+        domain,
         was_alternative: wasAlternative
       };
 
@@ -172,21 +181,26 @@ export class TrainingSessionService {
         .select()
         .single();
 
-      if (error) {
-        logger.error('Erreur enregistrement exercice', error, 'TrainingSessionService');
-        throw error;
-      }
+      if (error) throw error;
 
-      return data;
+      return {
+        sessionId,
+        exerciseType,
+        contentHash,
+        contentPreview,
+        difficultyLevel,
+        domain,
+        wasAlternative
+      };
 
     } catch (error) {
-      logger.error('Échec enregistrement exercice', error, 'TrainingSessionService');
+      Logger.error('Erreur enregistrement exercice', error);
       return null;
     }
   }
 
   /**
-   * Enregistrer la progression de l'utilisateur
+   * Enregistre la progression d'un exercice
    */
   async recordProgress(
     sessionId: string,
@@ -219,23 +233,27 @@ export class TrainingSessionService {
         .select()
         .single();
 
-      if (error) {
-        logger.error('Erreur enregistrement progression', error, 'TrainingSessionService');
-        throw error;
-      }
+      if (error) throw error;
 
-      return data;
+      return {
+        sessionId,
+        exerciseId,
+        userAnswer,
+        evaluationScore,
+        timeSpentSeconds,
+        feedbackProvided: feedback
+      };
 
     } catch (error) {
-      logger.error('Échec enregistrement progression', error, 'TrainingSessionService');
+      Logger.error('Erreur enregistrement progression', error);
       return null;
     }
   }
 
   /**
-   * Récupérer les sessions de l'utilisateur
+   * Récupère les sessions d'entraînement de l'utilisateur
    */
-  async getUserSessions(limit: number = 20): Promise<DbTrainingSession[]> {
+  async getUserSessions(limit: number = 50): Promise<DbTrainingSession[]> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
@@ -250,21 +268,18 @@ export class TrainingSessionService {
         .order('created_at', { ascending: false })
         .limit(limit);
 
-      if (error) {
-        logger.error('Erreur récupération sessions', error, 'TrainingSessionService');
-        return [];
-      }
+      if (error) throw error;
 
       return data || [];
 
     } catch (error) {
-      logger.error('Échec récupération sessions', error, 'TrainingSessionService');
+      Logger.error('Erreur récupération sessions', error);
       return [];
     }
   }
 
   /**
-   * Calculer les statistiques utilisateur
+   * Récupère les statistiques utilisateur
    */
   async getUserStats(): Promise<{
     totalSessions: number;
@@ -288,81 +303,80 @@ export class TrainingSessionService {
         };
       }
 
-      // Récupérer TOUTES les sessions avec leurs progressions (complétées ET en cours)
-      const { data: sessions, error: sessionsError } = await supabase
+      // Récupérer les sessions
+      const { data: sessions, error: sessionError } = await supabase
         .from('prepa_cds_sessions')
-        .select(`
-          *,
-          prepa_cds_progress_logs!session_id(evaluation_score)
-        `)
+        .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      // Debug: Log pour vérifier les données
-      logger.info('Sessions récupérées', { 
-        count: sessions?.length || 0, 
-        error: sessionsError,
-        sessions: sessions?.slice(0, 2) // Premier 2 pour debug
-      }, 'TrainingSessionService');
-
-      if (sessionsError) {
-        logger.error('Erreur requête sessions avec progressions', sessionsError, 'TrainingSessionService');
-        // Fallback: récupérer seulement les sessions sans progressions
-        const { data: fallbackSessions } = await supabase
-          .from('prepa_cds_sessions')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
-        
-        if (fallbackSessions) {
-          logger.info('Fallback: sessions sans progressions', { count: fallbackSessions.length }, 'TrainingSessionService');
-          return this.calculateBasicStats(fallbackSessions);
-        }
+      if (sessionError) {
+        throw sessionError;
       }
 
-      if (!sessions || sessions.length === 0) {
-        logger.info('Aucune session trouvée', { userId: user.id }, 'TrainingSessionService');
-        return {
-          totalSessions: 0,
-          averageScore: 0,
-          totalTimeMinutes: 0,
-          streakDays: 0,
-          sessionsByDomain: {},
-          recentActivity: []
-        };
+      // Récupérer les progress logs séparément
+      const { data: progressLogs, error: progressError } = await supabase
+        .from('prepa_cds_progress_logs')
+        .select('*')
+        .eq('user_id', user.id);
+
+      if (progressError) {
+        Logger.error('Erreur récupération progress logs', progressError);
       }
 
-      // Calculer les statistiques (séparer sessions complétées et totales)
-      const totalSessions = sessions.length;
-      const completedSessions = sessions.filter(s => s.completed_at !== null);
-      const totalTimeMinutes = sessions.reduce((sum, session) => sum + (session.session_duration || 0), 0);
+      const allSessions = sessions || [];
+      const allProgressLogs = progressLogs || [];
       
-      // Calculer le score moyen
-      let totalScores = 0;
+      // Calculer les statistiques principales
+      const totalSessions = allSessions.length;
+      const completedSessions = allSessions.filter(s => s.completed_at).length;
+      
+      // Calculer le score moyen basé sur les progress logs
+      let totalScore = 0;
       let scoreCount = 0;
-      sessions.forEach((session: any) => {
-        if (session.prepa_cds_progress_logs && Array.isArray(session.prepa_cds_progress_logs)) {
-          session.prepa_cds_progress_logs.forEach((log: any) => {
-            if (log.evaluation_score !== null) {
-              totalScores += log.evaluation_score;
-              scoreCount++;
-            }
-          });
+      
+      // Grouper les progress logs par session
+      const progressBySession = allProgressLogs.reduce((acc: any, log: any) => {
+        if (!acc[log.session_id]) acc[log.session_id] = [];
+        acc[log.session_id].push(log);
+        return acc;
+      }, {});
+      
+      Object.values(progressBySession).forEach((logs: any) => {
+        if (logs.length > 0) {
+          const sessionAvgScore = logs.reduce((sum: number, log: any) => 
+            sum + (log.evaluation_score || 0), 0) / logs.length;
+          totalScore += sessionAvgScore;
+          scoreCount++;
         }
       });
-      const averageScore = scoreCount > 0 ? Math.round(totalScores / scoreCount) : 0;
+      
+      const averageScore = scoreCount > 0 ? Math.round(totalScore / scoreCount) : 0;
 
-      // Calculer la série (streak) de jours consécutifs (uniquement sessions complétées)
-      const streakDays = this.calculateStreak(completedSessions as any);
+      // Calculer le temps total (minutes)
+      const totalTimeMinutes = Math.round(
+        allSessions.reduce((sum, session) => sum + (session.session_duration || 0), 0) / 60
+      );
 
-      // Sessions par domaine (toutes les sessions)
-      const sessionsByDomain = sessions.reduce((acc, session) => {
+      // Calculer les sessions par domaine
+      const sessionsByDomain = allSessions.reduce((acc: Record<string, number>, session) => {
         acc[session.domain] = (acc[session.domain] || 0) + 1;
         return acc;
-      }, {} as Record<string, number>);
+      }, {});
 
-      // Activité récente (30 derniers jours) - toutes les sessions
-      const recentActivity = this.calculateRecentActivity(sessions as any);
+      // Calculer le streak (jours consécutifs)
+      const streakDays = this.calculateStreak(allSessions);
+
+      // Calculer l'activité récente avec les scores réels
+      const recentActivity = this.calculateRecentActivityWithScores(allSessions, progressBySession);
+
+      Logger.info('Statistiques calculées', {
+        totalSessions,
+        averageScore,
+        totalTimeMinutes,
+        streakDays,
+        recentActivityCount: recentActivity.length
+      });
 
       return {
         totalSessions,
@@ -374,7 +388,7 @@ export class TrainingSessionService {
       };
 
     } catch (error) {
-      logger.error('Échec calcul statistiques', error, 'TrainingSessionService');
+      Logger.error('Erreur calcul statistiques', error);
       return {
         totalSessions: 0,
         averageScore: 0,
@@ -387,66 +401,76 @@ export class TrainingSessionService {
   }
 
   /**
-   * Vérifier si un contenu a déjà été proposé récemment
+   * Vérifie si un contenu a déjà été proposé récemment
    */
   async isContentAlreadyProposed(sessionId: string, content: string): Promise<boolean> {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        return false;
-      }
-
       const contentHash = this.generateContentHash(content);
-      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return false;
+
+      // Vérifier dans les 24 dernières heures
+      const twentyFourHoursAgo = new Date();
+      twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
 
       const { data, error } = await supabase
         .from('prepa_cds_exercise_history')
         .select('id')
         .eq('user_id', user.id)
         .eq('content_hash', contentHash)
-        .gte('generated_at', oneDayAgo)
+        .gte('generated_at', twentyFourHoursAgo.toISOString())
         .limit(1);
 
       if (error) {
-        logger.error('Erreur vérification contenu', error, 'TrainingSessionService');
+        Logger.error('Erreur vérification contenu', error);
         return false;
       }
 
       return (data && data.length > 0);
 
     } catch (error) {
-      logger.error('Échec vérification contenu', error, 'TrainingSessionService');
+      Logger.error('Erreur vérification contenu proposé', error);
       return false;
     }
   }
 
   /**
-   * Calculer la série de jours consécutifs
+   * Calcule le streak de jours consécutifs
    */
-  private calculateStreak(sessions: TrainingSessionWithProgress[]): number {
-    if (sessions.length === 0) return 0;
+  private calculateStreak(sessions: DbTrainingSession[]): number {
+    if (!sessions || sessions.length === 0) return 0;
 
-    const sessionDates = sessions
-      .map(session => new Date(session.completed_at || session.created_at).toDateString())
-      .filter((date, index, arr) => arr.indexOf(date) === index)
-      .sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+    const completedSessions = sessions
+      .filter(s => s.completed_at)
+      .sort((a, b) => new Date(b.completed_at!).getTime() - new Date(a.completed_at!).getTime());
+
+    if (completedSessions.length === 0) return 0;
 
     let streak = 0;
-    const today = new Date().toDateString();
-    let currentDate = new Date();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-    for (const sessionDate of sessionDates) {
-      const checkDate = currentDate.toDateString();
-      
-      if (sessionDate === checkDate) {
+    // Grouper les sessions par jour
+    const sessionsByDay = new Set<string>();
+    completedSessions.forEach(session => {
+      const sessionDate = new Date(session.completed_at!);
+      sessionDate.setHours(0, 0, 0, 0);
+      sessionsByDay.add(sessionDate.toDateString());
+    });
+
+    const sortedDays = Array.from(sessionsByDay)
+      .map(day => new Date(day))
+      .sort((a, b) => b.getTime() - a.getTime());
+
+    // Calculer le streak
+    let currentDate = new Date(today);
+    
+    for (const sessionDay of sortedDays) {
+      if (sessionDay.getTime() === currentDate.getTime()) {
         streak++;
         currentDate.setDate(currentDate.getDate() - 1);
-      } else if (sessionDate === today && streak === 0) {
-        // Aujourd'hui compte toujours pour démarrer une série
-        streak++;
-        currentDate.setDate(currentDate.getDate() - 1);
-      } else {
+      } else if (sessionDay.getTime() < currentDate.getTime()) {
         break;
       }
     }
@@ -455,81 +479,104 @@ export class TrainingSessionService {
   }
 
   /**
-   * Calculer l'activité récente
+   * Calcule l'activité récente avec les scores réels
    */
-  private calculateRecentActivity(sessions: any[]): Array<{ date: string; sessionsCount: number; averageScore: number }> {
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  private calculateRecentActivityWithScores(sessions: any[], progressBySession: any): Array<{
+    date: string;
+    sessionsCount: number;
+    averageScore: number;
+  }> {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
     const recentSessions = sessions.filter(session => 
-      new Date(session.completed_at || session.created_at) >= thirtyDaysAgo
+      new Date(session.created_at) >= thirtyDaysAgo
     );
 
-    const activityByDate = recentSessions.reduce((acc, session) => {
-      const date = new Date(session.completed_at || session.created_at).toDateString();
-      
+    // Grouper par date
+    const sessionsByDate = recentSessions.reduce((acc: any, session) => {
+      const date = new Date(session.created_at).toISOString().split('T')[0];
       if (!acc[date]) {
-        acc[date] = { sessionsCount: 0, totalScore: 0, scoreCount: 0 };
+        acc[date] = {
+          sessions: [],
+          totalScore: 0,
+          scoreCount: 0
+        };
       }
+      acc[date].sessions.push(session);
       
-      acc[date].sessionsCount++;
-      
-      // Calculer le score moyen pour cette session
-      if (session.prepa_cds_progress_logs && Array.isArray(session.prepa_cds_progress_logs)) {
-        session.prepa_cds_progress_logs.forEach((log: any) => {
-          if (log.evaluation_score !== null) {
-            acc[date].totalScore += log.evaluation_score;
-            acc[date].scoreCount++;
-          }
-        });
+      // Calculer le score de la session si disponible
+      const logs = progressBySession[session.session_id] || [];
+      if (logs.length > 0) {
+        const sessionScore = logs.reduce((sum: number, log: any) => 
+          sum + (log.evaluation_score || 0), 0) / logs.length;
+        acc[date].totalScore += sessionScore;
+        acc[date].scoreCount++;
       }
       
       return acc;
-    }, {} as Record<string, { sessionsCount: number; totalScore: number; scoreCount: number }>);
+    }, {});
 
-    return Object.entries(activityByDate).map(([date, data]) => {
-      const activityData = data as { sessionsCount: number; totalScore: number; scoreCount: number };
-      return {
-        date,
-        sessionsCount: activityData.sessionsCount,
-        averageScore: activityData.scoreCount > 0 ? Math.round(activityData.totalScore / activityData.scoreCount) : 0
-      };
-    });
+    return Object.entries(sessionsByDate).map(([date, data]: [string, any]) => ({
+      date,
+      sessionsCount: data.sessions.length,
+      averageScore: data.scoreCount > 0 ? Math.round(data.totalScore / data.scoreCount) : 0
+    }));
   }
 
   /**
-   * Calculer les stats de base sans progressions
+   * Calcule des statistiques de base quand les progress logs ne sont pas disponibles
    */
-  private calculateBasicStats(sessions: DbTrainingSession[]) {
+  private calculateBasicStats(sessions: DbTrainingSession[]): any {
     const totalSessions = sessions.length;
-    const completedSessions = sessions.filter(s => s.completed_at !== null);
-    const totalTimeMinutes = sessions.reduce((sum, session) => sum + (session.session_duration || 0), 0);
+    const completedSessions = sessions.filter(s => s.completed_at).length;
     
-    const sessionsByDomain = sessions.reduce((acc, session) => {
+    // Score moyen estimé basé sur le niveau de difficulté
+    const averageScore = sessions.length > 0 ? 
+      Math.round(sessions.reduce((sum, session) => {
+        switch (session.level) {
+          case 'debutant': return sum + 75;
+          case 'intermediaire': return sum + 70;
+          case 'avance': return sum + 65;
+          default: return sum + 70;
+        }
+      }, 0) / sessions.length) : 0;
+
+    const totalTimeMinutes = Math.round(
+      sessions.reduce((sum, session) => sum + (session.session_duration || 0), 0) / 60
+    );
+
+    const sessionsByDomain = sessions.reduce((acc: Record<string, number>, session) => {
       acc[session.domain] = (acc[session.domain] || 0) + 1;
       return acc;
-    }, {} as Record<string, number>);
+    }, {});
+
+    const streakDays = this.calculateStreak(sessions);
+    const recentActivity = this.calculateRecentActivityWithScores(sessions, {});
 
     return {
       totalSessions,
-      averageScore: 0, // Pas de progressions disponibles
+      averageScore,
       totalTimeMinutes,
-      streakDays: this.calculateStreak(completedSessions as any),
+      streakDays,
       sessionsByDomain,
-      recentActivity: []
+      recentActivity
     };
   }
 
   /**
-   * Générer un hash simple pour le contenu
+   * Génère un hash simple pour le contenu
    */
   private generateContentHash(content: string): string {
     let hash = 0;
     for (let i = 0; i < content.length; i++) {
       const char = content.charCodeAt(i);
       hash = ((hash << 5) - hash) + char;
-      hash = hash & hash; // Convert to 32-bit integer
+      hash = hash & hash; // Convert to 32bit integer
     }
-    return Math.abs(hash).toString(36);
+    return hash.toString();
   }
 }
 
+// Export du service en singleton
 export const trainingSessionService = TrainingSessionService.getInstance();
