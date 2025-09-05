@@ -9,7 +9,7 @@ import {
 } from '@/components/training';
 import { ProtectedTrainingRoute } from '@/components/ProtectedTrainingRoute';
 import { useAgentTheme } from "@/hooks/useAgentTheme";
-import { useTrainingManager } from '@/hooks/training';
+import { useOptimizedTrainingManager } from '@/hooks/training';
 import { DEFAULT_TRAINING_CONFIG } from '@/config/training';
 
 const Training = () => {
@@ -22,7 +22,6 @@ const Training = () => {
     user,
     currentSessionId,
     sessionData,
-    isEmpty,
     setConfiguration,
     handleStartTraining,
     handleTrainingComplete,
@@ -31,7 +30,7 @@ const Training = () => {
     handleConfigurationBack,
     handleSignOut,
     isLoading
-  } = useTrainingManager(DEFAULT_TRAINING_CONFIG);
+  } = useOptimizedTrainingManager(DEFAULT_TRAINING_CONFIG);
 
   useAgentTheme(selectedAgent);
 
@@ -67,16 +66,7 @@ const Training = () => {
         onShowConfiguration={handleShowConfiguration}
         onSignOut={handleSignOut}
       >
-        {/* Hero Section - Visible seulement pour nouveaux utilisateurs */}
-        {!state.showConfiguration && isEmpty && (
-          <HeroSection 
-            onStartTraining={handleStartTraining}
-            onShowConfiguration={handleShowConfiguration}
-            isLoading={isLoading}
-          />
-        )}
-
-        {/* Performance Dashboard - Toujours visible avec vraies données */}
+        {/* Affichage conditionnel : Hero OU Dashboard, jamais les deux */}
         {!state.showConfiguration && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -85,11 +75,18 @@ const Training = () => {
             className="p-6"
           >
             <div className="max-w-7xl mx-auto">
-              <TrainingDashboard 
-                sessionData={sessionData} 
-                onStartTraining={handleStartTraining}
-                isEmpty={isEmpty}
-              />
+              {state.isEmpty ? (
+                <HeroSection 
+                  onStartTraining={handleStartTraining}
+                  onShowConfiguration={handleShowConfiguration}
+                  isLoading={isLoading}
+                />
+              ) : (
+                <TrainingDashboard 
+                  sessionData={sessionData} 
+                  onStartTraining={handleStartTraining}
+                />
+              )}
             </div>
           </motion.div>
         )}

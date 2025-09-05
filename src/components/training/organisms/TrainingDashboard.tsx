@@ -7,20 +7,18 @@ import { ActivityCalendar } from '../ActivityCalendar';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ActionButton } from '../atoms/ActionButton';
-import { Trophy, Star, Target, Zap, Medal, Crown, Play, BookOpen } from 'lucide-react';
-import { EmptyTrainingState } from '../EmptyTrainingState';
+import { Trophy, Star, Target, Zap, Medal, Crown, BookOpen } from 'lucide-react';
+
 import type { TrainingSessionData } from '@/hooks/useTrainingSession';
 
 interface TrainingDashboardProps {
   sessionData: TrainingSessionData | null;
   onStartTraining?: () => Promise<void>;
-  isEmpty?: boolean;
 }
 
 export const TrainingDashboard: React.FC<TrainingDashboardProps> = ({ 
   sessionData,
-  onStartTraining,
-  isEmpty = false 
+  onStartTraining
 }) => {
   const [selectedPeriod, setSelectedPeriod] = useState('month');
 
@@ -111,34 +109,6 @@ export const TrainingDashboard: React.FC<TrainingDashboardProps> = ({
 
   const performanceData = transformDataForChart(sessionData, selectedPeriod);
   const achievements = calculateAchievements(sessionData);
-
-  // Gestion de l'état vide
-  if (isEmpty) {
-    return (
-      <div className="space-y-8">
-        <EmptyTrainingState onStartTraining={onStartTraining || (() => {})} />
-        
-        {/* Bouton d'action principal pour utilisateurs sans données */}
-        {onStartTraining && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className="flex justify-center"
-          >
-            <ActionButton
-              variant="primary"
-              onClick={onStartTraining}
-              icon={<Play className="h-5 w-5" />}
-              className="px-8 py-4 text-lg font-semibold min-w-[250px]"
-            >
-              Commencer votre Premier Entraînement
-            </ActionButton>
-          </motion.div>
-        )}
-      </div>
-    );
-  }
 
   // Dashboard principal avec données
   return (

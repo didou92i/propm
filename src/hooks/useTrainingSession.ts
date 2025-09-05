@@ -243,7 +243,7 @@ export const useTrainingSession = () => {
     isAuthenticated: !!user,
     hasData: !!sessionData,
     
-    // Statistiques calculées
-    isEmpty: sessionData ? sessionData.totalSessions === 0 : true
+    // Statistiques calculées  
+    isEmpty: !sessionData || sessionData.totalSessions === 0
   };
 };
