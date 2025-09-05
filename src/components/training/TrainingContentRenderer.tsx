@@ -6,6 +6,7 @@ import { CheckCircle, ArrowLeft } from 'lucide-react';
 import { AnimatedQuizPlayer } from './AnimatedQuizPlayer';
 import { TrueFalseAnimated } from './TrueFalseAnimated';
 import { CasePracticeSimulator } from './CasePracticeSimulator';
+import { OpenEndedQuestionPlayer } from './OpenEndedQuestionPlayer';
 import type { TrainingType, UserLevel, StudyDomain } from '@/types/prepacds';
 
 interface TrainingContentRendererProps {
@@ -25,7 +26,7 @@ export function TrainingContentRenderer({
   onComplete,
   onExit
 }: TrainingContentRendererProps) {
-  const supportedTypes = ['qcm', 'vrai_faux', 'cas_pratique'];
+  const supportedTypes = ['qcm', 'vrai_faux', 'cas_pratique', 'question_ouverte'];
 
   // Rendu pour les types supportés
   if (supportedTypes.includes(trainingType)) {
@@ -63,6 +64,15 @@ export function TrainingContentRenderer({
               onComplete(score, answers);
             }}
             onExit={onExit}
+          />
+        )}
+
+        {trainingType === 'question_ouverte' && (
+          <OpenEndedQuestionPlayer
+            questions={content?.questions || []}
+            onComplete={onComplete}
+            onExit={onExit}
+            title={`Questions Ouvertes ${domain} - ${level}`}
           />
         )}
       </motion.div>

@@ -14,6 +14,7 @@ export { TrainingLayout } from './TrainingLayout';
 export { TrainingLoadingState } from './TrainingLoadingState';
 export { TrainingErrorState } from './TrainingErrorState';
 export { TrainingContentRenderer } from './TrainingContentRenderer';
+export { OpenEndedQuestionPlayer } from './OpenEndedQuestionPlayer';
 export { ActivityCalendar } from './ActivityCalendar';
 export { EmptyTrainingState } from './EmptyTrainingState';
 export { TrainingLoadingIndicator } from './TrainingLoadingIndicator';

@@ -4,7 +4,8 @@ import type { TrainingType, UserLevel, StudyDomain } from '@/types/prepacds';
 export const TRAINING_TYPES = [
   { value: 'qcm' as TrainingType, label: 'QCM - Questions à Choix Multiple', icon: Target },
   { value: 'vrai_faux' as TrainingType, label: 'Vrai/Faux - Affirmations', icon: BookOpen },
-  { value: 'cas_pratique' as TrainingType, label: 'Cas Pratiques - Simulations', icon: Brain }
+  { value: 'cas_pratique' as TrainingType, label: 'Cas Pratiques - Simulations', icon: Brain },
+  { value: 'question_ouverte' as TrainingType, label: 'Questions Ouvertes - Rédaction', icon: Trophy }
 ];
 
 export const USER_LEVELS = [
