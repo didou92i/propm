@@ -11,13 +11,13 @@ export function MonitoringMetrics({ stats }: MonitoringMetricsProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
       {/* OpenAI Metrics */}
-      <Card>
+      <Card className="glass-intense neomorphism hover-lift gradient-border border border-primary/15 backdrop-blur-xl shadow-glow group">
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium">OpenAI - Tokens utilisés</CardTitle>
+          <CardTitle className="text-sm font-medium text-muted-foreground/90 tracking-wide">OpenAI - Tokens utilisés</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{stats.openai.tokensUsed.toLocaleString()}</div>
-          <p className="text-xs text-muted-foreground mt-1">
+          <div className="text-3xl font-bold bg-gradient-to-r from-foreground via-primary to-accent bg-clip-text text-transparent group-hover:scale-105 transition-transform duration-300">{stats.openai.tokensUsed.toLocaleString()}</div>
+          <p className="text-xs text-muted-foreground/80 mt-2 font-medium">
             {stats.openai.requestsCount} requêtes
           </p>
         </CardContent>
