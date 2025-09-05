@@ -16,7 +16,7 @@ interface ActivityCalendarProps {
 }
 
 export const ActivityCalendar: React.FC<ActivityCalendarProps> = ({ 
-  recentActivity, 
+  recentActivity = [], 
   isLoading = false 
 }) => {
   // Générer les 5 dernières semaines (35 jours)
@@ -36,6 +36,8 @@ export const ActivityCalendar: React.FC<ActivityCalendarProps> = ({
 
   // Mapper les données d'activité avec les jours du calendrier
   const getActivityForDate = (date: Date) => {
+    if (!recentActivity || !Array.isArray(recentActivity)) return undefined;
+    
     const dateString = date.toDateString();
     return recentActivity.find(activity => 
       new Date(activity.date).toDateString() === dateString
