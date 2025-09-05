@@ -267,7 +267,7 @@ export function AppSidebar({ selectedAgent, onAgentSelect, onContextShare, onNew
                     `flex items-center gap-3 p-3 rounded-lg hover:bg-sidebar-accent/50 transition-colors ${isActive ? 'glass-intense border-l-2 border-primary' : 'glass-subtle'}`
                   }>
                     <Brain className="w-5 h-5 text-emerald-500" />
-                    <span className="font-medium">Entraînement</span>
+                    <span className="font-medium">Entraînement ( Beta )</span>
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
