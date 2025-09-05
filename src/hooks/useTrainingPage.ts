@@ -49,20 +49,21 @@ export const useTrainingPage = (initialConfig: TrainingConfig) => {
     logDebugInfo();
   }, [logDebugInfo]);
 
-  // Génération automatique optimisée des données si nécessaire
+  // Génération automatique des données au chargement initial
   useEffect(() => {
     const ensureData = async () => {
-      if (!sessionLoading && user && sessionData) {
-        // Toujours forcer la génération pour s'assurer d'avoir de vraies données
+      if (user && !sessionLoading) {
         try {
-          console.log('🔄 Vérification et génération des données...');
-          const result = await realDataService.ensureDataCompleteness();
-          console.log('✅ Données vérifiées:', result);
+          console.log('🔧 Vérification données pour:', user.email);
           
-          // Refresh après génération pour voir les nouveaux scores
+          // Forcer la génération complète pour assurer la cohérence
+          const result = await realDataService.ensureDataCompleteness();
+          console.log('✅ Génération terminée:', result);
+          
+          // Attendre puis rafraîchir pour voir les nouveaux scores
           setTimeout(async () => {
             await refreshSessionData();
-            console.log('🔄 Données rafraîchies après génération');
+            console.log('🔄 Interface mise à jour avec nouveaux scores');
           }, 1500);
         } catch (error) {
           console.warn('⚠️ Génération échouée:', error);

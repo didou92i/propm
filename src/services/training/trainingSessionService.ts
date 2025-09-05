@@ -363,7 +363,12 @@ class TrainingSessionService {
       
       const averageScore = scoreCount > 0 ? Math.round(totalScore / scoreCount) : 0;
       
-      console.log('🎯 Score Calculation:', { totalScore, scoreCount, averageScore });
+      console.log('📊 Calcul scores:', { 
+        progressLogsTotal: allProgressLogs.length,
+        totalScore, 
+        scoreCount, 
+        averageScore 
+      });
 
       // Calculer le temps total (minutes)
       const totalTimeMinutes = Math.round(

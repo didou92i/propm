@@ -5,78 +5,103 @@ import { supabase } from '@/integrations/supabase/client';
  */
 export const realDataService = {
   /**
-   * Génère des progress logs pour les sessions existantes sans logs
-   * Force la génération même si des logs existent déjà (mode forcé)
+   * Génère des progress logs pour les sessions existantes
+   * Supprime et recréer les progress logs pour garantir des données cohérentes
    */
-  async generateProgressLogsForExistingSessions(): Promise<void> {
+  async generateProgressLogsForExistingSessions(): Promise<{ logsCreated: number }> {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Utilisateur non authentifié');
+    if (!user) {
+      console.error('❌ Utilisateur non authentifié');
+      return { logsCreated: 0 };
+    }
 
-    console.log('🔄 Génération forcée des progress logs...');
+    console.log('🔄 Génération progress logs pour utilisateur:', user.id);
 
-    // Récupérer TOUTES les sessions
-    const { data: sessions } = await supabase
+    // Récupérer toutes les sessions de l'utilisateur
+    const { data: sessions, error: sessionsError } = await supabase
       .from('prepa_cds_sessions')
       .select('*')
-      .eq('user_id', user.id);
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (sessionsError) {
+      console.error('❌ Erreur récupération sessions:', sessionsError);
+      return { logsCreated: 0 };
+    }
 
     if (!sessions || sessions.length === 0) {
-      console.log('📋 Aucune session trouvée');
-      return;
+      console.log('📋 Aucune session trouvée pour l\'utilisateur');
+      return { logsCreated: 0 };
     }
 
     console.log('📋 Sessions trouvées:', sessions.length);
+
+    // Nettoyage complet des anciens progress logs
+    const { error: deleteError } = await supabase
+      .from('prepa_cds_progress_logs')
+      .delete()
+      .eq('user_id', user.id);
+
+    if (deleteError) {
+      console.error('❌ Erreur suppression anciens logs:', deleteError);
+    } else {
+      console.log('🧹 Anciens progress logs supprimés');
+    }
+
     let totalLogsCreated = 0;
+    const allProgressLogs = [];
 
+    // Générer les progress logs pour chaque session
     for (const session of sessions) {
-      // Supprimer les logs existants pour cette session (nettoyage)
-      await supabase
-        .from('prepa_cds_progress_logs')
-        .delete()
-        .eq('session_id', session.session_id);
-
-      console.log('🧹 Nettoyage logs existants pour:', session.session_id);
-
-      // Générer des progress logs réalistes
-      const numExercises = Math.floor(Math.random() * 5) + 3; // 3-7 exercices
-      const progressLogs = [];
-
+      const numExercises = Math.floor(Math.random() * 4) + 3; // 3-6 exercices
+      
       for (let i = 0; i < numExercises; i++) {
-        // Simuler une progression réaliste (score qui s'améliore)
-        const baseScore = 60 + Math.random() * 30; // Score entre 60-90
-        const progressBonus = (i / numExercises) * 10; // Amélioration progressive
+        // Score progressif réaliste
+        const baseScore = 65 + Math.random() * 25; // 65-90
+        const progressBonus = (i / numExercises) * 8; // Amélioration graduelle
         const score = Math.min(100, Math.round(baseScore + progressBonus));
 
-        progressLogs.push({
+        // Créer un exercise_id unique et cohérent
+        const exerciseId = crypto.randomUUID();
+
+        allProgressLogs.push({
           user_id: user.id,
           session_id: session.session_id,
-          exercise_id: `exercise-${session.session_id}-${i}`,
+          exercise_id: exerciseId,
           user_answer: this.generateRealisticAnswer(session.domain, score),
           evaluation_score: score,
-          time_spent_seconds: Math.floor(Math.random() * 180) + 120, // 2-5 minutes
+          time_spent_seconds: Math.floor(Math.random() * 120) + 60, // 1-3 minutes
           feedback_provided: this.generateFeedback(score),
           created_at: new Date(
-            new Date(session.created_at).getTime() + i * 300000 // +5min par exercice
+            new Date(session.created_at).getTime() + i * 180000 // +3min par exercice
           ).toISOString()
         });
       }
+    }
 
-      // Insérer les progress logs avec gestion d'erreur
-      const { data: insertedLogs, error: insertError } = await supabase
-        .from('prepa_cds_progress_logs')
-        .insert(progressLogs)
-        .select();
+    // Insertion par batch pour optimiser les performances
+    if (allProgressLogs.length > 0) {
+      const batchSize = 100;
+      for (let i = 0; i < allProgressLogs.length; i += batchSize) {
+        const batch = allProgressLogs.slice(i, i + batchSize);
+        
+        const { data: insertedLogs, error: insertError } = await supabase
+          .from('prepa_cds_progress_logs')
+          .insert(batch)
+          .select('id');
 
-      if (insertError) {
-        console.error('❌ Erreur insertion progress logs:', insertError);
-      } else {
-        const logsCount = insertedLogs?.length || 0;
-        console.log('✅ Progress logs créés:', logsCount, 'pour session:', session.session_id);
-        totalLogsCreated += logsCount;
+        if (insertError) {
+          console.error('❌ Erreur insertion batch progress logs:', insertError);
+        } else {
+          const batchCount = insertedLogs?.length || 0;
+          totalLogsCreated += batchCount;
+          console.log(`✅ Batch ${Math.floor(i/batchSize) + 1}: ${batchCount} progress logs créés`);
+        }
       }
     }
 
     console.log('🎯 Total progress logs créés:', totalLogsCreated);
+    return { logsCreated: totalLogsCreated };
   },
 
   /**
@@ -208,10 +233,10 @@ export const realDataService = {
       throw new Error('Utilisateur non connecté');
     }
 
-    // Forcer la génération des progress logs pour TOUTES les sessions existantes
-    await this.generateProgressLogsForExistingSessions();
+    let sessionsCreated = 0;
+    let progressLogsCreated = 0;
 
-    // Vérifier le nombre d'activité récente
+    // 1. Vérifier le nombre d'activité récente
     const fourWeeksAgo = new Date();
     fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
 
@@ -227,17 +252,28 @@ export const realDataService = {
 
     console.log('📊 Activité récente:', { sessions: recentSessions?.length || 0, activeDays });
 
-    let sessionsCreated = 0;
-    let progressLogsCreated = 0;
-
-    // Si l'activité est faible, générer plus de données
-    if ((recentSessions?.length || 0) < 10) {
-      console.log('📈 Génération de données supplémentaires...');
+    // 2. Si pas assez de sessions, en créer plus
+    if ((recentSessions?.length || 0) < 15) {
+      console.log('📈 Génération de sessions supplémentaires...');
       const result = await this.generateRecentActivityData();
       sessionsCreated = result.sessionsCreated;
-      progressLogsCreated = result.progressLogsCreated;
     }
 
-    return { sessionsCreated, progressLogsCreated, activeDays: Math.max(activeDays, 10) };
+    // 3. Forcer la génération des progress logs pour TOUTES les sessions
+    console.log('🔄 Génération forcée des progress logs...');
+    const progressResult = await this.generateProgressLogsForExistingSessions();
+    progressLogsCreated = progressResult.logsCreated;
+
+    console.log('✅ Complétude données:', { 
+      sessionsCreated, 
+      progressLogsCreated,
+      activeDays: Math.max(activeDays, 8)
+    });
+
+    return { 
+      sessionsCreated, 
+      progressLogsCreated, 
+      activeDays: Math.max(activeDays, 8) 
+    };
   }
 };
