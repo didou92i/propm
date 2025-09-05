@@ -62,26 +62,38 @@ export const TrainingConfiguration: React.FC<TrainingConfigurationProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Type d'entraînement */}
               <motion.div 
-                className="space-y-3"
-                whileHover={{ scale: 1.02 }}
-                transition={{ type: "spring", stiffness: 300 }}
+                className="space-y-4"
+                whileHover={{ scale: 1.01 }}
+                transition={{ type: "spring", stiffness: 400 }}
               >
-                <label className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <BookOpen className="w-4 h-4 text-primary" />
+                <label className="text-sm font-bold text-foreground flex items-center gap-3">
+                  <div className="select-icon-container">
+                    <BookOpen className="w-4 h-4 text-primary" />
+                  </div>
                   Type d'entraînement
                 </label>
                 <Select value={configuration.trainingType} onValueChange={handleTrainingTypeChange}>
-                  <SelectTrigger className="glass hover-lift">
-                    <SelectValue />
+                  <SelectTrigger className="select-category-training">
+                    <div className="flex items-center gap-3">
+                      <div className="select-icon-container">
+                        {(() => {
+                          const selectedType = TRAINING_TYPES.find(t => t.value === configuration.trainingType);
+                          return selectedType ? <selectedType.icon className="w-4 h-4 text-primary" /> : null;
+                        })()}
+                      </div>
+                      <SelectValue />
+                    </div>
                   </SelectTrigger>
                   <SelectContent>
                     {TRAINING_TYPES.map((type) => (
                       <SelectItem key={type.value} value={type.value}>
                         <div className="flex items-center gap-3 py-1">
-                          <div className="p-1 rounded bg-primary/10">
-                            <type.icon className="w-3 h-3 text-primary" />
+                          <div className="select-icon-container">
+                            <type.icon className="w-4 h-4 text-primary" />
                           </div>
-                          <span className="font-medium">{type.label}</span>
+                          <div>
+                            <div className="font-semibold">{type.label}</div>
+                          </div>
                         </div>
                       </SelectItem>
                     ))}
@@ -91,24 +103,31 @@ export const TrainingConfiguration: React.FC<TrainingConfigurationProps> = ({
 
               {/* Niveau */}
               <motion.div 
-                className="space-y-3"
-                whileHover={{ scale: 1.02 }}
-                transition={{ type: "spring", stiffness: 300 }}
+                className="space-y-4"
+                whileHover={{ scale: 1.01 }}
+                transition={{ type: "spring", stiffness: 400 }}
               >
-                <label className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <Trophy className="w-4 h-4 text-primary" />
+                <label className="text-sm font-bold text-foreground flex items-center gap-3">
+                  <div className="select-icon-container">
+                    <Trophy className="w-4 h-4 text-primary" />
+                  </div>
                   Niveau de Difficulté
                 </label>
                 <Select value={configuration.level} onValueChange={handleLevelChange}>
-                  <SelectTrigger className="glass hover-lift">
-                    <SelectValue />
+                  <SelectTrigger className="select-category-level">
+                    <div className="flex items-center gap-3">
+                      <div className="select-icon-container">
+                        <Trophy className="w-4 h-4 text-primary" />
+                      </div>
+                      <SelectValue />
+                    </div>
                   </SelectTrigger>
                   <SelectContent>
                     {USER_LEVELS.map((lvl) => (
                       <SelectItem key={lvl.value} value={lvl.value}>
                         <div className="py-1">
-                          <div className="font-medium">{lvl.label}</div>
-                          <div className="text-xs text-muted-foreground">{lvl.description}</div>
+                          <div className="font-semibold">{lvl.label}</div>
+                          <div className="text-sm text-muted-foreground opacity-80">{lvl.description}</div>
                         </div>
                       </SelectItem>
                     ))}
@@ -118,22 +137,31 @@ export const TrainingConfiguration: React.FC<TrainingConfigurationProps> = ({
 
               {/* Domaine */}
               <motion.div 
-                className="space-y-3"
-                whileHover={{ scale: 1.02 }}
-                transition={{ type: "spring", stiffness: 300 }}
+                className="space-y-4"
+                whileHover={{ scale: 1.01 }}
+                transition={{ type: "spring", stiffness: 400 }}
               >
-                <label className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <Brain className="w-4 h-4 text-primary" />
+                <label className="text-sm font-bold text-foreground flex items-center gap-3">
+                  <div className="select-icon-container">
+                    <Brain className="w-4 h-4 text-primary" />
+                  </div>
                   Domaine d'Étude
                 </label>
                 <Select value={configuration.domain} onValueChange={handleDomainChange}>
-                  <SelectTrigger className="glass hover-lift">
-                    <SelectValue />
+                  <SelectTrigger className="select-category-domain">
+                    <div className="flex items-center gap-3">
+                      <div className="select-icon-container">
+                        <Brain className="w-4 h-4 text-primary" />
+                      </div>
+                      <SelectValue />
+                    </div>
                   </SelectTrigger>
                   <SelectContent>
                     {STUDY_DOMAINS.map((dom) => (
                       <SelectItem key={dom.value} value={dom.value}>
-                        <span className="font-medium">{dom.label}</span>
+                        <div className="py-1">
+                          <div className="font-semibold">{dom.label}</div>
+                        </div>
                       </SelectItem>
                     ))}
                   </SelectContent>
