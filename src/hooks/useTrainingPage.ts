@@ -4,6 +4,7 @@ import { useTrainingSession } from '@/hooks/useTrainingSession';
 import type { TrainingConfig } from '@/types/training';
 import { toast } from 'sonner';
 import { logger } from '@/utils/logger';
+import { realDataService } from '@/services/training/realDataService';
 
 /**
  * Hook simplifié pour la page Training - Accès direct aux données
@@ -47,6 +48,24 @@ export const useTrainingPage = (initialConfig: TrainingConfig) => {
   useEffect(() => {
     logDebugInfo();
   }, [logDebugInfo]);
+
+  // Génération automatique silencieuse des données si nécessaire
+  useEffect(() => {
+    const ensureData = async () => {
+      if (!sessionLoading && isEmpty && user && sessionData?.totalSessions === 0) {
+        try {
+          console.log('🔄 Génération automatique de données d\'exemple...');
+          await realDataService.ensureDataCompleteness();
+          await refreshSessionData();
+          console.log('✅ Données générées avec succès');
+        } catch (error) {
+          console.warn('⚠️ Génération automatique échouée, continuons sans données:', error);
+        }
+      }
+    };
+
+    ensureData();
+  }, [sessionLoading, isEmpty, user, sessionData?.totalSessions, refreshSessionData]);
 
   // === ACTIONS SIMPLIFIÉES ===
   const handleStartTraining = useCallback(async () => {
