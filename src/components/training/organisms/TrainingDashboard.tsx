@@ -7,7 +7,9 @@ import { ActivityCalendar } from '../ActivityCalendar';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ActionButton } from '../atoms/ActionButton';
-import { Trophy, Star, Target, Zap, Medal, Crown, BookOpen } from 'lucide-react';
+import { Trophy, Star, Target, Zap, Medal, Crown, BookOpen, BarChart3 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 
 import type { TrainingSessionData } from '@/hooks/useTrainingSession';
 
@@ -21,6 +23,7 @@ export const TrainingDashboard: React.FC<TrainingDashboardProps> = ({
   onStartTraining
 }) => {
   const [selectedPeriod, setSelectedPeriod] = useState('month');
+  const navigate = useNavigate();
 
   // Transformation des données pour les graphiques
   const transformDataForChart = (data: any, period: string) => {
@@ -127,16 +130,27 @@ export const TrainingDashboard: React.FC<TrainingDashboardProps> = ({
           </p>
         </div>
         
-        {onStartTraining && (
-          <ActionButton
+        <div className="flex items-center space-x-3">
+          <Button
             variant="outline"
-            onClick={onStartTraining}
-            icon={<BookOpen className="h-4 w-4" />}
-            className="px-6 py-2"
+            onClick={() => navigate('/dashboard')}
+            className="flex items-center space-x-2 px-4 py-2"
           >
-            Nouvel Entraînement
-          </ActionButton>
-        )}
+            <BarChart3 className="h-4 w-4" />
+            <span>Dashboard Complet</span>
+          </Button>
+          
+          {onStartTraining && (
+            <ActionButton
+              variant="outline"
+              onClick={onStartTraining}
+              icon={<BookOpen className="h-4 w-4" />}
+              className="px-6 py-2"
+            >
+              Nouvel Entraînement
+            </ActionButton>
+          )}
+        </div>
       </motion.div>
 
       {/* Statistiques rapides */}
