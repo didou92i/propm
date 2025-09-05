@@ -23,37 +23,37 @@ export function MonitoringMetrics({ stats }: MonitoringMetricsProps) {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="glass-intense neomorphism hover-lift gradient-border border border-secondary/15 backdrop-blur-xl shadow-glow group">
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium">Temps de réponse moyen</CardTitle>
+          <CardTitle className="text-sm font-medium text-muted-foreground/90 tracking-wide">Temps de réponse moyen</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{stats.openai.averageResponseTime}s</div>
-          <p className="text-xs text-muted-foreground mt-1">
+          <div className="text-3xl font-bold bg-gradient-to-r from-foreground via-secondary to-accent bg-clip-text text-transparent group-hover:scale-105 transition-transform duration-300">{stats.openai.averageResponseTime}s</div>
+          <p className="text-xs text-muted-foreground/80 mt-2 font-medium">
             Taux de succès: {stats.openai.successRate}%
           </p>
         </CardContent>
       </Card>
 
       {/* Edge Functions Metrics */}
-      <Card>
+      <Card className="glass-intense neomorphism hover-lift gradient-border border border-accent/15 backdrop-blur-xl shadow-glow group">
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium">Edge Functions</CardTitle>
+          <CardTitle className="text-sm font-medium text-muted-foreground/90 tracking-wide">Edge Functions</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{stats.edgeFunctions.totalCalls.toLocaleString()}</div>
-          <p className="text-xs text-muted-foreground mt-1">
+          <div className="text-3xl font-bold bg-gradient-to-r from-foreground via-accent to-primary bg-clip-text text-transparent group-hover:scale-105 transition-transform duration-300">{stats.edgeFunctions.totalCalls.toLocaleString()}</div>
+          <p className="text-xs text-muted-foreground/80 mt-2 font-medium">
             Latence: {stats.edgeFunctions.averageLatency}ms
           </p>
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="glass-intense neomorphism hover-lift gradient-border border border-destructive/15 backdrop-blur-xl shadow-glow group">
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium">Taux d'erreur</CardTitle>
+          <CardTitle className="text-sm font-medium text-muted-foreground/90 tracking-wide">Taux d'erreur</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{stats.edgeFunctions.errorRate}%</div>
+          <div className="text-3xl font-bold bg-gradient-to-r from-destructive via-orange-500 to-red-500 bg-clip-text text-transparent group-hover:scale-105 transition-transform duration-300">{stats.edgeFunctions.errorRate}%</div>
           <Progress 
             value={stats.edgeFunctions.errorRate} 
             className="mt-2" 
@@ -63,55 +63,55 @@ export function MonitoringMetrics({ stats }: MonitoringMetricsProps) {
       </Card>
 
       {/* Document Processing Metrics */}
-      <Card>
+      <Card className="glass-intense neomorphism hover-lift gradient-border border border-primary/15 backdrop-blur-xl shadow-glow group">
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium">Documents traités</CardTitle>
+          <CardTitle className="text-sm font-medium text-muted-foreground/90 tracking-wide">Documents traités</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{stats.documents.totalProcessed.toLocaleString()}</div>
-          <p className="text-xs text-muted-foreground mt-1">
+          <div className="text-3xl font-bold bg-gradient-to-r from-foreground via-primary to-secondary bg-clip-text text-transparent group-hover:scale-105 transition-transform duration-300">{stats.documents.totalProcessed.toLocaleString()}</div>
+          <p className="text-xs text-muted-foreground/80 mt-2 font-medium">
             {stats.documents.processingQueue} en file d'attente
           </p>
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="glass-intense neomorphism hover-lift gradient-border border border-secondary/15 backdrop-blur-xl shadow-glow group">
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium">Temps de traitement</CardTitle>
+          <CardTitle className="text-sm font-medium text-muted-foreground/90 tracking-wide">Temps de traitement</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{stats.documents.averageProcessingTime}s</div>
-          <p className="text-xs text-muted-foreground mt-1">
+          <div className="text-3xl font-bold bg-gradient-to-r from-foreground via-secondary to-accent bg-clip-text text-transparent group-hover:scale-105 transition-transform duration-300">{stats.documents.averageProcessingTime}s</div>
+          <p className="text-xs text-muted-foreground/80 mt-2 font-medium">
             Échecs: {stats.documents.failureRate}%
           </p>
         </CardContent>
       </Card>
 
       {/* System Metrics */}
-      <Card>
+      <Card className="glass-intense neomorphism hover-lift gradient-border border border-accent/15 backdrop-blur-xl shadow-glow group">
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium">Utilisateurs actifs</CardTitle>
+          <CardTitle className="text-sm font-medium text-muted-foreground/90 tracking-wide">Utilisateurs actifs</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{stats.system.activeUsers}</div>
-          <p className="text-xs text-muted-foreground mt-1">
+          <div className="text-3xl font-bold bg-gradient-to-r from-foreground via-accent to-primary bg-clip-text text-transparent group-hover:scale-105 transition-transform duration-300">{stats.system.activeUsers}</div>
+          <p className="text-xs text-muted-foreground/80 mt-2 font-medium">
             {stats.system.conversationsToday} conversations aujourd'hui
           </p>
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="glass-intense neomorphism hover-lift gradient-border border border-primary/15 backdrop-blur-xl shadow-glow group">
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium">Utilisation mémoire</CardTitle>
+          <CardTitle className="text-sm font-medium text-muted-foreground/90 tracking-wide">Utilisation mémoire</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{stats.system.memoryUsage}%</div>
+          <div className="text-3xl font-bold bg-gradient-to-r from-foreground via-primary to-secondary bg-clip-text text-transparent group-hover:scale-105 transition-transform duration-300">{stats.system.memoryUsage}%</div>
           <Progress 
             value={stats.system.memoryUsage} 
             className="mt-2"
             max={100}
           />
-          <p className="text-xs text-muted-foreground mt-1">
+          <p className="text-xs text-muted-foreground/80 mt-2 font-medium">
             Uptime: {stats.system.uptime}%
           </p>
         </CardContent>
