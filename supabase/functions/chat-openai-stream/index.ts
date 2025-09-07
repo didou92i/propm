@@ -212,7 +212,9 @@ serve(async (req) => {
     });
 
     if (!runResponse.ok) {
-      throw new Error('Failed to create run');
+      const errorText = await runResponse.text();
+      console.error('OpenAI API error:', { status: runResponse.status, body: errorText });
+      throw new Error(`Failed to create run: ${runResponse.status} - ${errorText}`);
     }
 
     const runData = await runResponse.json();
