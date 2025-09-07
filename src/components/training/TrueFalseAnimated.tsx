@@ -133,7 +133,7 @@ export function TrueFalseAnimated({
       selectedBtn.classList.add('answer-select');
       selectedBtn.setAttribute('data-animation-lock', 'true');
       
-      // PHASE 2: Animation de feedback après 300ms (visible 3 secondes)
+      // PHASE 2: Animation de feedback après 300ms (visible 5 secondes)
       setTimeout(() => {
         logger.info("Début animation feedback", { isCorrect }, "TrueFalseAnimated");
         
@@ -147,7 +147,7 @@ export function TrueFalseAnimated({
             color: white !important;
             transform: scale(1.1) !important;
             box-shadow: 0 0 25px hsl(142, 76%, 36%, 0.6) !important;
-            animation: correctReveal 3s ease-out forwards !important;
+            animation: correctReveal 5s ease-out forwards !important;
             transition: none !important;
             animation-fill-mode: forwards !important;
           `;
@@ -179,7 +179,7 @@ export function TrueFalseAnimated({
               border-color: hsl(142, 76%, 36%) !important;
               color: white !important;
               box-shadow: 0 0 15px hsl(142, 76%, 36%, 0.4) !important;
-              animation: correctReveal 3s ease-out forwards !important;
+              animation: correctReveal 5s ease-out forwards !important;
               transition: none !important;
               animation-fill-mode: forwards !important;
             `;
@@ -191,7 +191,7 @@ export function TrueFalseAnimated({
           }, "TrueFalseAnimated");
         }
         
-        // Log des styles toutes les 500ms pendant 3 secondes
+        // Log des styles toutes les 500ms pendant 5 secondes
         const styleChecker = setInterval(() => {
           logger.debug("Vérification persistance styles", {
             selectedBtnStyles: selectedBtn.style.cssText,
@@ -204,12 +204,12 @@ export function TrueFalseAnimated({
         setTimeout(() => {
           clearInterval(styleChecker);
           logger.info("Fin vérification styles", {}, "TrueFalseAnimated");
-        }, 3000);
+        }, 5000);
         
       }, 300);
     }
     
-    // PHASE 3: Flip de la carte après 3 secondes (laisser voir l'animation)
+    // PHASE 3: Flip de la carte après 5 secondes (laisser voir l'animation)
     setTimeout(() => {
       logger.info("🔄 Début flip carte", { 
         currentFlipState: isFlipped,
@@ -240,7 +240,7 @@ export function TrueFalseAnimated({
           setScore(prev => prev + 1);
         }
 
-        // PHASE 4: Transition vers la question suivante après 2 secondes supplémentaires
+        // PHASE 4: Transition vers la question suivante après 3 secondes supplémentaires
         setTimeout(() => {
           logger.info("Transition vers question suivante", { 
             isLast: currentQuestionIndex >= questions.length - 1 
@@ -253,9 +253,9 @@ export function TrueFalseAnimated({
             logger.info("Quiz terminé", { finalScore, totalQuestions: questions.length }, "TrueFalseAnimated");
             onComplete(finalScore, newAnswers);
           }
-        }, 2000);
+        }, 3000);
       }, 600);
-    }, 3000); // Délai pour voir l'animation complète
+    }, 5000); // Délai pour voir l'animation complète
   };
 
   const nextQuestion = () => {
@@ -449,7 +449,20 @@ export function TrueFalseAnimated({
               </Badge>
             )}
           </div>
-          <Button variant="outline" onClick={onExit}>
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              logger.info("🚪 Clic bouton Quitter", { 
+                animationInProgress,
+                isFlipped,
+                showResult,
+                currentQuestionIndex 
+              }, "TrueFalseAnimated");
+              // Force l'arrêt des animations en cours
+              setAnimationInProgress(false);
+              onExit();
+            }}
+          >
             Quitter
           </Button>
         </div>
