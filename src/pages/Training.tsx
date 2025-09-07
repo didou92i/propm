@@ -82,9 +82,10 @@ const Training = () => {
       >
         {/* DASHBOARD SIMPLIFIÉ */}
         {!showConfiguration && (
-          <SimplifiedTrainingDashboard 
-            onStartTraining={handleStartTraining}
-          />
+            <SimplifiedTrainingDashboard 
+              onStartTraining={handleStartTraining}
+              onShowConfiguration={handleShowConfiguration}
+            />
         )}
 
         {/* Configuration Section */}

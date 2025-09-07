@@ -16,16 +16,19 @@ import {
   Trophy,
   TrendingUp,
   Calendar,
-  Play
+  Play,
+  Settings
 } from 'lucide-react';
 import { useTrainingStats } from '@/hooks/training/useTrainingStats';
 
 interface SimplifiedTrainingDashboardProps {
   onStartTraining?: () => Promise<void>;
+  onShowConfiguration?: () => void;
 }
 
 export const SimplifiedTrainingDashboard: React.FC<SimplifiedTrainingDashboardProps> = ({
-  onStartTraining
+  onStartTraining,
+  onShowConfiguration
 }) => {
   const { metrics, chartData, achievements, isLoading } = useTrainingStats();
 
@@ -53,14 +56,28 @@ export const SimplifiedTrainingDashboard: React.FC<SimplifiedTrainingDashboardPr
             Suivez votre progression et continuez votre entraînement
           </p>
         </div>
-        <Button 
-          onClick={onStartTraining}
-          size="lg"
-          className="w-full sm:w-auto gradient-agent glass-subtle hover-lift ripple-container shadow-glow transform-3d transition-all duration-300 font-semibold text-white border-0 px-8 py-4"
-        >
-          <Play className="w-4 h-4 mr-2" />
-          Nouvel Entraînement
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          <Button 
+            onClick={onStartTraining}
+            size="lg"
+            className="gradient-agent glass-subtle hover-lift ripple-container shadow-glow transform-3d transition-all duration-300 font-semibold text-white border-0 px-8 py-4"
+          >
+            <Play className="w-4 h-4 mr-2" />
+            Nouvel Entraînement
+          </Button>
+          
+          {onShowConfiguration && (
+            <Button
+              onClick={onShowConfiguration}
+              variant="outline"
+              size="lg"
+              className="glass-subtle hover-lift ripple-container transition-all duration-300 font-semibold px-8 py-4 border-primary/20 hover:border-primary/40 bg-background/50 hover:bg-primary/5"
+            >
+              <Settings className="w-4 h-4 mr-2" />
+              Entraînement Personnalisé
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Statistiques rapides */}
