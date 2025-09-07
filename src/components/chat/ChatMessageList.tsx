@@ -78,16 +78,6 @@ export function ChatMessageList({
                       isAssistant={message.role === "assistant"}
                     />
                   )}
-                  
-                  {message.id === typingMessageId && isStreaming && streamingContent && (
-                    <div className="mt-2 text-sm opacity-70">
-                      {streamingContent}...
-                      <StreamingPerformanceIndicator 
-                        performance={streamingPerformance} 
-                        isStreaming={isStreaming} 
-                      />
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
