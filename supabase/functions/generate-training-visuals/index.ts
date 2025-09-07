@@ -31,7 +31,7 @@ serve(async (req) => {
 
     console.log('Generating visual with GPT-Image-1:', { visualType, domain, prompt: prompt.substring(0, 100) + '...' });
 
-    const response = await fetch('https://api.openai.com/v1/images/generations', {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${openAIApiKey}`,
@@ -39,12 +39,14 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: 'gpt-image-1',
-        prompt: prompt,
-        n: 1,
-        size: '1024x1024',
-        output_format: 'webp',
-        quality: 'high',
-        response_format: 'b64_json'
+        messages: [
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        tool_choice: { "type": "image_generation" },
+        max_completion_tokens: 1000
       }),
     });
 
@@ -55,7 +57,21 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    const imageData = data.data[0].b64_json;
+    console.log('GPT-Image-1 response structure:', JSON.stringify(data, null, 2));
+    
+    // Extract image from GPT-Image-1 response structure
+    const imageCall = data.choices[0]?.message?.tool_calls?.[0]?.function?.arguments;
+    let imageData;
+    
+    if (imageCall) {
+      const parsedCall = JSON.parse(imageCall);
+      imageData = parsedCall.image || parsedCall.b64_json || parsedCall.data;
+    }
+    
+    if (!imageData) {
+      console.error('No image data found in response:', data);
+      throw new Error('No image data found in GPT-Image-1 response');
+    }
 
     console.log('Visual generated successfully');
 
