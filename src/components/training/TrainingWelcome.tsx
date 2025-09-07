@@ -53,7 +53,7 @@ export const TrainingWelcome: React.FC<TrainingWelcomeProps> = ({ onStart }) => 
               className="bg-background/80 backdrop-blur-sm border border-primary/20 rounded-2xl p-8"
             >
               <img 
-                src="/lovable-uploads/5246d52e-0f6f-4e1d-b701-ce8bc5fdfedf.png" 
+                src="/lovable-uploads/ee5c244a-472b-4489-ab81-d6dd1cc9525c.png" 
                 alt="PML Pro Logo" 
                 className="h-36 w-36 object-contain mx-auto"
                 loading="eager"
