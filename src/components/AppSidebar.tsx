@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { Calculator, Search, Settings, Plus, User, Moon, Sun, LogOut, MessageSquare, Activity, Brain } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Badge } from "@/components/ui/badge";
 import { ConversationSwitcher } from "@/components/conversation";
 import { useConversationHistory } from "@/hooks/useConversationHistory";
@@ -20,6 +21,7 @@ import {
   SidebarMenuItem,
   SidebarHeader,
   SidebarFooter,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { useRipple } from "@/hooks/useRipple";
 import { useTheme } from "@/hooks/useTheme";
@@ -39,6 +41,9 @@ export function AppSidebar({ selectedAgent, onAgentSelect, onContextShare, onNew
   const { toast } = useToast();
   const { getConversationSummary } = useConversationHistory();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
+  const { open } = useSidebar();
+  const collapsed = !open;
 
   const handleAgentSelect = (agentId: string, event?: React.MouseEvent<HTMLElement>) => {
     if (event) createRipple(event);
@@ -89,8 +94,14 @@ export function AppSidebar({ selectedAgent, onAgentSelect, onContextShare, onNew
   };
 
   return (
-    <Sidebar className="border-r border-border/40 glass-subtle theme-transition max-w-[15rem] min-w-[15rem] w-[15rem]">
-      <SidebarHeader className="p-4 border-b border-border/40">
+    <Sidebar className={`border-r border-border/40 glass-subtle theme-transition ${
+      isMobile 
+        ? collapsed 
+          ? "w-0 min-w-0 max-w-0 overflow-hidden" 
+          : "w-64 min-w-64 max-w-64" 
+        : "max-w-[15rem] min-w-[15rem] w-[15rem]"
+    }`}>
+      <SidebarHeader className={`p-4 border-b border-border/40 ${isMobile && collapsed ? 'hidden' : ''}`}>
         <div className="flex items-center gap-2 mb-4 animate-fade-in">
           <div className="w-8 h-8 rounded-lg gradient-agent-animated flex items-center justify-center float neomorphism-subtle overflow-hidden">
             <img 
@@ -101,32 +112,38 @@ export function AppSidebar({ selectedAgent, onAgentSelect, onContextShare, onNew
               decoding="async"
             />
           </div>
-          <span className="font-semibold text-lg">Propm.fr</span>
+          {!collapsed && <span className="font-semibold text-lg">Propm.fr</span>}
         </div>
-        <button 
-          onClick={handleNewConversation}
-          className="flex items-center gap-2 w-full p-2 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-sidebar-accent ripple-container hover-lift glass-hover neomorphism-hover"
-        >
-          <Plus className="w-4 h-4" />
-          Nouvelle conversation
-        </button>
+        {!collapsed && (
+          <button 
+            onClick={handleNewConversation}
+            className="flex items-center gap-2 w-full p-2 text-sm text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-sidebar-accent ripple-container hover-lift glass-hover neomorphism-hover"
+          >
+            <Plus className="w-4 h-4" />
+            Nouvelle conversation
+          </button>
+        )}
       </SidebarHeader>
 
       <SidebarContent>
         <SidebarGroup>
-          <div className="flex items-center justify-between px-4 py-2">
-            <SidebarGroupLabel className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Agents IA
-            </SidebarGroupLabel>
-            <ConversationSwitcher
-              currentAgent={selectedAgent}
-              onAgentSwitch={(agentId) => handleAgentSelect(agentId)}
-              onContextShare={handleContextShare}
-            >
-              <button className="p-1 rounded hover:bg-sidebar-accent/50 transition-colors">
-                <MessageSquare className="w-3 h-3 text-muted-foreground" />
-              </button>
-            </ConversationSwitcher>
+          <div className={`flex items-center justify-between px-4 py-2 ${collapsed ? 'px-2' : ''}`}>
+            {!collapsed && (
+              <>
+                <SidebarGroupLabel className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Agents IA
+                </SidebarGroupLabel>
+                <ConversationSwitcher
+                  currentAgent={selectedAgent}
+                  onAgentSwitch={(agentId) => handleAgentSelect(agentId)}
+                  onContextShare={handleContextShare}
+                >
+                  <button className="p-1 rounded hover:bg-sidebar-accent/50 transition-colors">
+                    <MessageSquare className="w-3 h-3 text-muted-foreground" />
+                  </button>
+                </ConversationSwitcher>
+              </>
+            )}
           </div>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -138,7 +155,7 @@ export function AppSidebar({ selectedAgent, onAgentSelect, onContextShare, onNew
                       selectedAgent === agent.id
                         ? "glass-intense text-sidebar-accent-foreground border-l-2 border-primary"
                         : "hover:bg-sidebar-accent/50 glass-subtle"
-                    }`}
+                    } ${collapsed ? 'justify-center' : ''}`}
                   >
                     <AgentAvatar 
                       agentId={agent.id}
@@ -150,15 +167,19 @@ export function AppSidebar({ selectedAgent, onAgentSelect, onContextShare, onNew
                         selectedAgent === agent.id ? 'scale-110' : ''
                       }`}
                     />
-                    <span className="font-medium flex-1 truncate whitespace-nowrap overflow-hidden text-ellipsis">{agent.name}</span>
-                    {(() => {
-                      const summary = getConversationSummary(agent.id);
-                      return summary.messageCount > 0 && (
-                        <Badge variant="secondary" className="ml-auto text-xs h-5 min-w-[1.5rem] max-w-[2rem] overflow-hidden">
-                          {summary.messageCount > 99 ? '99+' : summary.messageCount}
-                        </Badge>
-                      );
-                    })()}
+                    {!collapsed && (
+                      <>
+                        <span className="font-medium flex-1 truncate whitespace-nowrap overflow-hidden text-ellipsis">{agent.name}</span>
+                        {(() => {
+                          const summary = getConversationSummary(agent.id);
+                          return summary.messageCount > 0 && (
+                            <Badge variant="secondary" className="ml-auto text-xs h-5 min-w-[1.5rem] max-w-[2rem] overflow-hidden">
+                              {summary.messageCount > 99 ? '99+' : summary.messageCount}
+                            </Badge>
+                          );
+                        })()}
+                      </>
+                    )}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -167,9 +188,11 @@ export function AppSidebar({ selectedAgent, onAgentSelect, onContextShare, onNew
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-2">
-            Outils
-          </SidebarGroupLabel>
+          {!collapsed && (
+            <SidebarGroupLabel className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-2">
+              Outils
+            </SidebarGroupLabel>
+          )}
           <SidebarGroupContent>
             <SidebarMenu>
               {TOOLS.map((tool, index) => (
@@ -257,9 +280,11 @@ export function AppSidebar({ selectedAgent, onAgentSelect, onContextShare, onNew
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-2">
-            Système
-          </SidebarGroupLabel>
+          {!collapsed && (
+            <SidebarGroupLabel className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-2">
+              Système
+            </SidebarGroupLabel>
+          )}
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
@@ -288,21 +313,21 @@ export function AppSidebar({ selectedAgent, onAgentSelect, onContextShare, onNew
 
       </SidebarContent>
 
-      <SidebarFooter className="p-4 border-t border-border/40">
-        <div className="flex gap-2">
+      <SidebarFooter className={`p-4 border-t border-border/40 ${collapsed ? 'p-2' : ''}`}>
+        <div className={`flex gap-2 ${collapsed ? 'flex-col' : ''}`}>
           <SidebarMenuButton 
             onClick={handleSignOut}
-            className="flex-1 items-center gap-3 p-3 rounded-lg hover:bg-sidebar-accent/50 transition-colors glass-hover ripple-container overflow-hidden"
+            className={`${collapsed ? 'justify-center p-2' : 'flex-1'} items-center gap-3 p-3 rounded-lg hover:bg-sidebar-accent/50 transition-colors glass-hover ripple-container overflow-hidden`}
           >
             <LogOut className="w-5 h-5 text-muted-foreground" />
-            <span className="truncate whitespace-nowrap overflow-hidden text-ellipsis">Déconnexion</span>
+            {!collapsed && <span className="truncate whitespace-nowrap overflow-hidden text-ellipsis">Déconnexion</span>}
           </SidebarMenuButton>
           <button
             onClick={(e) => {
               createRipple(e);
               toggleTheme();
             }}
-            className="p-3 rounded-lg hover:bg-sidebar-accent/50 transition-colors glass-hover ripple-container"
+            className={`${collapsed ? 'p-2' : 'p-3'} rounded-lg hover:bg-sidebar-accent/50 transition-colors glass-hover ripple-container`}
           >
             {theme === 'light' ? (
               <Moon className="w-5 h-5 text-muted-foreground" />
