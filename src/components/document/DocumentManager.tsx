@@ -7,6 +7,7 @@ import { DocumentSearchBar } from './DocumentSearchBar';
 import { DocumentViewModeSelector } from './DocumentViewModeSelector';
 import { useDocumentLogic } from '@/hooks/document/useDocumentLogic';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ResponsiveCardContainer } from '@/components/ui/responsive-grid';
 
 interface DocumentData {
   id: string;
@@ -130,20 +131,37 @@ export const DocumentManager = () => {
                 <h3 className="font-medium text-lg mb-2">Aucun document trouvé</h3>
               </Card>
             ) : (
-              <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' : 'space-y-3'}>
-                {filteredDocuments.map((doc) => (
-                  <DocumentCard
-                    key={doc.id}
-                    doc={doc}
-                    onDownload={downloadDocument}
-                    onDelete={deleteDocument}
-                    formatFileSize={formatFileSize}
-                    formatDate={formatDate}
-                    getFileTypeColor={getFileTypeColor}
-                    getExtractionMethodLabel={getExtractionMethodLabel}
-                  />
-                ))}
-              </div>
+              viewMode === 'grid' ? (
+                <ResponsiveCardContainer>
+                  {filteredDocuments.map((doc) => (
+                    <DocumentCard
+                      key={doc.id}
+                      doc={doc}
+                      onDownload={downloadDocument}
+                      onDelete={deleteDocument}
+                      formatFileSize={formatFileSize}
+                      formatDate={formatDate}
+                      getFileTypeColor={getFileTypeColor}
+                      getExtractionMethodLabel={getExtractionMethodLabel}
+                    />
+                  ))}
+                </ResponsiveCardContainer>
+              ) : (
+                <div className="space-y-3">
+                  {filteredDocuments.map((doc) => (
+                    <DocumentCard
+                      key={doc.id}
+                      doc={doc}
+                      onDownload={downloadDocument}
+                      onDelete={deleteDocument}
+                      formatFileSize={formatFileSize}
+                      formatDate={formatDate}
+                      getFileTypeColor={getFileTypeColor}
+                      getExtractionMethodLabel={getExtractionMethodLabel}
+                    />
+                  ))}
+                </div>
+              )
             )}
           </TabsContent>
         </Tabs>

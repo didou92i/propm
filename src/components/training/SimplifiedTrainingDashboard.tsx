@@ -20,6 +20,8 @@ import {
   Settings
 } from 'lucide-react';
 import { useTrainingStats } from '@/hooks/training/useTrainingStats';
+import { ResponsiveGrid, ResponsiveCardContainer } from '@/components/ui/responsive-grid';
+import { EnhancedButton } from '@/components/ui/enhanced-mobile-support';
 
 interface SimplifiedTrainingDashboardProps {
   onStartTraining?: () => Promise<void>;
@@ -57,31 +59,34 @@ export const SimplifiedTrainingDashboard: React.FC<SimplifiedTrainingDashboardPr
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-          <Button 
+          <EnhancedButton 
             onClick={onStartTraining}
+            variant="primary"
             size="lg"
-            className="gradient-agent glass-subtle hover-lift ripple-container shadow-glow transform-3d transition-all duration-300 font-semibold text-white border-0 px-8 py-4"
+            withRipple
+            className="gradient-agent glass-subtle hover-lift shadow-glow transform-3d transition-all duration-300 font-semibold text-white border-0 px-8 py-4"
           >
             <Play className="w-4 h-4 mr-2" />
             Nouvel Entraînement
-          </Button>
+          </EnhancedButton>
           
           {onShowConfiguration && (
-            <Button
+            <EnhancedButton
               onClick={onShowConfiguration}
               variant="outline"
               size="lg"
-              className="glass-subtle hover-lift ripple-container transition-all duration-300 font-semibold px-8 py-4 border-primary/20 hover:border-primary/40 bg-background/50 hover:bg-primary/5"
+              withRipple
+              className="glass-subtle hover-lift transition-all duration-300 font-semibold px-8 py-4 border-primary/20 hover:border-primary/40 bg-background/50 hover:bg-primary/5"
             >
               <Settings className="w-4 h-4 mr-2" />
               Entraînement Personnalisé
-            </Button>
+            </EnhancedButton>
           )}
         </div>
       </div>
 
       {/* Statistiques rapides */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <ResponsiveGrid cols={{ default: 2, lg: 4 }} gap={4}>
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
@@ -129,7 +134,7 @@ export const SimplifiedTrainingDashboard: React.FC<SimplifiedTrainingDashboardPr
             </div>
           </CardContent>
         </Card>
-      </div>
+      </ResponsiveGrid>
 
       {/* Répartition par domaine */}
       {chartData.domains.length > 0 && (
@@ -170,7 +175,7 @@ export const SimplifiedTrainingDashboard: React.FC<SimplifiedTrainingDashboardPr
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <ResponsiveGrid cols={{ default: 1, sm: 2 }} gap={3}>
               {achievements.slice(0, 6).map((achievement) => (
                 <div 
                   key={achievement.id}
@@ -195,7 +200,7 @@ export const SimplifiedTrainingDashboard: React.FC<SimplifiedTrainingDashboardPr
                   </p>
                 </div>
               ))}
-            </div>
+            </ResponsiveGrid>
           </CardContent>
         </Card>
       )}
@@ -211,10 +216,10 @@ export const SimplifiedTrainingDashboard: React.FC<SimplifiedTrainingDashboardPr
             <p className="text-muted-foreground mb-4">
               Démarrez dès maintenant pour suivre votre progression
             </p>
-            <Button onClick={onStartTraining}>
+            <EnhancedButton onClick={onStartTraining} variant="primary" withRipple>
               <Play className="w-4 h-4 mr-2" />
               Commencer l'Entraînement
-            </Button>
+            </EnhancedButton>
           </CardContent>
         </Card>
       )}

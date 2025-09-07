@@ -6,6 +6,7 @@ import { MonitoringAnalytics } from './MonitoringAnalytics';
 import { SecurityPanel } from './SecurityPanel';
 import { BetaLogsViewer } from './BetaLogsViewer';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ResponsiveGrid } from '@/components/ui/responsive-grid';
 
 export function MonitoringDashboard() {
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -28,7 +29,7 @@ export function MonitoringDashboard() {
       />
       
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 gap-1">
           <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="beta-logs">Beta Logs</TabsTrigger>

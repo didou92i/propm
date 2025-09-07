@@ -2,6 +2,7 @@ export { AssistantConfigStatus } from './AssistantConfigStatus';
 export { ChatArea } from './ChatArea';
 export { ChatMessageList } from './ChatMessageList';
 export { ChatComposer } from './ChatComposer';
+export { MobileChatComposer } from './MobileChatComposer';
 export { ChatAttachment } from './ChatAttachment';
 export { MessageWithAttachments } from './MessageWithAttachments';
 export { EditableMessage } from './EditableMessage';
