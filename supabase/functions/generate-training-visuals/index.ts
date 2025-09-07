@@ -29,7 +29,13 @@ serve(async (req) => {
       throw new Error('Paramètres manquants: context, scenario, visualType et domain sont requis');
     }
 
-    // Generate contextual prompt based on training content
+    // Determine number of images and types based on context complexity
+    const shouldGenerateMultiple = (context.length > 200 || scenario.includes('accident') || scenario.includes('contrôle') || scenario.includes('infraction'));
+    const numberOfImages = shouldGenerateMultiple ? Math.min(3, Math.floor(Math.random() * 2) + 2) : 1;
+    
+    console.log('🔢 [MULTI-GEN] Génération de', numberOfImages, 'image(s) selon le contexte');
+
+    // Generate contextual prompts based on training content
     const visualPrompts = {
       'press_clipping': `Create a realistic French newspaper clipping about: ${scenario}. Professional newspaper layout with headline, article text, and publication details. Context: ${context}`,
       'official_document': `Generate an official French administrative document related to: ${scenario}. Professional letterhead, official stamps, formal legal language. Context: ${context}`,
@@ -39,92 +45,137 @@ serve(async (req) => {
       'legal_form': `Generate an official French legal form or report related to: ${scenario}. Professional administrative layout. Context: ${context}`
     };
 
-    const prompt = visualPrompts[visualType] || visualPrompts['field_photo'];
-    console.log('📝 [PROMPT] Prompt généré:', prompt.substring(0, 200) + '...');
-    console.log('🎨 [PARAMS] Type:', visualType, 'Domaine:', domain);
-
-    // Configuration de la requête OpenAI pour GPT-Image-1
-    const requestPayload = {
-      model: 'gpt-image-1',
-      prompt: prompt,
-      n: 1,
-      size: '1024x1024',
-      output_format: 'webp',
-      quality: 'high'
+    // Select visual types based on context
+    const getVisualTypes = (primaryType: string, count: number) => {
+      const types = [primaryType];
+      const alternatives = ['field_photo', 'official_document', 'press_clipping'];
+      
+      for (let i = 1; i < count; i++) {
+        const available = alternatives.filter(t => !types.includes(t));
+        if (available.length > 0) {
+          types.push(available[Math.floor(Math.random() * available.length)]);
+        }
+      }
+      return types;
     };
 
-    console.log('🚀 [OPENAI-REQ] Payload envoyé:', JSON.stringify(requestPayload, null, 2));
-    console.log('🌐 [OPENAI-REQ] Endpoint: /v1/images/generations');
+    const visualTypes = getVisualTypes(visualType, numberOfImages);
+    const images = [];
+    
+    console.log('🎨 [TYPES] Types d\'images à générer:', visualTypes);
 
-    const response = await fetch('https://api.openai.com/v1/images/generations', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestPayload),
-    });
-
-    console.log('📡 [OPENAI-RESP] Status:', response.status, response.statusText);
-    console.log('📡 [OPENAI-RESP] Headers:', Object.fromEntries(response.headers.entries()));
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ [OPENAI-ERROR] Réponse brute:', errorText);
+    // Generate images sequentially to avoid rate limits
+    for (let i = 0; i < visualTypes.length; i++) {
+      const currentType = visualTypes[i];
+      const prompt = visualPrompts[currentType] || visualPrompts['field_photo'];
       
-      let errorData;
+      console.log(`📝 [PROMPT-${i+1}] Type: ${currentType}, Prompt:`, prompt.substring(0, 200) + '...');
+
+      // Configuration optimisée de la requête OpenAI pour GPT-Image-1
+      const requestPayload = {
+        model: 'gpt-image-1',
+        prompt: prompt,
+        n: 1,
+        size: '512x512', // Réduit de 1024x1024 pour performance
+        output_format: 'webp',
+        quality: 'medium', // Réduit de 'high' pour performance
+        output_compression: 70 // Ajoute compression pour réduire la taille
+      };
+
+      console.log(`🚀 [OPENAI-REQ-${i+1}] Payload envoyé:`, JSON.stringify(requestPayload, null, 2));
+      console.log(`🌐 [OPENAI-REQ-${i+1}] Endpoint: /v1/images/generations`);
+
       try {
-        errorData = JSON.parse(errorText);
-        console.error('❌ [OPENAI-ERROR] Erreur parsée:', JSON.stringify(errorData, null, 2));
-      } catch (parseError) {
-        console.error('❌ [PARSE-ERROR] Impossible de parser l\'erreur:', parseError);
-        errorData = { error: { message: errorText } };
+        const response = await fetch('https://api.openai.com/v1/images/generations', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openAIApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestPayload),
+        });
+
+        console.log(`📡 [OPENAI-RESP-${i+1}] Status:`, response.status, response.statusText);
+        console.log(`📡 [OPENAI-RESP-${i+1}] Headers:`, Object.fromEntries(response.headers.entries()));
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`❌ [OPENAI-ERROR-${i+1}] Réponse brute:`, errorText);
+          
+          // Continue avec l'image suivante en cas d'erreur
+          console.warn(`⚠️ [SKIP-${i+1}] Image ${i+1} échouée, passage à la suivante`);
+          continue;
+        }
+
+        const responseText = await response.text();
+        console.log(`📄 [OPENAI-RESP-${i+1}] Réponse brute (100 premiers chars):`, responseText.substring(0, 100));
+        
+        let data;
+        try {
+          data = JSON.parse(responseText);
+          console.log(`✅ [OPENAI-RESP-${i+1}] JSON parsé avec succès`);
+        } catch (parseError) {
+          console.error(`❌ [PARSE-ERROR-${i+1}] Impossible de parser la réponse JSON:`, parseError);
+          continue;
+        }
+        
+        // Extract image from GPT-Image-1 response
+        let imageData;
+        
+        if (data.data && data.data.length > 0) {
+          console.log(`🔍 [IMAGE-EXTRACT-${i+1}] Tentative extraction depuis data[0]`);
+          imageData = data.data[0].b64_json || data.data[0].url;
+          console.log(`🔍 [IMAGE-EXTRACT-${i+1}] Type de données trouvées:`, typeof imageData, 'Longueur:', imageData?.length || 0);
+        }
+        
+        if (!imageData) {
+          console.error(`❌ [IMAGE-EXTRACT-${i+1}] Aucune donnée image trouvée`);
+          continue;
+        }
+
+        console.log(`✅ [SUCCESS-${i+1}] Image ${i+1} générée avec succès`);
+        console.log(`📏 [SUCCESS-${i+1}] Taille de l'image base64:`, imageData.length, 'caractères');
+
+        // Ajouter l'image à la collection
+        images.push({
+          image: imageData.startsWith('data:') ? imageData : `data:image/webp;base64,${imageData}`,
+          visualType: currentType,
+          domain,
+          prompt: prompt.substring(0, 150) + '...'
+        });
+
+        // Petite pause entre les générations pour éviter le rate limit
+        if (i < visualTypes.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+
+      } catch (error) {
+        console.error(`❌ [ERROR-${i+1}] Erreur lors de la génération de l'image ${i+1}:`, error);
+        continue;
       }
-      
-      throw new Error(`OpenAI API error (${response.status}): ${errorData.error?.message || errorText}`);
     }
 
-    const responseText = await response.text();
-    console.log('📄 [OPENAI-RESP] Réponse brute (100 premiers chars):', responseText.substring(0, 100));
-    
-    let data;
-    try {
-      data = JSON.parse(responseText);
-      console.log('✅ [OPENAI-RESP] JSON parsé avec succès');
-      console.log('📊 [OPENAI-RESP] Structure:', JSON.stringify(data, null, 2));
-    } catch (parseError) {
-      console.error('❌ [PARSE-ERROR] Impossible de parser la réponse JSON:', parseError);
-      throw new Error('Réponse OpenAI invalide: impossible de parser le JSON');
-    }
-    
-    // Extract image from GPT-Image-1 response (format standard images/generations)
-    let imageData;
-    
-    if (data.data && data.data.length > 0) {
-      console.log('🔍 [IMAGE-EXTRACT] Tentative extraction depuis data[0]');
-      imageData = data.data[0].b64_json || data.data[0].url;
-      console.log('🔍 [IMAGE-EXTRACT] Type de données trouvées:', typeof imageData, 'Longueur:', imageData?.length || 0);
-    }
-    
-    if (!imageData) {
-      console.error('❌ [IMAGE-EXTRACT] Aucune donnée image trouvée');
-      console.error('❌ [IMAGE-EXTRACT] Structure data:', JSON.stringify(data, null, 2));
-      throw new Error('Aucune donnée image trouvée dans la réponse GPT-Image-1');
+    // Vérification qu'au moins une image a été générée
+    if (images.length === 0) {
+      console.error('❌ [FINAL-ERROR] Aucune image n\'a pu être générée');
+      throw new Error('Échec de la génération de toutes les images');
     }
 
-    console.log('✅ [SUCCESS] Image générée avec succès');
-    console.log('📏 [SUCCESS] Taille de l\'image base64:', imageData.length, 'caractères');
+    console.log(`🎉 [FINAL-SUCCESS] ${images.length} image(s) générée(s) avec succès sur ${numberOfImages} demandée(s)`);
 
-    const resultPayload = { 
-      image: imageData.startsWith('data:') ? imageData : `data:image/webp;base64,${imageData}`,
-      visualType,
-      domain,
-      prompt: prompt.substring(0, 150) + '...'
+    const resultPayload = {
+      images: images,
+      totalGenerated: images.length,
+      requestedCount: numberOfImages,
+      visualTypes: visualTypes
     };
 
     console.log('📤 [RESPONSE] Payload de retour préparé:', {
       ...resultPayload,
-      image: resultPayload.image.substring(0, 50) + '...(truncated)'
+      images: resultPayload.images.map((img, idx) => ({
+        ...img,
+        image: img.image.substring(0, 50) + '...(truncated)'
+      }))
     });
 
     return new Response(JSON.stringify(resultPayload), {
