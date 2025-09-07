@@ -89,7 +89,7 @@ export function AppSidebar({ selectedAgent, onAgentSelect, onContextShare, onNew
   };
 
   return (
-    <Sidebar className="border-r border-border/40 glass-subtle theme-transition">
+    <Sidebar className="border-r border-border/40 glass-subtle theme-transition max-w-[15rem] min-w-[15rem] w-[15rem]">
       <SidebarHeader className="p-4 border-b border-border/40">
         <div className="flex items-center gap-2 mb-4 animate-fade-in">
           <div className="w-8 h-8 rounded-lg gradient-agent-animated flex items-center justify-center float neomorphism-subtle overflow-hidden">
@@ -134,10 +134,10 @@ export function AppSidebar({ selectedAgent, onAgentSelect, onContextShare, onNew
                 <SidebarMenuItem key={agent.id} className="animate-fade-in" style={{ animationDelay: `${index * 0.1}s` }}>
                   <SidebarMenuButton
                     onClick={(e) => handleAgentSelect(agent.id, e)}
-                    className={`flex items-center gap-3 p-3 rounded-lg ripple-container hover-lift transform-3d hover-tilt glass-hover neomorphism-hover ${
+                    className={`flex items-center gap-3 p-3 rounded-lg ripple-container glass-hover ${
                       selectedAgent === agent.id
-                        ? "glass-intense text-sidebar-accent-foreground border-l-2 border-primary neomorphism"
-                        : "hover:bg-sidebar-accent/50 hover-glow glass-subtle"
+                        ? "glass-intense text-sidebar-accent-foreground border-l-2 border-primary"
+                        : "hover:bg-sidebar-accent/50 glass-subtle"
                     }`}
                   >
                     <AgentAvatar 
@@ -150,12 +150,12 @@ export function AppSidebar({ selectedAgent, onAgentSelect, onContextShare, onNew
                         selectedAgent === agent.id ? 'scale-110' : ''
                       }`}
                     />
-                    <span className="font-medium flex-1">{agent.name}</span>
+                    <span className="font-medium flex-1 truncate whitespace-nowrap overflow-hidden text-ellipsis">{agent.name}</span>
                     {(() => {
                       const summary = getConversationSummary(agent.id);
                       return summary.messageCount > 0 && (
-                        <Badge variant="secondary" className="ml-auto text-xs h-5">
-                          {summary.messageCount}
+                        <Badge variant="secondary" className="ml-auto text-xs h-5 min-w-[1.5rem] max-w-[2rem] overflow-hidden">
+                          {summary.messageCount > 99 ? '99+' : summary.messageCount}
                         </Badge>
                       );
                     })()}
@@ -193,7 +193,7 @@ export function AppSidebar({ selectedAgent, onAgentSelect, onContextShare, onNew
                           loading="lazy"
                           decoding="async"
                         />
-                        <span className="font-medium">{tool.name}</span>
+                        <span className="font-medium truncate whitespace-nowrap overflow-hidden text-ellipsis">{tool.name}</span>
                       </NavLink>
                     </SidebarMenuButton>
                   ) : tool.id === 'natif' ? (
@@ -215,7 +215,7 @@ export function AppSidebar({ selectedAgent, onAgentSelect, onContextShare, onNew
                           loading="lazy"
                           decoding="async"
                         />
-                        <span className="font-medium">{tool.name}</span>
+                         <span className="font-medium truncate whitespace-nowrap overflow-hidden text-ellipsis">{tool.name}</span>
                       </NavLink>
                     </SidebarMenuButton>
                   ) : tool.id === 'jobs' ? (
@@ -231,22 +231,22 @@ export function AppSidebar({ selectedAgent, onAgentSelect, onContextShare, onNew
                         }
                       >
                         <tool.icon className={`w-5 h-5 ${tool.color}`} />
-                        <span className="font-medium">{tool.name}</span>
+                         <span className="font-medium truncate whitespace-nowrap overflow-hidden text-ellipsis">{tool.name}</span>
                       </NavLink>
                     </SidebarMenuButton>
                   ) : (
                     <SidebarMenuButton
                       onClick={(e) => handleAgentSelect(tool.id, e)}
-                      className={`flex items-center gap-3 p-3 rounded-lg ripple-container hover-lift transform-3d hover-tilt glass-hover neomorphism-hover ${
+                      className={`flex items-center gap-3 p-3 rounded-lg ripple-container glass-hover ${
                         selectedAgent === tool.id
-                          ? 'glass-intense text-sidebar-accent-foreground border-l-2 border-primary pulse-glow neomorphism'
-                          : 'hover:bg-sidebar-accent/50 hover-glow glass-subtle'
+                          ? 'glass-intense text-sidebar-accent-foreground border-l-2 border-primary'
+                          : 'hover:bg-sidebar-accent/50 glass-subtle'
                       }`}
                     >
                       <tool.icon className={`w-5 h-5 transition-all duration-300 ${
                         selectedAgent === tool.id ? 'text-primary scale-110' : tool.color
                       }`} />
-                      <span className="font-medium">{tool.name}</span>
+                      <span className="font-medium truncate whitespace-nowrap overflow-hidden text-ellipsis">{tool.name}</span>
                     </SidebarMenuButton>
                   )}
                 </SidebarMenuItem>
@@ -268,7 +268,7 @@ export function AppSidebar({ selectedAgent, onAgentSelect, onContextShare, onNew
                     `flex items-center gap-3 p-3 rounded-lg hover:bg-sidebar-accent/50 transition-colors ${isActive ? 'glass-intense border-l-2 border-primary' : 'glass-subtle'}`
                   }>
                     <Brain className="w-5 h-5 text-emerald-500" />
-                    <span className="font-medium">Entraînement ( Beta )</span>
+                    <span className="font-medium truncate whitespace-nowrap overflow-hidden text-ellipsis">Entraînement ( Beta )</span>
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -278,7 +278,7 @@ export function AppSidebar({ selectedAgent, onAgentSelect, onContextShare, onNew
                     `flex items-center gap-3 p-3 rounded-lg hover:bg-sidebar-accent/50 transition-colors ${isActive ? 'glass-intense border-l-2 border-primary' : 'glass-subtle'}`
                   }>
                     <Activity className="w-5 h-5 text-muted-foreground" />
-                    <span className="font-medium">Diagnostics</span>
+                    <span className="font-medium truncate whitespace-nowrap overflow-hidden text-ellipsis">Diagnostics</span>
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -292,17 +292,17 @@ export function AppSidebar({ selectedAgent, onAgentSelect, onContextShare, onNew
         <div className="flex gap-2">
           <SidebarMenuButton 
             onClick={handleSignOut}
-            className="flex-1 items-center gap-3 p-3 rounded-lg hover:bg-sidebar-accent/50 transition-colors glass-hover neomorphism-hover ripple-container"
+            className="flex-1 items-center gap-3 p-3 rounded-lg hover:bg-sidebar-accent/50 transition-colors glass-hover ripple-container overflow-hidden"
           >
             <LogOut className="w-5 h-5 text-muted-foreground" />
-            <span>Déconnexion</span>
+            <span className="truncate whitespace-nowrap overflow-hidden text-ellipsis">Déconnexion</span>
           </SidebarMenuButton>
           <button
             onClick={(e) => {
               createRipple(e);
               toggleTheme();
             }}
-            className="p-3 rounded-lg hover:bg-sidebar-accent/50 transition-colors glass-hover neomorphism-hover ripple-container"
+            className="p-3 rounded-lg hover:bg-sidebar-accent/50 transition-colors glass-hover ripple-container"
           >
             {theme === 'light' ? (
               <Moon className="w-5 h-5 text-muted-foreground" />
