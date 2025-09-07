@@ -7,6 +7,117 @@ const corsHeaders = {
 };
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+const assistantId = Deno.env.get('PREPACDS_ASSISTANT_ID');
+
+// Fonction pour appeler l'assistant PrepaCDS
+async function callPrepaCDSAssistant(prompt: string): Promise<string> {
+  if (!openAIApiKey || !assistantId) {
+    throw new Error('Configuration manquante: OpenAI API key ou PrepaCDS Assistant ID');
+  }
+
+  // 1. Créer un thread
+  const threadResponse = await fetch('https://api.openai.com/v1/threads', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${openAIApiKey}`,
+      'Content-Type': 'application/json',
+      'OpenAI-Beta': 'assistants=v2'
+    },
+    body: JSON.stringify({})
+  });
+
+  if (!threadResponse.ok) {
+    throw new Error(`Failed to create thread: ${threadResponse.status}`);
+  }
+
+  const thread = await threadResponse.json();
+
+  // 2. Ajouter le message au thread
+  const messageResponse = await fetch(`https://api.openai.com/v1/threads/${thread.id}/messages`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${openAIApiKey}`,
+      'Content-Type': 'application/json',
+      'OpenAI-Beta': 'assistants=v2'
+    },
+    body: JSON.stringify({
+      role: 'user',
+      content: prompt
+    })
+  });
+
+  if (!messageResponse.ok) {
+    throw new Error(`Failed to add message: ${messageResponse.status}`);
+  }
+
+  // 3. Lancer le run avec l'assistant PrepaCDS
+  const runResponse = await fetch(`https://api.openai.com/v1/threads/${thread.id}/runs`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${openAIApiKey}`,
+      'Content-Type': 'application/json',
+      'OpenAI-Beta': 'assistants=v2'
+    },
+    body: JSON.stringify({
+      assistant_id: assistantId,
+      instructions: 'Tu es un expert en évaluation pour les concours de Chef de Service de Police Municipale. Analyse les réponses avec précision et bienveillance.'
+    })
+  });
+
+  if (!runResponse.ok) {
+    throw new Error(`Failed to create run: ${runResponse.status}`);
+  }
+
+  const run = await runResponse.json();
+
+  // 4. Attendre que le run soit complété
+  let runStatus = run.status;
+  let maxWaitTime = 30000; // 30 secondes max
+  let waitTime = 0;
+  const pollInterval = 1000;
+
+  while (runStatus !== 'completed' && runStatus !== 'failed' && runStatus !== 'cancelled' && waitTime < maxWaitTime) {
+    await new Promise(resolve => setTimeout(resolve, pollInterval));
+    waitTime += pollInterval;
+
+    const statusResponse = await fetch(`https://api.openai.com/v1/threads/${thread.id}/runs/${run.id}`, {
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'OpenAI-Beta': 'assistants=v2'
+      }
+    });
+
+    if (statusResponse.ok) {
+      const statusData = await statusResponse.json();
+      runStatus = statusData.status;
+    }
+  }
+
+  if (runStatus !== 'completed') {
+    throw new Error(`Run failed or timed out. Status: ${runStatus}`);
+  }
+
+  // 5. Récupérer les messages du thread
+  const messagesResponse = await fetch(`https://api.openai.com/v1/threads/${thread.id}/messages`, {
+    headers: {
+      'Authorization': `Bearer ${openAIApiKey}`,
+      'OpenAI-Beta': 'assistants=v2'
+    }
+  });
+
+  if (!messagesResponse.ok) {
+    throw new Error(`Failed to get messages: ${messagesResponse.status}`);
+  }
+
+  const messages = await messagesResponse.json();
+  const assistantMessage = messages.data.find((msg: any) => msg.role === 'assistant');
+  
+  if (!assistantMessage?.content?.[0]?.text?.value) {
+    throw new Error('No response from PrepaCDS Assistant');
+  }
+
+  return assistantMessage.content[0].text.value;
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -16,11 +127,20 @@ serve(async (req) => {
   try {
     const { userAnswer, expectedAnswer, level, domain } = await req.json();
 
-    const systemPrompt = `Tu es un correcteur expert pour le concours de Chef de Service de Police Municipale.
+    const evaluationPrompt = `ÉVALUATION D'UNE RÉPONSE PREPACDS
 
-Analyse la réponse de l'utilisateur et fournis une évaluation détaillée.
+Niveau: ${level}
+Domaine: ${domain}
 
-FORMAT DE RÉPONSE:
+Réponse de l'utilisateur:
+${userAnswer}
+
+Réponse attendue:
+${expectedAnswer}
+
+Évalue cette réponse avec expertise et bienveillance. Fournis une analyse précise et constructive.
+
+FORMAT DE RÉPONSE REQUIS (JSON strict):
 {
   "score": 75,
   "isCorrect": true,
@@ -29,29 +149,30 @@ FORMAT DE RÉPONSE:
   "detailedAnalysis": "Analyse complète de la réponse",
   "improvementSuggestions": ["Suggestion 1", "Suggestion 2"],
   "references": ["Référence juridique 1"]
-}`;
+}
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Niveau: ${level}, Domaine: ${domain}\nRéponse utilisateur: ${userAnswer}\nRéponse attendue: ${expectedAnswer}` }
-        ],
-        temperature: 0.3,
-      }),
-    });
+IMPORTANT: Réponds UNIQUEMENT avec le JSON, sans texte supplémentaire.`;
 
-    const data = await response.json();
-    let evaluation;
+    const response = await callPrepaCDSAssistant(evaluationPrompt);
     
+    let evaluation;
     try {
-      evaluation = JSON.parse(data.choices[0].message.content);
+      // Nettoyer la réponse pour extraire le JSON
+      let cleanContent = response.trim();
+      if (cleanContent.startsWith('```json')) {
+        cleanContent = cleanContent.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+      } else if (cleanContent.startsWith('```')) {
+        cleanContent = cleanContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
+      }
+      
+      const firstBrace = cleanContent.indexOf('{');
+      const lastBrace = cleanContent.lastIndexOf('}');
+      
+      if (firstBrace !== -1 && lastBrace !== -1 && firstBrace < lastBrace) {
+        cleanContent = cleanContent.substring(firstBrace, lastBrace + 1);
+      }
+      
+      evaluation = JSON.parse(cleanContent);
     } catch {
       evaluation = {
         score: 50,

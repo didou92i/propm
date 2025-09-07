@@ -8,6 +8,7 @@ const corsHeaders = {
 };
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+const assistantId = Deno.env.get('PREPACDS_ASSISTANT_ID');
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
@@ -23,21 +24,130 @@ serve(async (req) => {
 
     console.log('Génération question:', { level, domain, questionType });
 
-    // Construction du prompt spécialisé pour Prepa CDS
-    const systemPrompt = `Tu es un expert en préparation au concours de Chef de Service de Police Municipale. 
-    
-Génère une question d'entraînement de type "${questionType}" pour le niveau "${level}" dans le domaine "${domain}".
+    // Fonction pour appeler l'assistant PrepaCDS
+    async function callPrepaCDSAssistant(prompt: string): Promise<string> {
+      if (!openAIApiKey || !assistantId) {
+        throw new Error('Configuration manquante: OpenAI API key ou PrepaCDS Assistant ID');
+      }
 
-**CONTRAINTES OBLIGATOIRES:**
-- Question réaliste et conforme aux épreuves du concours
-- Niveau de difficulté adapté au profil "${level}"
-- Références juridiques précises et actualisées
-- Explication pédagogique détaillée
+      // 1. Créer un thread
+      const threadResponse = await fetch('https://api.openai.com/v1/threads', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'Content-Type': 'application/json',
+          'OpenAI-Beta': 'assistants=v2'
+        },
+        body: JSON.stringify({})
+      });
 
-**FORMAT DE RÉPONSE REQUIS:**
+      if (!threadResponse.ok) {
+        throw new Error(`Failed to create thread: ${threadResponse.status}`);
+      }
+
+      const thread = await threadResponse.json();
+
+      // 2. Ajouter le message au thread
+      const messageResponse = await fetch(`https://api.openai.com/v1/threads/${thread.id}/messages`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'Content-Type': 'application/json',
+          'OpenAI-Beta': 'assistants=v2'
+        },
+        body: JSON.stringify({
+          role: 'user',
+          content: prompt
+        })
+      });
+
+      if (!messageResponse.ok) {
+        throw new Error(`Failed to add message: ${messageResponse.status}`);
+      }
+
+      // 3. Lancer le run avec l'assistant PrepaCDS
+      const runResponse = await fetch(`https://api.openai.com/v1/threads/${thread.id}/runs`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'Content-Type': 'application/json',
+          'OpenAI-Beta': 'assistants=v2'
+        },
+        body: JSON.stringify({
+          assistant_id: assistantId,
+          instructions: 'Tu es un expert en génération de questions pour les concours de Chef de Service de Police Municipale. Génère des questions de qualité professionnelle.'
+        })
+      });
+
+      if (!runResponse.ok) {
+        throw new Error(`Failed to create run: ${runResponse.status}`);
+      }
+
+      const run = await runResponse.json();
+
+      // 4. Attendre que le run soit complété
+      let runStatus = run.status;
+      let maxWaitTime = 30000; // 30 secondes max
+      let waitTime = 0;
+      const pollInterval = 1000;
+
+      while (runStatus !== 'completed' && runStatus !== 'failed' && runStatus !== 'cancelled' && waitTime < maxWaitTime) {
+        await new Promise(resolve => setTimeout(resolve, pollInterval));
+        waitTime += pollInterval;
+
+        const statusResponse = await fetch(`https://api.openai.com/v1/threads/${thread.id}/runs/${run.id}`, {
+          headers: {
+            'Authorization': `Bearer ${openAIApiKey}`,
+            'OpenAI-Beta': 'assistants=v2'
+          }
+        });
+
+        if (statusResponse.ok) {
+          const statusData = await statusResponse.json();
+          runStatus = statusData.status;
+        }
+      }
+
+      if (runStatus !== 'completed') {
+        throw new Error(`Run failed or timed out. Status: ${runStatus}`);
+      }
+
+      // 5. Récupérer les messages du thread
+      const messagesResponse = await fetch(`https://api.openai.com/v1/threads/${thread.id}/messages`, {
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'OpenAI-Beta': 'assistants=v2'
+        }
+      });
+
+      if (!messagesResponse.ok) {
+        throw new Error(`Failed to get messages: ${messagesResponse.status}`);
+      }
+
+      const messages = await messagesResponse.json();
+      const assistantMessage = messages.data.find((msg: any) => msg.role === 'assistant');
+      
+      if (!assistantMessage?.content?.[0]?.text?.value) {
+        throw new Error('No response from PrepaCDS Assistant');
+      }
+
+      return assistantMessage.content[0].text.value;
+    }
+
+    // Construction du prompt pour l'assistant PrepaCDS
+    const questionPrompt = `GÉNÉRATION DE QUESTION PREPACDS
+
+Type de question: ${questionType}
+Niveau: ${level}
+Domaine: ${domain}
+Éviter répétitions: ${avoidRecentTopics ? 'Oui' : 'Non'}
+
+Génère UNE question d'entraînement de qualité professionnelle conforme aux épreuves du concours de Chef de Service de Police Municipale.
+
+FORMAT DE RÉPONSE REQUIS (JSON strict):
 {
   "question": "Question formulée clairement",
-  "options": ["A", "B", "C", "D"] (pour QCM uniquement),
+  "options": ["A", "B", "C", "D"],
   "correctAnswer": "Réponse correcte",
   "explanation": "Explication détaillée avec analyse et références",
   "references": [
@@ -53,70 +163,37 @@ Génère une question d'entraînement de type "${questionType}" pour le niveau "
   "learningObjectives": ["Objectif 1", "Objectif 2"]
 }
 
-**INSTRUCTIONS SELON LE NIVEAU:**
-- Débutant: Concepts de base, définitions claires, exemples simples
-- Intermédiaire: Applications pratiques, cas concrets, nuances juridiques
-- Avancé: Situations complexes, jurisprudence, cas d'exception
+IMPORTANT: Réponds UNIQUEMENT avec le JSON, sans texte supplémentaire.`;
 
-**INSTRUCTIONS SELON LE DOMAINE:**
-- droit_public: CGCT, pouvoirs de police, contentieux administratif, marchés publics
-- droit_penal: Code pénal, procédures, infractions, responsabilité pénale
-- management: GRH, organisation, planification, leadership, évaluation
-- procedures: Protocoles opérationnels, chaîne de commandement, urgences
-- redaction: Notes de service, rapports, correspondance, style administratif
-- culture_generale: Actualités sécuritaires, réformes, évolutions réglementaires
-
-Génère UNE SEULE question de qualité professionnelle.`;
-
-    const userPrompt = `Génère une question de type "${questionType}" pour:
-- Niveau: ${level}
-- Domaine: ${domain}
-- Éviter répétitions: ${avoidRecentTopics ? 'Oui' : 'Non'}
-
-La question doit être immédiatement utilisable pour l'entraînement d'un candidat.`;
-
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        temperature: 0.7,
-        max_tokens: 2000,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Erreur OpenAI: ${response.status}`);
-    }
-
-    const data = await response.json();
-    let generatedContent = data.choices[0].message.content;
+    const response = await callPrepaCDSAssistant(questionPrompt);
 
     // Extraction du JSON de la réponse
     let questionData;
     try {
-      // Tentative d'extraction du JSON
-      const jsonMatch = generatedContent.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        questionData = JSON.parse(jsonMatch[0]);
-      } else {
-        throw new Error('Format JSON non trouvé');
+      // Nettoyer la réponse pour extraire le JSON
+      let cleanContent = response.trim();
+      if (cleanContent.startsWith('```json')) {
+        cleanContent = cleanContent.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+      } else if (cleanContent.startsWith('```')) {
+        cleanContent = cleanContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
       }
+      
+      const firstBrace = cleanContent.indexOf('{');
+      const lastBrace = cleanContent.lastIndexOf('}');
+      
+      if (firstBrace !== -1 && lastBrace !== -1 && firstBrace < lastBrace) {
+        cleanContent = cleanContent.substring(firstBrace, lastBrace + 1);
+      }
+      
+      questionData = JSON.parse(cleanContent);
     } catch (parseError) {
       console.error('Erreur parsing JSON:', parseError);
       // Fallback avec structure de base
       questionData = {
-        question: generatedContent.split('\n')[0] || `Question ${questionType} pour ${domain}`,
+        question: `Question ${questionType} pour ${domain}`,
         options: questionType === 'qcm' ? ['Option A', 'Option B', 'Option C', 'Option D'] : [],
         correctAnswer: 'Réponse à déterminer',
-        explanation: 'Explication générée par l\'IA',
+        explanation: 'Explication générée par l\'assistant PrepaCDS',
         references: [],
         difficulty: level === 'debutant' ? 2 : level === 'intermediaire' ? 3 : 4,
         domain: domain,
