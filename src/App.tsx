@@ -21,6 +21,7 @@ const JobsPage = lazy(() => import("./pages/Jobs"));
 const JobCreatePage = lazy(() => import("./pages/JobCreate"));
 const JobManagePage = lazy(() => import("./pages/JobManage"));
 const Training = lazy(() => import("./pages/Training"));
+const TrainingWelcome = lazy(() => import("./pages/TrainingWelcome"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 
 const queryClient = new QueryClient();
@@ -80,6 +81,11 @@ const App = () => (
               </ProtectedRoute>
             } />
             <Route path="/training" element={
+              <ProtectedRoute>
+                <TrainingWelcome />
+              </ProtectedRoute>
+            } />
+            <Route path="/training/dashboard" element={
               <ProtectedRoute>
                 <Training />
               </ProtectedRoute>
