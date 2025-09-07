@@ -48,15 +48,6 @@ export const MainHeader: React.FC<MainHeaderProps> = ({
           </Badge>
         )}
         <Button
-          variant={showConfiguration ? "default" : "outline"}
-          size="sm"
-          onClick={onShowConfiguration}
-          className="glass"
-        >
-          <Settings className="w-4 h-4 mr-2" />
-          Configuration
-        </Button>
-        <Button
           variant="outline"
           size="sm"
           onClick={onSignOut}
