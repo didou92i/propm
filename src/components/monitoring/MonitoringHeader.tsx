@@ -13,13 +13,13 @@ export function MonitoringHeader({ healthStatus, onRefresh, isRefreshing = false
   const getStatusColor = (status: HealthStatus['status']) => {
     switch (status) {
       case 'healthy':
-        return 'bg-green-500';
+        return 'bg-emerald-500 dark:bg-emerald-600';
       case 'warning':
-        return 'bg-yellow-500';
+        return 'bg-amber-500 dark:bg-amber-600';
       case 'critical':
-        return 'bg-red-500';
+        return 'bg-red-500 dark:bg-red-600';
       default:
-        return 'bg-gray-500';
+        return 'bg-muted-foreground';
     }
   };
 

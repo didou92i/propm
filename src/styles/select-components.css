@@ -105,10 +105,10 @@
 
 /* Contenu moderne */
 .select-content-modern {
-  background: rgba(var(--glass-bg));
+  background: hsl(var(--popover) / 0.95) !important;
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border: 1px solid hsl(var(--agent-primary) / 0.2);
+  border: 2px solid hsl(var(--border)) !important;
   box-shadow: 
     0 16px 64px hsl(var(--background) / 0.4),
     0 8px 32px hsl(var(--agent-primary) / 0.1),
