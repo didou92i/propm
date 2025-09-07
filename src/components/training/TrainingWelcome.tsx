@@ -53,9 +53,14 @@ export const TrainingWelcome: React.FC<TrainingWelcomeProps> = ({ onStart }) => 
               className="bg-background/80 backdrop-blur-sm border border-primary/20 rounded-2xl p-8"
             >
               <img 
-                src="/lovable-uploads/ac2af908-24d7-4f55-a75f-56c182fe8971.png" 
+                src="/lovable-uploads/b6121141-9979-4e12-941c-2ca137c85fc3.png" 
                 alt="Propm.fr Logo" 
                 className="h-32 w-32 object-contain"
+                loading="eager"
+                onError={(e) => {
+                  console.error('Logo failed to load');
+                  e.currentTarget.style.display = 'none';
+                }}
               />
               <div className="text-lg text-muted-foreground mt-2 font-medium">
                 Formation CDS Premium
