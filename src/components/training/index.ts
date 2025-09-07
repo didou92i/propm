@@ -1,6 +1,5 @@
 // Organisms (Complex components)
 export { HeroSection } from './organisms/HeroSection';
-export { TrainingDashboard } from './organisms/TrainingDashboard';
 
 // Molecules (Component combinations)
 export { HeroHeader } from './molecules/HeroHeader';
@@ -35,9 +34,6 @@ export { ActivityCalendar } from './ActivityCalendar';
 export { EmptyTrainingState } from './EmptyTrainingState';
 export { TrainingLoadingIndicator } from './TrainingLoadingIndicator';
 export { TrainingToastManager } from './TrainingToastManager';
-
-// Lazy components pour optimisation
-export { LazyTrainingDashboard } from './LazyTrainingDashboard';
 
 // Debug components (développement)
 export { DebugPanel } from './DebugPanel';
