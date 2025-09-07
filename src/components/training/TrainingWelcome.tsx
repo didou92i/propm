@@ -53,7 +53,7 @@ export const TrainingWelcome: React.FC<TrainingWelcomeProps> = ({ onStart }) => 
               className="bg-background/80 backdrop-blur-sm border border-primary/20 rounded-2xl p-8"
             >
               <img 
-                src="/redacpro-avatar.png" 
+                src="/lovable-uploads/68dad421-cafc-4283-8914-05125190f5ae.png"
                 alt="Propm.fr Logo" 
                 className="h-32 w-32 object-contain"
                 loading="eager"
