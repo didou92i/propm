@@ -49,9 +49,9 @@ export const TrainingConfiguration: React.FC<TrainingConfigurationProps> = ({
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
-      className="p-6 space-y-6"
+      className="p-4 sm:p-6 space-y-4 sm:space-y-6"
     >
-      <div className="max-w-4xl mx-auto space-y-8">
+      <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8">
         <Card className="glass neomorphism interactive-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-xl">
@@ -60,7 +60,7 @@ export const TrainingConfiguration: React.FC<TrainingConfigurationProps> = ({
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {/* Type d'entraînement */}
               <motion.div 
                 className="space-y-4"
@@ -182,7 +182,7 @@ export const TrainingConfiguration: React.FC<TrainingConfigurationProps> = ({
             </motion.div>
 
             <motion.div 
-              className="flex gap-4 justify-center"
+              className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:justify-center"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.5 }}
@@ -190,17 +190,17 @@ export const TrainingConfiguration: React.FC<TrainingConfigurationProps> = ({
               <Button
                 variant="outline"
                 onClick={onBack}
-                className="px-6 py-3 glass hover-lift"
+                className="w-full sm:w-auto px-6 py-3 glass hover-lift"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Retour
               </Button>
               <Button 
                 onClick={onStartTraining} 
-                className="px-8 py-3 text-lg font-semibold gradient-primary hover-lift shadow-glow transform-3d"
+                className="w-full sm:w-auto px-8 py-3 text-base sm:text-lg font-semibold gradient-primary hover-lift shadow-glow transform-3d"
                 size="lg"
               >
-                <Play className="w-5 h-5 mr-2" />
+                <Play className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                 Lancer l'Entraînement
               </Button>
             </motion.div>

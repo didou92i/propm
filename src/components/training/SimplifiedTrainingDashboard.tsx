@@ -46,25 +46,26 @@ export const SimplifiedTrainingDashboard: React.FC<SimplifiedTrainingDashboardPr
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="space-y-6 p-6"
+      className="space-y-4 sm:space-y-6 p-4 sm:p-6 max-w-6xl mx-auto"
     >
       {/* Header avec action principale */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">
+      <div className="flex flex-col gap-4">
+        <div className="text-center sm:text-left">
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">
             Dashboard Formation
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-sm sm:text-base text-muted-foreground">
             Suivez votre progression et continuez votre entraînement
           </p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+        
+        <div className="flex flex-col gap-3">
           <EnhancedButton 
             onClick={onStartTraining}
             variant="primary"
             size="lg"
             withRipple
-            className="gradient-agent glass-subtle hover-lift shadow-glow transform-3d transition-all duration-300 font-semibold text-white border-0 px-8 py-4"
+            className="w-full gradient-agent glass-subtle hover-lift shadow-glow transform-3d transition-all duration-300 font-semibold text-white border-0 py-4 text-base"
           >
             <Play className="w-4 h-4 mr-2" />
             Nouvel Entraînement
@@ -76,7 +77,7 @@ export const SimplifiedTrainingDashboard: React.FC<SimplifiedTrainingDashboardPr
               variant="outline"
               size="lg"
               withRipple
-              className="glass-subtle hover-lift transition-all duration-300 font-semibold px-8 py-4 border-primary/20 hover:border-primary/40 bg-background/50 hover:bg-primary/5"
+              className="w-full glass-subtle hover-lift transition-all duration-300 font-semibold py-4 border-primary/20 hover:border-primary/40 bg-background/50 hover:bg-primary/5 text-base"
             >
               <Settings className="w-4 h-4 mr-2" />
               Entraînement Personnalisé
@@ -86,50 +87,50 @@ export const SimplifiedTrainingDashboard: React.FC<SimplifiedTrainingDashboardPr
       </div>
 
       {/* Statistiques rapides */}
-      <ResponsiveGrid cols={{ default: 2, lg: 4 }} gap={4}>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <Target className="w-4 h-4 text-primary" />
-              <div>
-                <p className="text-sm text-muted-foreground">Sessions</p>
-                <p className="text-2xl font-bold">{metrics.totalSessions}</p>
+      <ResponsiveGrid cols={{ default: 2, sm: 2, lg: 4 }} gap={3}>
+        <Card className="glass-subtle hover-lift transition-all duration-300">
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              <Target className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0" />
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-muted-foreground">Sessions</p>
+                <p className="text-lg sm:text-2xl font-bold truncate">{metrics.totalSessions}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <BarChart3 className="w-4 h-4 text-primary" />
-              <div>
-                <p className="text-sm text-muted-foreground">Score Moyen</p>
-                <p className="text-2xl font-bold">{metrics.averageScore}%</p>
+        <Card className="glass-subtle hover-lift transition-all duration-300">
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0" />
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-muted-foreground">Score Moyen</p>
+                <p className="text-lg sm:text-2xl font-bold truncate">{metrics.averageScore}%</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <Clock className="w-4 h-4 text-primary" />
-              <div>
-                <p className="text-sm text-muted-foreground">Temps Total</p>
-                <p className="text-2xl font-bold">{Math.round(((metrics as any).totalTimeMinutes || 0) / 60)}h</p>
+        <Card className="glass-subtle hover-lift transition-all duration-300">
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0" />
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-muted-foreground">Temps Total</p>
+                <p className="text-lg sm:text-2xl font-bold truncate">{Math.round(((metrics as any).totalTimeMinutes || 0) / 60)}h</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <TrendingUp className="w-4 h-4 text-primary" />
-              <div>
-                <p className="text-sm text-muted-foreground">Streak</p>
-                <p className="text-2xl font-bold">{metrics.streakDays}j</p>
+        <Card className="glass-subtle hover-lift transition-all duration-300">
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0" />
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-muted-foreground">Streak</p>
+                <p className="text-lg sm:text-2xl font-bold truncate">{metrics.streakDays}j</p>
               </div>
             </div>
           </CardContent>
