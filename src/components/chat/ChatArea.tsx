@@ -132,6 +132,10 @@ export function ChatArea({
     }
     
     sendMessage(input, attachments, messages, userSession, setMessages);
+    
+    // Clear input and attachments after successful submission
+    setInput("");
+    setAttachments([]);
   };
   const handleMessageEdit = (messageId: string, newContent: string) => {
     setMessages(prev => prev.map(message => message.id === messageId ? {

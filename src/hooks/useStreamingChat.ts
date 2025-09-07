@@ -56,7 +56,7 @@ export function useStreamingChat() {
       onMessageUpdate('L\'assistant traite votre demande...', false);
 
       // Use Supabase functions.invoke for better error handling
-      const { data, error } = await supabase.functions.invoke('chat-completions-stream', {
+      const { data, error } = await supabase.functions.invoke('chat-completions-optimized', {
         body: {
           messages,
           selectedAgent,
