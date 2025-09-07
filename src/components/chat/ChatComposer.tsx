@@ -111,22 +111,22 @@ export const ChatComposer = forwardRef<HTMLDivElement, ChatComposerProps>(
     };
 
     return (
-      <div ref={ref} className="px-3 py-2 pb-4 bg-background/20 backdrop-blur-md border-t border-white/5">
+      <div ref={ref} className="px-2 sm:px-3 py-2 pb-3 sm:pb-4 bg-background/20 backdrop-blur-md border-t border-white/5">
         <div className="max-w-3xl mx-auto">
           {/* Attachments Display */}
           {attachments.length > 0 && (
-            <div className="mb-3 flex flex-wrap gap-2">
+            <div className="mb-2 sm:mb-3 flex flex-wrap gap-1 sm:gap-2">
               {attachments.map(attachment => (
                 <div
                   key={attachment.id}
-                  className="px-3 py-2 flex items-center gap-2 bg-muted rounded-lg text-sm"
+                  className="px-2 sm:px-3 py-1 sm:py-2 flex items-center gap-1 sm:gap-2 bg-muted rounded-lg text-xs sm:text-sm"
                 >
-                  <Paperclip className="w-3 h-3" />
-                  <span className="truncate max-w-32">{attachment.file.name}</span>
+                  <Paperclip className="w-3 h-3 flex-shrink-0" />
+                  <span className="truncate max-w-20 sm:max-w-32">{attachment.file.name}</span>
                   <button
                     type="button"
                     onClick={() => removeAttachment(attachment.id)}
-                    className="text-muted-foreground hover:text-foreground ml-1"
+                    className="text-muted-foreground hover:text-foreground ml-1 flex-shrink-0 w-4 h-4 flex items-center justify-center"
                   >
                     ×
                   </button>
@@ -137,14 +137,14 @@ export const ChatComposer = forwardRef<HTMLDivElement, ChatComposerProps>(
 
           {/* Error Display */}
           {attachmentError && (
-            <div className="mb-3 p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-sm text-destructive">
+            <div className="mb-2 sm:mb-3 p-2 sm:p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-xs sm:text-sm text-destructive">
               {attachmentError}
             </div>
           )}
 
           {/* Main Input Container */}
           <form onSubmit={onSubmit}>
-            <div className="relative flex items-end gap-1 p-2 border border-white/5 rounded-full bg-background/30 backdrop-blur-md shadow-sm hover:border-white/10 transition-all duration-300">
+            <div className="relative flex items-end gap-1 p-1.5 sm:p-2 border border-white/5 rounded-full bg-background/30 backdrop-blur-md shadow-sm hover:border-white/10 transition-all duration-300">
               {/* Attachment Button */}
               <input
                 type="file"
@@ -160,7 +160,7 @@ export const ChatComposer = forwardRef<HTMLDivElement, ChatComposerProps>(
                 size="sm"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isLoading || processingAttachment}
-                className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground shrink-0"
+                className="h-5 w-5 sm:h-6 sm:w-6 p-0 text-muted-foreground hover:text-foreground shrink-0"
               >
                 <Paperclip className="w-3 h-3" />
               </Button>
@@ -173,8 +173,8 @@ export const ChatComposer = forwardRef<HTMLDivElement, ChatComposerProps>(
                   placeholder="Message..."
                   className={cn(
                     "w-full resize-none bg-transparent border-0 outline-none",
-                    "text-sm placeholder:text-muted-foreground",
-                    "min-h-[18px] max-h-32 py-0 px-0",
+                    "text-xs sm:text-sm placeholder:text-muted-foreground",
+                    "min-h-[16px] sm:min-h-[18px] max-h-24 sm:max-h-32 py-0 px-0",
                     "focus:ring-0 focus:border-0"
                   )}
                   onKeyDown={(e) => {
@@ -198,12 +198,13 @@ export const ChatComposer = forwardRef<HTMLDivElement, ChatComposerProps>(
                   rows={1}
                   style={{
                     height: 'auto',
-                    minHeight: '18px'
+                    minHeight: window.innerWidth < 640 ? '16px' : '18px'
                   }}
                   onInput={(e) => {
                     const target = e.target as HTMLTextAreaElement;
                     target.style.height = 'auto';
-                    target.style.height = Math.min(target.scrollHeight, 128) + 'px';
+                    const maxHeight = window.innerWidth < 640 ? 96 : 128;
+                    target.style.height = Math.min(target.scrollHeight, maxHeight) + 'px';
                   }}
                 />
               </div>
@@ -213,25 +214,25 @@ export const ChatComposer = forwardRef<HTMLDivElement, ChatComposerProps>(
                 disabled={(!input.trim() && attachments.length === 0) || isLoading || processingAttachment}
                 onClick={handleSendClick}
                 className={cn(
-                  "h-6 w-6 p-0 rounded-full shrink-0",
+                  "h-5 w-5 sm:h-6 sm:w-6 p-0 rounded-full shrink-0",
                   (!input.trim() && attachments.length === 0) || isLoading || processingAttachment
                     ? "bg-muted text-muted-foreground cursor-not-allowed"
                     : "bg-foreground text-background hover:bg-foreground/90"
                 )}
               >
-                <Send className="w-3 h-3" />
+                <Send className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
               </Button>
             </div>
 
             {/* Secondary Actions */}
             {(messages.length > 0 || attachments.length > 0) && (
-              <div className="flex justify-center mt-4">
+              <div className="flex justify-center mt-2 sm:mt-4">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button 
                       variant="ghost" 
                       size="sm"
-                      className="text-xs text-muted-foreground hover:text-foreground h-7 px-2"
+                      className="text-xs text-muted-foreground hover:text-foreground h-6 sm:h-7 px-2"
                     >
                       <MoreVertical className="w-3 h-3" />
                     </Button>

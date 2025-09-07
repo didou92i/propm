@@ -166,12 +166,12 @@ export function ChatArea({
   const agentInfoData = agentInfo[selectedAgent as keyof typeof agentInfo];
 
   return (
-    <div className="flex flex-col h-full max-w-[min(90vw,4xl)] mx-auto w-full">
-      {/* Contenu principal centré */}
+    <div className="flex flex-col h-full max-w-[min(95vw,4xl)] mx-auto w-full">
+      {/* Contenu principal */}
       <div className="flex-1 flex flex-col h-full">
         {/* Suggestions de l'assistant pour tous les agents */}
         {messages.length === 0 && (
-          <div className="px-6 py-8 flex-shrink-0">
+          <div className="px-3 sm:px-6 py-4 sm:py-8 flex-shrink-0">
             <AgentSuggestions
               agentId={selectedAgent}
               onSuggestionClick={(suggestion) => setInput(suggestion)}
@@ -181,7 +181,7 @@ export function ChatArea({
 
         {/* Document Processing Indicator */}
         {processingAttachment && (
-          <div className="px-6 py-4 flex-shrink-0">
+          <div className="px-3 sm:px-6 py-2 sm:py-4 flex-shrink-0">
             <DocumentProcessingIndicator
               isProcessing={processingAttachment}
               error={attachmentError}
