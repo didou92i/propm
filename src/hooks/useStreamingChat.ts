@@ -55,45 +55,52 @@ export function useStreamingChat() {
       // Immediate user feedback
       onMessageUpdate('L\'assistant traite votre demande...', false);
 
-      // Use Supabase functions.invoke for better error handling
-      const { data, error } = await supabase.functions.invoke('chat-completions-optimized', {
-        body: {
+      // Get the current session token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('Session non disponible');
+      }
+
+      // Use direct fetch for SSE streaming support
+      const response = await fetch('https://yulhsufpnjkiozkrgyoq.supabase.co/functions/v1/chat-completions-optimized', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl1bGhzdWZwbmpraW96a3JneW9xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzkwNTM0NjUsImV4cCI6MjA1NDYyOTQ2NX0.HxmUiC_amSmU6rHNhI9RisZzTYsmAt6C3N28vWY2k0M',
+        },
+        body: JSON.stringify({
           messages,
           selectedAgent,
           userSession
-        }
+        }),
+        signal: abortControllerRef.current.signal
       });
 
-      if (error) {
-        throw new Error(`Erreur de streaming: ${error.message}`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      // If we got a direct response, handle it
-      if (data && data.content) {
-        onComplete(data.content, data.threadId);
-        setStreamingState(prev => ({
-          ...prev,
-          isStreaming: false,
-          isTyping: false
-        }));
-        endSession(sessionId, true);
+      // Check if it's a streaming response
+      const contentType = response.headers.get('content-type');
+      if (contentType?.includes('text/event-stream')) {
+        // Use real-time streaming
+        await handleRealTimeStream(response, onMessageUpdate, onComplete, sessionId);
         return;
+      } else {
+        // Handle non-streaming response
+        const data = await response.json();
+        if (data.content) {
+          onComplete(data.content, data.threadId);
+          setStreamingState(prev => ({
+            ...prev,
+            isStreaming: false,
+            isTyping: false
+          }));
+          endSession(sessionId, true);
+          return;
+        }
       }
-
-      // If we got a direct response, handle it
-      if (data && data.content) {
-        onComplete(data.content, data.threadId);
-        setStreamingState(prev => ({
-          ...prev,
-          isStreaming: false,
-          isTyping: false
-        }));
-        endSession(sessionId, true);
-        return;
-      }
-
-      // Handle streaming response (this would need more implementation for SSE)
-      throw new Error("Streaming non supporté via invoke");
 
     } catch (error) {
       endSession(sessionId, false);
@@ -144,11 +151,16 @@ export function useStreamingChat() {
         
         for (const line of lines) {
           if (line.startsWith('data: ') && line.length > 6) {
-            try {
-              const data = JSON.parse(line.slice(6));
+            const jsonStr = line.slice(6).trim();
+            if (jsonStr) {
+              try {
+                const data = JSON.parse(jsonStr);
               
               if (data.status === 'streaming_started') {
                 // Stream has started successfully
+                if (!firstTokenReceived) {
+                  onMessageUpdate('', false); // Clear initial loading message
+                }
                 continue;
               }
               
@@ -156,7 +168,6 @@ export function useStreamingChat() {
                 // Real-time token streaming
                 if (!firstTokenReceived) {
                   firstTokenReceived = true;
-                  onMessageUpdate('', false); // Clear initial message
                 }
                 
                 fullContent = data.content;
@@ -166,9 +177,9 @@ export function useStreamingChat() {
                   currentContent: fullContent,
                   isTyping: true,
                   performance: {
-                    firstTokenLatency: 0, // Will be updated by edge function
-                    tokenCount: data.tokenCount || 0,
-                    tokensPerSecond: 0
+                    firstTokenLatency: data.performance?.firstTokenLatency || 0,
+                    tokenCount: fullContent.length,
+                    tokensPerSecond: data.performance?.tokensPerSecond || 0
                   }
                 }));
                 
@@ -199,9 +210,10 @@ export function useStreamingChat() {
               if (data.error) {
                 throw new Error(data.error);
               }
-            } catch (parseError) {
-              // Ignore parse errors for malformed SSE data
-              continue;
+              } catch (parseError) {
+                // Ignore parse errors for malformed SSE data
+                continue;
+              }
             }
           }
         }
