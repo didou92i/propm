@@ -9,6 +9,7 @@
 @import './styles/performance.css';
 @import './styles/modern-training.css';
 @import './styles/keyframe-animations.css';
+@import './styles/mobile-optimizations.css';
 
 @tailwind base;
 @tailwind components;

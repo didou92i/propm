@@ -7,8 +7,10 @@ import { FloatingActionButton } from "@/components/FloatingActionButton";
 import { PlatformDiagnostics } from "@/components/PlatformDiagnostics";
 import { SemanticSearchDialog } from "@/components/search";
 import { MonitoringDashboard } from "@/components/monitoring";
+import { MobileNavigationTabBar } from "@/components/ui/mobile-navigation";
 import { useAgentTheme } from "@/hooks/useAgentTheme";
 import { useAdmin } from "@/hooks/useAdmin";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { LegalFooter } from "@/components/legal";
 import { Bot, Sparkles, Plus, Settings, FileSearch, Activity, BarChart3 } from "lucide-react";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
@@ -17,6 +19,7 @@ import { useNavigate } from "react-router-dom";
 const Index = () => {
   const navigate = useNavigate();
   const { isAdmin } = useAdmin();
+  const isMobile = useIsMobile();
   const [selectedAgent, setSelectedAgent] = useState("redacpro");
   const [chatKey, setChatKey] = useState(0);
   const [isNewChatMode, setIsNewChatMode] = useState(false);
@@ -84,7 +87,7 @@ const Index = () => {
   }, []);
   return (
     <ParallaxBackground className="min-h-screen">
-      <SidebarProvider>
+      <SidebarProvider defaultOpen={!isMobile}>
         <div className="flex h-screen w-full theme-transition">
           <AppSidebar 
             selectedAgent={selectedAgent} 
@@ -112,7 +115,7 @@ const Index = () => {
             </header>
 
             {/* Main Chat Area */}
-            <main className="flex-1 min-h-0 pb-16">
+            <main className={`flex-1 min-h-0 ${isMobile ? 'pb-20' : 'pb-16'}`}>
               <ChatArea key={chatKey} selectedAgent={selectedAgent} sharedContext={sharedContext} />
             </main>
           </div>
@@ -120,15 +123,36 @@ const Index = () => {
           {/* Legal Footer - Fixed */}
           <LegalFooter />
           
-          {/* Enhanced Floating Action Buttons */}
-          <FloatingActionButton icon={Plus} onClick={() => setShowConfirmNewChat(true)} position="bottom-right" variant="primary" size="md" tooltip="Nouvelle conversation (Ctrl/Cmd+N)" />
+          {/* Enhanced Floating Action Buttons - Adjusted for mobile */}
+          <FloatingActionButton 
+            icon={Plus} 
+            onClick={() => setShowConfirmNewChat(true)} 
+            position="bottom-right" 
+            variant="primary" 
+            size={isMobile ? "lg" : "md"} 
+            tooltip={isMobile ? undefined : "Nouvelle conversation (Ctrl/Cmd+N)"} 
+          />
           
-          {isAdmin && (
+          {isAdmin && !isMobile && (
             <>
-              <FloatingActionButton icon={FileSearch} onClick={handleSemanticSearch} position="bottom-left" variant="secondary" size="sm" tooltip="Recherche sémantique" />
+              <FloatingActionButton 
+                icon={FileSearch} 
+                onClick={handleSemanticSearch} 
+                position="bottom-left" 
+                variant="secondary" 
+                size="sm" 
+                tooltip="Recherche sémantique" 
+              />
 
               <div className="fixed bottom-6 left-20 z-40">
-                <FloatingActionButton icon={BarChart3} onClick={handleMonitoring} position="bottom-left" variant="accent" size="sm" tooltip="Monitoring & Analytics" />
+                <FloatingActionButton 
+                  icon={BarChart3} 
+                  onClick={handleMonitoring} 
+                  position="bottom-left" 
+                  variant="accent" 
+                  size="sm" 
+                  tooltip="Monitoring & Analytics" 
+                />
               </div>
             </>
           )}
@@ -174,6 +198,9 @@ const Index = () => {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+          
+          {/* Mobile Navigation */}
+          {isMobile && <MobileNavigationTabBar />}
         </div>
       </SidebarProvider>
     </ParallaxBackground>

@@ -1,0 +1,143 @@
+/* Enhanced tactile feedback and mobile optimization */
+
+/* Touch-friendly components */
+.touch-target {
+  @apply min-h-[44px] min-w-[44px];
+}
+
+.touch-manipulation {
+  touch-action: manipulation;
+}
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.safe-area-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+/* Enhanced mobile buttons */
+.mobile-button-enhanced {
+  @apply touch-manipulation active:scale-95 transition-transform duration-150;
+  @apply min-h-[48px] px-4 py-3;
+  @apply focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2;
+}
+
+/* Mobile-optimized cards */
+.mobile-card {
+  @apply p-4 rounded-xl touch-manipulation;
+  @apply active:scale-[0.98] transition-transform duration-150;
+}
+
+/* Enhanced ripple effects for mobile */
+.mobile-ripple {
+  @apply relative overflow-hidden;
+}
+
+.mobile-ripple::after {
+  content: '';
+  @apply absolute inset-0 bg-current opacity-0 scale-0 rounded-full;
+  @apply transition-all duration-300 pointer-events-none;
+}
+
+.mobile-ripple:active::after {
+  @apply opacity-20 scale-150;
+}
+
+/* Mobile navigation spacing */
+.mobile-nav-spacing {
+  @apply pb-20 lg:pb-0;
+}
+
+/* Enhanced glass effects for mobile */
+.mobile-glass {
+  @apply bg-background/80 backdrop-blur-xl border border-border/20;
+  @apply shadow-xl shadow-black/10;
+}
+
+/* Mobile-optimized floating elements */
+.mobile-floating {
+  @apply shadow-2xl backdrop-blur-sm;
+  @apply border border-white/10;
+}
+
+/* Touch-friendly form inputs */
+.mobile-input {
+  @apply min-h-[48px] px-4 py-3 text-base;
+  @apply focus:ring-2 focus:ring-primary/50 focus:ring-offset-2;
+}
+
+/* Mobile-specific animations */
+.mobile-fade-in {
+  animation: mobile-fade-in 0.3s ease-out;
+}
+
+@keyframes mobile-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Mobile scroll optimization */
+.mobile-scroll {
+  @apply overscroll-contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Enhanced mobile dropdown */
+.mobile-dropdown {
+  @apply bg-background/95 backdrop-blur-xl border border-border/30;
+  @apply shadow-2xl shadow-black/20 rounded-xl;
+  @apply z-50 max-h-64 overflow-y-auto mobile-scroll;
+}
+
+/* Mobile-optimized modal overlay */
+.mobile-modal-overlay {
+  @apply bg-black/60 backdrop-blur-sm;
+  @apply animate-in fade-in duration-200;
+}
+
+/* Touch-friendly checkbox and radio */
+.mobile-checkbox,
+.mobile-radio {
+  @apply w-5 h-5 touch-manipulation;
+  @apply focus:ring-2 focus:ring-primary/50 focus:ring-offset-2;
+}
+
+/* Mobile-optimized sidebar */
+.mobile-sidebar {
+  @apply transform transition-transform duration-300;
+}
+
+.mobile-sidebar.closed {
+  @apply -translate-x-full;
+}
+
+.mobile-sidebar.open {
+  @apply translate-x-0;
+}
+
+/* Mobile header optimization */
+.mobile-header {
+  @apply sticky top-0 z-40 bg-background/80 backdrop-blur-xl;
+  @apply border-b border-border/20 safe-area-top;
+}
+
+/* Enhanced mobile button states */
+.mobile-button-primary {
+  @apply bg-primary text-primary-foreground shadow-lg;
+  @apply active:bg-primary/90 active:shadow-md;
+  @apply focus:ring-2 focus:ring-primary/50 focus:ring-offset-2;
+}
+
+.mobile-button-secondary {
+  @apply bg-secondary text-secondary-foreground border border-border/20;
+  @apply active:bg-secondary/80 active:border-border/40;
+  @apply focus:ring-2 focus:ring-secondary/50 focus:ring-offset-2;
+}
