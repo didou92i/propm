@@ -2,6 +2,17 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
+interface AssistantConfig {
+  agentId: string;
+  assistantId: string;
+  name: string;
+  systemPrompt: string;
+  model: string;
+  temperature?: number;
+  maxTokens: number;
+  retrievedAt: string;
+}
+
 const supabaseAdmin = createClient(
   Deno.env.get('SUPABASE_URL') ?? '',
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -118,8 +129,19 @@ serve(async (req) => {
       timestamp: new Date().toISOString()
     });
 
-    // Get agent configuration
-    const agentConfig = AGENT_CONFIGS[selectedAgent] || AGENT_CONFIGS.redacpro;
+    // Try to get dynamic assistant configuration first
+    let agentConfig = await getDynamicAgentConfig(user.id, selectedAgent);
+    
+    // Fallback to hardcoded config if no dynamic config found
+    if (!agentConfig) {
+      console.log('Using fallback hardcoded config for', selectedAgent);
+      agentConfig = AGENT_CONFIGS[selectedAgent] || AGENT_CONFIGS.redacpro;
+    } else {
+      console.log('Using dynamic OpenAI Assistant config for', selectedAgent, {
+        model: agentConfig.model,
+        assistantId: agentConfig.assistantId || 'none'
+      });
+    }
     
     // Prepare conversation messages
     const conversationMessages = [
@@ -317,3 +339,50 @@ serve(async (req) => {
     });
   }
 });
+
+/**
+ * Récupère la configuration dynamique d'un Assistant OpenAI
+ */
+async function getDynamicAgentConfig(userId: string, agentId: string): Promise<any | null> {
+  try {
+    // Récupérer les configs cachées depuis le profil utilisateur
+    const { data, error } = await supabaseAdmin
+      .from('profiles')
+      .select('assistant_configs, configs_updated_at')
+      .eq('user_id', userId)
+      .single();
+
+    if (error || !data?.assistant_configs) {
+      console.log('No cached assistant configs found for user', userId);
+      return null;
+    }
+
+    const configs: AssistantConfig[] = data.assistant_configs;
+    const configAge = new Date().getTime() - new Date(data.configs_updated_at).getTime();
+    const isExpired = configAge > (24 * 60 * 60 * 1000); // 24 heures
+
+    if (isExpired) {
+      console.log('Assistant configs expired for user', userId);
+      return null;
+    }
+
+    const config = configs.find(c => c.agentId === agentId);
+    if (!config) {
+      console.log('No config found for agent', agentId);
+      return null;
+    }
+
+    // Adapter au format attendu par le système
+    return {
+      model: config.model,
+      systemPrompt: config.systemPrompt,
+      maxTokens: config.maxTokens,
+      temperature: config.temperature,
+      assistantId: config.assistantId // Pour debug/logs
+    };
+
+  } catch (error) {
+    console.error('Error retrieving dynamic agent config:', error);
+    return null;
+  }
+}

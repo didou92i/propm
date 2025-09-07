@@ -1,3 +1,4 @@
+export { AssistantConfigStatus } from './AssistantConfigStatus';
 export { ChatArea } from './ChatArea';
 export { ChatMessageList } from './ChatMessageList';
 export { ChatComposer } from './ChatComposer';
