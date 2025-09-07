@@ -8,7 +8,7 @@ import { useConversationHistory } from "@/hooks/useConversationHistory";
 import { Message } from "@/types/chat";
 import { AGENTS, TOOLS } from "@/config/agents";
 import { AgentAvatar } from "@/components/common";
-import { AssistantConfigStatus } from "@/components/chat";
+
 import {
   Sidebar,
   SidebarContent,
@@ -286,11 +286,6 @@ export function AppSidebar({ selectedAgent, onAgentSelect, onContextShare, onNew
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <AssistantConfigStatus />
-          </SidebarGroupContent>
-        </SidebarGroup>
       </SidebarContent>
 
       <SidebarFooter className="p-4 border-t border-border/40">
