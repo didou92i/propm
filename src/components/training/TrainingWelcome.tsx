@@ -52,9 +52,11 @@ export const TrainingWelcome: React.FC<TrainingWelcomeProps> = ({ onStart }) => 
               transition={{ duration: 2, repeat: Infinity }}
               className="bg-background/80 backdrop-blur-sm border border-primary/20 rounded-2xl p-8"
             >
-              <h1 className="text-6xl font-bold bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-transparent">
-                Propm.fr
-              </h1>
+              <img 
+                src="/lovable-uploads/ac2af908-24d7-4f55-a75f-56c182fe8971.png" 
+                alt="Propm.fr Logo" 
+                className="h-32 w-32 object-contain"
+              />
               <div className="text-lg text-muted-foreground mt-2 font-medium">
                 Formation CDS Premium
               </div>
