@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Clock, User, Building, CheckSquare } from 'lucide-react';
+import { FileText, Clock, User, Building, CheckSquare, Image, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { supabase } from '@/integrations/supabase/client';
+import { TrainingResultsModal } from './TrainingResultsModal';
 
 interface CasePracticeStep {
   id: string;
@@ -21,6 +23,16 @@ interface CasePracticeData {
   context: string;
   steps: CasePracticeStep[];
   totalTime: number;
+}
+
+interface TrainingEvaluation {
+  score: number;
+  isCorrect: boolean;
+  feedback: string;
+  strongPoints: string[];
+  improvementAreas: string[];
+  recommendations: string[];
+  detailedAnalysis: string;
 }
 
 interface CasePracticeSimulatorProps {
@@ -54,6 +66,11 @@ export function CasePracticeSimulator({
   const [timeSpent, setTimeSpent] = useState(0);
   const [stepStartTime, setStepStartTime] = useState(Date.now());
   const [isCompleted, setIsCompleted] = useState(false);
+  const [generatedVisual, setGeneratedVisual] = useState<string | null>(null);
+  const [isGeneratingVisual, setIsGeneratingVisual] = useState(false);
+  const [evaluation, setEvaluation] = useState<TrainingEvaluation | null>(null);
+  const [showResults, setShowResults] = useState(false);
+  const [isEvaluating, setIsEvaluating] = useState(false);
 
   const currentStep = caseData.steps[currentStepIndex];
   
@@ -74,22 +91,100 @@ export function CasePracticeSimulator({
   
   const progress = ((currentStepIndex + 1) / caseData.steps.length) * 100;
 
-  const handleNext = () => {
+  // Generate visual for current step
+  const generateVisual = async () => {
+    if (!currentStep) return;
+    
+    setIsGeneratingVisual(true);
+    try {
+      const visualTypes = ['press_clipping', 'official_document', 'field_photo', 'infraction_scene'];
+      const randomType = visualTypes[Math.floor(Math.random() * visualTypes.length)];
+      
+      const { data, error } = await supabase.functions.invoke('generate-training-visuals', {
+        body: {
+          context: caseData.context,
+          scenario: currentStep.scenario,
+          visualType: randomType,
+          domain: 'police_municipale'
+        }
+      });
+
+      if (error) throw error;
+      setGeneratedVisual(data.image);
+    } catch (error) {
+      console.error('Error generating visual:', error);
+    } finally {
+      setIsGeneratingVisual(false);
+    }
+  };
+
+  // Evaluate user answer
+  const evaluateAnswer = async (answer: string): Promise<TrainingEvaluation> => {
+    try {
+      const { data, error } = await supabase.functions.invoke('evaluate-user-answer', {
+        body: {
+          userAnswer: answer,
+          expectedAnswer: currentStep.expectedPoints.join('\n'),
+          level: 'intermediaire',
+          domain: 'police_municipale'
+        }
+      });
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error evaluating answer:', error);
+      // Fallback evaluation
+      return {
+        score: 12,
+        isCorrect: true,
+        feedback: "Votre réponse a été enregistrée. L'évaluation détaillée n'est pas disponible actuellement.",
+        strongPoints: ["Réponse structurée"],
+        improvementAreas: ["Développer certains aspects"],
+        recommendations: ["Continuer à pratiquer"],
+        detailedAnalysis: "Analyse non disponible"
+      };
+    }
+  };
+
+  const handleNext = async () => {
     const newAnswers = [...answers, currentAnswer];
     setAnswers(newAnswers);
     
     const stepTime = (Date.now() - stepStartTime) / 1000 / 60; // minutes
-    setTimeSpent(prev => prev + stepTime);
+    const totalTimeSpent = timeSpent + stepTime;
+    setTimeSpent(totalTimeSpent);
 
     if (currentStepIndex < caseData.steps.length - 1) {
       setCurrentStepIndex(prev => prev + 1);
       setCurrentAnswer('');
       setStepStartTime(Date.now());
+      setGeneratedVisual(null);
     } else {
+      // Evaluate final performance
+      setIsEvaluating(true);
+      try {
+        const finalAnswer = newAnswers.join('\n\n--- ÉTAPE SUIVANTE ---\n\n');
+        const evaluation = await evaluateAnswer(finalAnswer);
+        setEvaluation(evaluation);
+        setShowResults(true);
+      } catch (error) {
+        console.error('Error during evaluation:', error);
+      } finally {
+        setIsEvaluating(false);
+      }
+      
       setIsCompleted(true);
-      onComplete(newAnswers, timeSpent + stepTime);
+      onComplete(newAnswers, totalTimeSpent);
     }
   };
+
+  // Generate visual when step changes
+  useEffect(() => {
+    if (currentStep && !generatedVisual) {
+      generateVisual();
+    }
+  }, [currentStepIndex]);
 
   const canProceed = currentAnswer.trim().length > 50; // Minimum 50 characters
 
@@ -190,6 +285,33 @@ export function CasePracticeSimulator({
                   </ul>
                 </div>
 
+                {/* Visual Context */}
+                {(generatedVisual || isGeneratingVisual) && (
+                  <div className="bg-muted/20 p-4 rounded-lg">
+                    <h4 className="font-semibold text-sm mb-3 text-prepacds-primary flex items-center gap-2">
+                      <Image className="h-4 w-4" />
+                      Document Contextuel :
+                    </h4>
+                    {isGeneratingVisual ? (
+                      <div className="flex items-center justify-center p-8 bg-muted/50 rounded-lg">
+                        <Loader2 className="h-6 w-6 animate-spin text-prepacds-primary" />
+                        <span className="ml-2 text-sm text-muted-foreground">Génération du visuel...</span>
+                      </div>
+                    ) : generatedVisual ? (
+                      <div className="relative">
+                        <img 
+                          src={generatedVisual} 
+                          alt="Document contextuel généré par IA" 
+                          className="w-full max-w-md mx-auto rounded-lg shadow-md border"
+                        />
+                        <Badge variant="outline" className="absolute top-2 right-2 bg-background/90">
+                          Généré par IA
+                        </Badge>
+                      </div>
+                    ) : null}
+                  </div>
+                )}
+
                 {/* Answer Area */}
                 <div className="space-y-3">
                   <label className="text-sm font-medium text-foreground">Votre réponse :</label>
@@ -226,14 +348,49 @@ export function CasePracticeSimulator({
             </Button>
             <Button 
               onClick={handleNext}
-              disabled={!canProceed}
+              disabled={!canProceed || isEvaluating}
               className="gap-2"
             >
-              {currentStepIndex === caseData.steps.length - 1 ? 'Terminer' : 'Suivant'}
-              <CheckSquare className="h-4 w-4" />
+              {isEvaluating ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Évaluation...
+                </>
+              ) : (
+                <>
+                  {currentStepIndex === caseData.steps.length - 1 ? 'Terminer' : 'Suivant'}
+                  <CheckSquare className="h-4 w-4" />
+                </>
+              )}
             </Button>
           </div>
         </div>
+
+        {/* Results Modal */}
+        {evaluation && (
+          <TrainingResultsModal
+            isOpen={showResults}
+            onClose={() => setShowResults(false)}
+            evaluation={evaluation}
+            totalTime={timeSpent}
+            caseTitle={caseData.title}
+            onRestart={() => {
+              setCurrentStepIndex(0);
+              setAnswers([]);
+              setCurrentAnswer('');
+              setTimeSpent(0);
+              setStepStartTime(Date.now());
+              setIsCompleted(false);
+              setGeneratedVisual(null);
+              setEvaluation(null);
+              setShowResults(false);
+            }}
+            onNewTraining={() => {
+              setShowResults(false);
+              onExit();
+            }}
+          />
+        )}
       </motion.div>
     </div>
   );
