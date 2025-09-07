@@ -91,11 +91,27 @@ export function TrueFalseAnimated({
       return;
     }
     
-    logger.info("Début handleAnswer", { 
+    // Log de debug pour analyser l'état avant traitement
+    logger.info("🎯 Début handleAnswer", { 
       answer, 
       isCorrect: answer === currentQuestion.isCorrect,
       currentQuestionIndex,
-      questionId: currentQuestion.id 
+      questionId: currentQuestion.id,
+      questionStatement: currentQuestion.statement,
+      questionCorrectAnswer: currentQuestion.isCorrect
+    }, "TrueFalseAnimated");
+    
+    // Log des classes CSS présentes avant modification
+    const trueBtnClasses = trueBtnRef.current?.className || "N/A";
+    const falseBtnClasses = falseBtnRef.current?.className || "N/A";
+    const cardClasses = cardRef.current?.className || "N/A";
+    
+    logger.info("📝 État CSS avant animation", {
+      trueBtnClasses,
+      falseBtnClasses,
+      cardClasses,
+      perspective: window.getComputedStyle(document.querySelector('.perspective-1000') || document.body).perspective || "N/A",
+      preserv3d: window.getComputedStyle(document.querySelector('.preserve-3d') || document.body).transformStyle || "N/A"
     }, "TrueFalseAnimated");
     
     setSelectedAnswer(answer);
@@ -195,7 +211,24 @@ export function TrueFalseAnimated({
     
     // PHASE 3: Flip de la carte après 3 secondes (laisser voir l'animation)
     setTimeout(() => {
-      logger.info("Début flip carte", {}, "TrueFalseAnimated");
+      logger.info("🔄 Début flip carte", { 
+        currentFlipState: isFlipped,
+        willFlipTo: true,
+        cardElement: cardRef.current ? "présent" : "absent"
+      }, "TrueFalseAnimated");
+      
+      // Vérifier l'état des classes CSS avant le flip
+      const cardElement = cardRef.current;
+      if (cardElement) {
+        const computedStyle = window.getComputedStyle(cardElement);
+        logger.info("🎨 État CSS carte avant flip", {
+          transform: computedStyle.transform,
+          transformStyle: computedStyle.transformStyle,
+          backfaceVisibility: computedStyle.backfaceVisibility,
+          perspective: computedStyle.perspective
+        }, "TrueFalseAnimated");
+      }
+      
       setIsFlipped(true);
       
       setTimeout(() => {
@@ -295,9 +328,23 @@ export function TrueFalseAnimated({
         {/* Flip Card */}
         <div className="perspective-1000 mb-6">
           <motion.div
+            ref={cardRef}
             animate={{ rotateY: isFlipped ? 180 : 0 }}
             transition={{ duration: 0.6, ease: "easeInOut" }}
             className="relative preserve-3d"
+            onAnimationStart={() => {
+              logger.info("🔄 Animation flip START", { 
+                isFlipped, 
+                rotateY: isFlipped ? 180 : 0,
+                cardTransform: cardRef.current?.style.transform || "N/A"
+              }, "TrueFalseAnimated");
+            }}
+            onAnimationComplete={() => {
+              logger.info("✅ Animation flip COMPLETE", { 
+                isFlipped,
+                finalTransform: cardRef.current?.style.transform || "N/A"
+              }, "TrueFalseAnimated");
+            }}
           >
             {/* Front of card - Question */}
             <Card className={`absolute inset-0 backface-hidden ${isFlipped ? 'invisible' : ''}`}>

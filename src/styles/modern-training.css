@@ -171,19 +171,67 @@
     animation: chart-highlight 4s ease-in-out infinite;
   }
 
-  /* Badge System */
-  .achievement-badge {
-    position: relative;
-    overflow: hidden;
-  }
+/* Badge System */
+.achievement-badge {
+  position: relative;
+  overflow: hidden;
+}
 
-  .achievement-badge.unlocked::before {
-    content: '';
-    position: absolute;
-    top: -2px;
-    left: -100%;
-    width: 100%;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, hsl(var(--primary)), transparent);
-    animation: unlock-shine 2s ease-out;
+.achievement-badge.unlocked::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -100%;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, hsl(var(--primary)), transparent);
+  animation: unlock-shine 2s ease-out;
+}
+
+/* 3D Flip Card System - Correction de l'affichage inversé */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}
+
+/* Animation states pour les boutons Vrai/Faux */
+.answer-select {
+  transform: scale(1.05) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+@keyframes correctReveal {
+  0% {
+    background-color: inherit;
+    transform: scale(1);
+    box-shadow: none;
   }
+  50% {
+    transform: scale(1.15);
+    box-shadow: 0 0 30px hsl(142, 76%, 36%, 0.8);
+  }
+  100% {
+    background-color: hsl(142, 76%, 36%);
+    transform: scale(1.1);
+    box-shadow: 0 0 25px hsl(142, 76%, 36%, 0.6);
+  }
+}
+
+@keyframes incorrectShake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-8px) scale(1.02); }
+  20%, 40%, 60%, 80% { transform: translateX(8px) scale(1.02); }
+}
