@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TrainingWelcome as TrainingWelcomeComponent } from '@/components/training/TrainingWelcome';
-import { ProtectedTrainingRoute } from '@/components/ProtectedTrainingRoute';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
 
 const TrainingWelcome = () => {
   const navigate = useNavigate();
@@ -11,9 +11,9 @@ const TrainingWelcome = () => {
   };
 
   return (
-    <ProtectedTrainingRoute>
+    <ProtectedRoute>
       <TrainingWelcomeComponent onStart={handleStart} />
-    </ProtectedTrainingRoute>
+    </ProtectedRoute>
   );
 };
 
