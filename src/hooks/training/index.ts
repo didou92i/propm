@@ -12,3 +12,6 @@ export { useTrainingConfiguration } from './useTrainingConfiguration';
 
 // Hook legacy (deprecated, utilisez useOptimizedTrainingManager)
 export { useTrainingManager } from './useTrainingManager';
+
+// Hooks utilitaires pour les visuels
+export { useTrainingVisuals } from '../useTrainingVisuals';

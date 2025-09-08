@@ -76,7 +76,7 @@ serve(async (req) => {
         model: 'gpt-image-1',
         prompt: prompt,
         n: 1,
-        size: '512x512', // Réduit de 1024x1024 pour performance
+        size: '1024x1024', // Format supporté par OpenAI
         output_format: 'webp',
         quality: 'medium', // Réduit de 'high' pour performance
         output_compression: 70 // Ajoute compression pour réduire la taille
