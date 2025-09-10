@@ -61,6 +61,14 @@ export function useStreamingChat() {
         throw new Error('Session non disponible');
       }
 
+      // Try to populate missing assistant configurations first
+      try {
+        await supabase.functions.invoke('populate-assistant-config');
+        console.log('Assistant configurations populated');
+      } catch (configError) {
+        console.warn('Failed to populate configs, proceeding anyway:', configError);
+      }
+
       // Utiliser directement chat-openai-stream pour accès direct aux Assistants OpenAI
       const { data, error } = await supabase.functions.invoke('chat-openai-stream', {
         body: {
