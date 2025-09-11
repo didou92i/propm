@@ -115,16 +115,13 @@ const Index = () => {
             </header>
 
             {/* Main Chat Area */}
-            <main className={`flex-1 min-h-0 ${isMobile ? 'pb-24' : 'pb-16'}`}>
+            <main className={`flex-1 min-h-0 ${isMobile ? 'pb-20' : 'pb-16'}`}>
               <ChatArea key={chatKey} selectedAgent={selectedAgent} sharedContext={sharedContext} />
-              
-              {/* Legal Footer - Integrated on mobile */}
-              {isMobile && <LegalFooter />}
             </main>
           </div>
           
-          {/* Legal Footer - Fixed on desktop only */}
-          {!isMobile && <LegalFooter />}
+          {/* Legal Footer - Fixed */}
+          <LegalFooter />
           
           {/* Enhanced Floating Action Buttons - Adjusted for mobile */}
           <FloatingActionButton 
