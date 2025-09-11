@@ -12,12 +12,9 @@ import {
   ArrowLeft, 
   CheckCircle2, 
   AlertCircle,
-  FileText,
-  Image,
-  Loader2
+  FileText
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useTrainingVisuals } from '@/hooks/useTrainingVisuals';
 
 interface OpenEndedQuestion {
   id: string;
@@ -47,27 +44,16 @@ export function OpenEndedQuestionPlayer({
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const [isCompleted, setIsCompleted] = useState(false);
   const [autoSaveTimer, setAutoSaveTimer] = useState<NodeJS.Timeout | null>(null);
-  const { generateVisual, isGenerating: isGeneratingVisual, generatedVisuals } = useTrainingVisuals();
 
   const currentQuestion = questions[currentQuestionIndex];
   const currentAnswer = answers[currentQuestionIndex];
 
-  // Initialiser le timer pour la question actuelle et générer un visuel
+  // Initialiser le timer pour la question actuelle
   useEffect(() => {
     if (currentQuestion?.timeLimit) {
       setTimeLeft(currentQuestion.timeLimit * 60); // Convert to seconds
     }
-    
-    // Générer un visuel contextuel pour la question
-    if (currentQuestion?.context) {
-      generateVisual({
-        context: currentQuestion.context,
-        scenario: currentQuestion.question,
-        visualType: 'official_document',
-        domain: 'droit_administratif'
-      });
-    }
-  }, [currentQuestion, generateVisual]);
+  }, [currentQuestion]);
 
   // Gestion du timer
   useEffect(() => {
@@ -248,33 +234,6 @@ export function OpenEndedQuestionPlayer({
                     </ul>
                   </AlertDescription>
                 </Alert>
-              )}
-
-              {/* Visual Context */}
-              {(generatedVisuals.length > 0 || isGeneratingVisual) && (
-                <div className="bg-muted/20 p-4 rounded-lg">
-                  <h4 className="font-semibold text-sm mb-3 text-primary flex items-center gap-2">
-                    <Image className="h-4 w-4" />
-                    Document Contextuel :
-                  </h4>
-                  {isGeneratingVisual ? (
-                    <div className="flex items-center justify-center p-8 bg-muted/50 rounded-lg">
-                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                      <span className="ml-2 text-sm text-muted-foreground">Génération du visuel...</span>
-                    </div>
-                  ) : generatedVisuals.length > 0 ? (
-                    <div className="relative">
-                      <img 
-                        src={generatedVisuals[generatedVisuals.length - 1].image} 
-                        alt="Document contextuel généré par IA" 
-                        className="w-full max-w-md mx-auto rounded-lg shadow-md border"
-                      />
-                      <Badge variant="outline" className="absolute top-2 right-2 bg-background/90">
-                        Généré par IA
-                      </Badge>
-                    </div>
-                  ) : null}
-                </div>
               )}
 
               {/* Answer Area */}

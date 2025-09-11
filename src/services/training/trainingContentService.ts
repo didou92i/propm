@@ -1,6 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { TrainingType, UserLevel, StudyDomain } from "@/types/prepacds";
-import { ContentFallbackService } from './contentFallback';
 
 export interface ContentGenerationOptions {
   forceRefresh?: boolean;
@@ -142,25 +141,7 @@ class TrainingContentService {
         responseTime
       });
 
-      // Utiliser le fallback en cas d'erreur
-      console.log('[FALLBACK] Utilisation du contenu de secours');
-      const fallbackContent = ContentFallbackService.generateFallbackContent(
-        trainingType, 
-        level, 
-        domain
-      );
-      
-      const enhancedFallback = ContentFallbackService.enhanceFallbackContent(
-        fallbackContent, 
-        sessionId
-      );
-      
-      return {
-        content: enhancedFallback,
-        source: 'fallback' as const,
-        sessionId,
-        timestamp: Date.now()
-      };
+      throw new Error(errorMessage);
     }
   }
 
@@ -169,7 +150,7 @@ class TrainingContentService {
       throw new Error('Paramètres de génération manquants');
     }
 
-    const supportedTypes: TrainingType[] = ['qcm', 'vrai_faux', 'cas_pratique', 'question_ouverte'];
+    const supportedTypes: TrainingType[] = ['qcm', 'vrai_faux', 'cas_pratique'];
     if (!supportedTypes.includes(trainingType)) {
       throw new Error(`Type d'entraînement non supporté: ${trainingType}`);
     }
@@ -190,11 +171,6 @@ class TrainingContentService {
       case 'cas_pratique':
         if (!content.steps || content.steps.length === 0) {
           throw new Error('Étapes cas pratique manquantes dans le contenu généré');
-        }
-        break;
-      case 'question_ouverte':
-        if (!content.questions || content.questions.length === 0) {
-          throw new Error('Questions ouvertes manquantes dans le contenu généré');
         }
         break;
     }

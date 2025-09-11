@@ -174,38 +174,14 @@ serve(async (req) => {
       })
     });
 
-    // Get assistant ID dynamically from user profile configuration
-    let assistantId: string;
-    try {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('assistant_configurations')
-        .eq('user_id', user.id)
-        .single();
-      
-      const configs = profile?.assistant_configurations || [];
-      const config = configs.find((c: any) => c.agentId === selectedAgent);
-      
-      if (!config?.assistantId) {
-        console.error(`No assistant configuration found for agent: ${selectedAgent}`);
-        throw new Error(`Assistant configuration manquante pour ${selectedAgent}. Veuillez configurer vos assistants.`);
-      }
-      
-      assistantId = config.assistantId;
-      console.log(`Using assistant ID for ${selectedAgent}: ${assistantId}`);
-    } catch (error) {
-      console.error('Error fetching assistant configuration:', error);
-      return new Response(
-        JSON.stringify({ 
-          error: `Configuration assistant manquante. Utilisez la section Diagnostics pour configurer vos assistants OpenAI.`,
-          code: 'ASSISTANT_CONFIG_MISSING'
-        }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
+    // Create run with agent-specific instruction overrides
+    const assistantMap: Record<string, string> = {
+      redacpro: "asst_nVveo2OzbB2h8uHY2oIDpob1",
+      cdspro: "asst_ljWenYnbNEERVydsDaeVSHVl",
+      arrete: "asst_e4AMY6vpiqgqFwbQuhNCbyeL",
+      prepacds: "asst_MxbbQeTimcxV2mYR0KwAPNsu"
+    };
+    const assistantId = assistantMap[selectedAgent] || assistantMap.redacpro;
 
     // Simplified instruction handling - let assistants use their core prompts
     const getInstructions = (agent: string, messageContent: string): string | undefined => {
@@ -249,14 +225,20 @@ serve(async (req) => {
       return streamAssistantResponse(openAIApiKey, threadId, runId);
     }
 
-    // Simplified polling with reasonable intervals
+    // Ultra-optimized adaptive polling with performance intelligence
     let runStatus = 'queued';
     let attempts = 0;
-    const maxAttempts = 30; // Reduced for faster timeout
+    const maxAttempts = 60; // Increased for better reliability
     const startTime = Date.now();
 
     while (runStatus !== 'completed' && runStatus !== 'failed' && attempts < maxAttempts) {
-      const pollInterval = attempts < 3 ? 500 : attempts < 10 ? 1000 : 2000;
+      // Ultra-aggressive polling: faster initial intervals, smarter adaptation
+      const pollInterval = attempts < 2 ? 15 : // Ultra-fast start
+                          attempts < 5 ? 25 : // Fast continuation
+                          attempts < 12 ? 40 : // Moderate speed
+                          attempts < 25 ? 75 : // Standard polling
+                          attempts < 40 ? 150 : // Slower but persistent
+                          250; // Conservative fallback
       
       await new Promise(resolve => setTimeout(resolve, pollInterval));
       

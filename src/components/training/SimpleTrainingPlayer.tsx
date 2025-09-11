@@ -9,8 +9,6 @@ import { getStaticContent } from '@/services/training';
 import { validateTrainingContent, normalizeTrainingContent } from '@/utils/trainingValidation';
 import type { TrainingType, UserLevel, StudyDomain } from '@/types/prepacds';
 import { logger } from '@/utils/logger';
-import { FallbackContentIndicator } from './FallbackContentIndicator';
-import { ContentFallbackService } from '@/services/training/contentFallback';
 
 interface SimpleTrainingPlayerProps {
   trainingType: TrainingType;
@@ -183,13 +181,6 @@ export function SimpleTrainingPlayer({
       />
 
       <div className="pt-20 h-full overflow-auto">
-        {/* Indicateur de contenu fallback */}
-        <FallbackContentIndicator 
-          isVisible={isFromFallback && hasContent}
-          onRetry={handleRetry}
-          message="Contenu de secours utilisé - La génération IA est temporairement indisponible"
-        />
-        
         <TrainingContentRenderer
           trainingType={trainingType}
           level={level}

@@ -422,7 +422,6 @@ export type Database = {
       }
       profiles: {
         Row: {
-          assistant_configurations: Json | null
           avatar_url: string | null
           created_at: string
           display_name: string | null
@@ -431,7 +430,6 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          assistant_configurations?: Json | null
           avatar_url?: string | null
           created_at?: string
           display_name?: string | null
@@ -440,7 +438,6 @@ export type Database = {
           user_id: string
         }
         Update: {
-          assistant_configurations?: Json | null
           avatar_url?: string | null
           created_at?: string
           display_name?: string | null
