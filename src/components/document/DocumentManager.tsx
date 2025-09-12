@@ -1,13 +1,6 @@
-import { FileText } from 'lucide-react';
-import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { DocumentCluster } from './DocumentCluster';
-import { DocumentCard } from './DocumentCard';
-import { DocumentSearchBar } from './DocumentSearchBar'; 
-import { DocumentViewModeSelector } from './DocumentViewModeSelector';
 import { useDocumentLogic } from '@/hooks/document/useDocumentLogic';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ResponsiveCardContainer } from '@/components/ui/responsive-grid';
+import { DocumentFilters, DocumentList } from './components';
 
 interface DocumentData {
   id: string;
@@ -66,19 +59,6 @@ export const DocumentManager = () => {
     setFilteredDocuments(results.length > 0 ? results : documents);
   };
 
-  const handleTraditionalSearch = (term: string) => {
-    setSearchTerm(term);
-    if (!term.trim()) {
-      setFilteredDocuments(documents);
-      return;
-    }
-    const filtered = documents.filter(doc =>
-      doc.metadata.filename.toLowerCase().includes(term.toLowerCase()) ||
-      doc.content.toLowerCase().includes(term.toLowerCase())
-    );
-    setFilteredDocuments(filtered);
-  };
-
   const deleteDocument = () => {};
   const downloadDocument = () => {};
 
@@ -86,12 +66,12 @@ export const DocumentManager = () => {
     return (
       <div className="space-y-4">
         {[1, 2, 3].map(i => (
-          <Card key={i} className="p-4 glass-subtle">
+          <div key={i} className="p-4 glass-subtle rounded-lg">
             <div className="animate-pulse space-y-3">
               <div className="h-4 bg-muted rounded w-3/4"></div>
               <div className="h-3 bg-muted rounded w-1/2"></div>
             </div>
-          </Card>
+          </div>
         ))}
       </div>
     );
@@ -99,73 +79,25 @@ export const DocumentManager = () => {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-4">
-        <DocumentSearchBar 
-          onSemanticSearchResults={handleSemanticSearchResults}
-          searchTerm={searchTerm}
-          onTraditionalSearch={handleTraditionalSearch}
-        />
-        
-        <div className="flex items-center justify-between">
-          <DocumentViewModeSelector 
-            viewMode={viewMode}
-            onViewModeChange={setViewMode}
-          />
-        </div>
-      </div>
+      <DocumentFilters
+        searchTerm={searchTerm}
+        viewMode={viewMode}
+        documents={documents}
+        onSemanticSearchResults={handleSemanticSearchResults}
+        onTraditionalSearch={(term) => setSearchTerm(term)}
+        onViewModeChange={setViewMode}
+      />
 
-      {viewMode === 'cluster' ? (
-        <DocumentCluster onDocumentSelect={() => {}} />
-      ) : (
-        <Tabs defaultValue="all" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 glass-subtle">
-            <TabsTrigger value="all">Tous ({filteredDocuments.length})</TabsTrigger>
-            <TabsTrigger value="recent">Récents</TabsTrigger>
-            <TabsTrigger value="relevant">Plus Pertinents</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="all" className="space-y-3 mt-4">
-            {filteredDocuments.length === 0 ? (
-              <Card className="p-8 text-center glass-subtle">
-                <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="font-medium text-lg mb-2">Aucun document trouvé</h3>
-              </Card>
-            ) : (
-              viewMode === 'grid' ? (
-                <ResponsiveCardContainer>
-                  {filteredDocuments.map((doc) => (
-                    <DocumentCard
-                      key={doc.id}
-                      doc={doc}
-                      onDownload={downloadDocument}
-                      onDelete={deleteDocument}
-                      formatFileSize={formatFileSize}
-                      formatDate={formatDate}
-                      getFileTypeColor={getFileTypeColor}
-                      getExtractionMethodLabel={getExtractionMethodLabel}
-                    />
-                  ))}
-                </ResponsiveCardContainer>
-              ) : (
-                <div className="space-y-3">
-                  {filteredDocuments.map((doc) => (
-                    <DocumentCard
-                      key={doc.id}
-                      doc={doc}
-                      onDownload={downloadDocument}
-                      onDelete={deleteDocument}
-                      formatFileSize={formatFileSize}
-                      formatDate={formatDate}
-                      getFileTypeColor={getFileTypeColor}
-                      getExtractionMethodLabel={getExtractionMethodLabel}
-                    />
-                  ))}
-                </div>
-              )
-            )}
-          </TabsContent>
-        </Tabs>
-      )}
+      <DocumentList
+        documents={filteredDocuments}
+        viewMode={viewMode}
+        formatFileSize={formatFileSize}
+        formatDate={formatDate}
+        getFileTypeColor={getFileTypeColor}
+        getExtractionMethodLabel={getExtractionMethodLabel}
+        onDownload={downloadDocument}
+        onDelete={deleteDocument}
+      />
 
       <div className="flex justify-center pt-4">
         <Button variant="outline" onClick={loadDocuments} className="glass-hover">
