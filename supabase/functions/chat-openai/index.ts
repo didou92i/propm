@@ -1,463 +1,263 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.2';
 
-const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
-const openAIEmbeddingsKey = Deno.env.get('OPENAI_EMBEDDINGS_API_KEY') || openAIApiKey;
-const supabaseUrl = Deno.env.get('SUPABASE_URL');
-const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+// Services refactorisés
+import { OpenAIClientService } from '../_shared/openAIClientService.ts';
+import { ResponseFormatterService } from '../_shared/responseFormatterService.ts';
+import { PerformanceMonitoringService } from '../_shared/performanceMonitoringService.ts';
+import { AuthValidationService } from '../_shared/authValidationService.ts';
+import { ThreadManagementService } from '../_shared/threadManagementService.ts';
+import { AssistantConfigService } from '../_shared/assistantConfigService.ts';
+import { AdaptivePollingService } from '../_shared/adaptivePollingService.ts';
 
-// Create both service role client for admin operations and auth client for user validation
-const supabaseAdmin = createClient(supabaseUrl!, supabaseKey!);
-
-function createUserClient(authHeader: string) {
-  return createClient(
-    supabaseUrl!,
-    Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-    {
-      global: {
-        headers: { Authorization: authHeader },
-      },
-    }
-  );
-}
-
+// Configuration CORS
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Initialisation des clients
+const supabaseAdmin = createClient(
+  Deno.env.get('SUPABASE_URL') ?? '',
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+);
+
+/**
+ * Fonction principale de traitement du chat
+ */
+async function processChatRequest(
+  requestData: any,
+  authResult: any,
+  startTime: number
+): Promise<{ content: string; threadId: string; performanceMetrics: any }> {
+  const { messages, selectedAgent, userSession, hasAttachments } = requestData;
+  const userId = authResult.userId;
+  
+  // Validation des clés API
+  const apiKeysCheck = AuthValidationService.validateRequiredApiKeys(['OPENAI_API_KEY']);
+  if (!apiKeysCheck.isValid) {
+    throw new Error(`Clés API manquantes: ${apiKeysCheck.missingKeys.join(', ')}`);
+  }
+
+  console.log(`🚀 Début traitement chat - User: ${userId}, Agent: ${selectedAgent}`);
+  
+  // Initialiser les services
+  const openAIClient = new OpenAIClientService(Deno.env.get('OPENAI_API_KEY')!);
+  const authService = new AuthValidationService(supabaseAdmin);
+  const userSupabase = authService.createUserClient(`Bearer ${authResult.user.access_token || ''}`);
+  const threadService = new ThreadManagementService(openAIClient, userSupabase);
+  const pollingService = new AdaptivePollingService(openAIClient);
+
+  // Obtenir ou créer le thread
+  const threadInfo = await threadService.getOrCreateThread(userId, userSession, selectedAgent);
+  console.log(`📋 Thread: ${threadInfo.threadId} (${threadInfo.isNew ? 'nouveau' : 'existant'})`);
+
+  // Obtenir la configuration de l'assistant
+  const assistantConfig = AssistantConfigService.getAssistantConfig(selectedAgent);
+  console.log(`🤖 Assistant: ${assistantConfig.name} (${assistantConfig.id})`);
+
+  // Extraire le dernier message utilisateur
+  const latestMessage = messages[messages.length - 1];
+  if (!latestMessage || latestMessage.role !== 'user') {
+    throw new Error('Aucun message utilisateur trouvé');
+  }
+
+  // Stocker le message utilisateur
+  await threadService.storeMessage(threadInfo.conversationId, 'user', latestMessage.content);
+
+  // Ajouter le message au thread OpenAI
+  await openAIClient.addMessageToThread(threadInfo.threadId, latestMessage.content);
+
+  // Obtenir les instructions contextuelles
+  const contextualInstructions = AssistantConfigService.getContextualInstructions(
+    selectedAgent,
+    latestMessage.content
+  );
+
+  // Créer le run avec retry automatique
+  let runId: string;
+  let attempts = 0;
+  const maxRetries = 3;
+
+  while (attempts < maxRetries) {
+    try {
+      runId = await openAIClient.createRun(
+        threadInfo.threadId,
+        assistantConfig.id,
+        contextualInstructions
+      );
+      break;
+    } catch (error) {
+      attempts++;
+      if (error.message?.includes('already has an active run')) {
+        console.log(`⏳ Thread occupé, tentative ${attempts}/${maxRetries}`);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      } else if (attempts === maxRetries) {
+        throw error;
+      } else {
+        await new Promise(resolve => setTimeout(resolve, 1000 * attempts));
+      }
+    }
+  }
+
+  if (!runId!) {
+    throw new Error('Impossible de créer le run après plusieurs tentatives');
+  }
+
+  console.log(`⚡ Run créé: ${runId}`);
+
+  // Polling adaptatif pour attendre la completion
+  const pollingResult = await pollingService.pollWithRetry(threadInfo.threadId, runId);
+
+  if (!pollingResult.success) {
+    throw new Error(`Run non complété: ${pollingResult.error}`);
+  }
+
+  // Récupérer la réponse de l'assistant
+  const assistantResponse = await openAIClient.getThreadMessages(threadInfo.threadId);
+
+  // Stocker la réponse de l'assistant
+  await threadService.storeMessage(threadInfo.conversationId, 'assistant', assistantResponse);
+
+  // Nettoyage des anciens messages
+  await threadService.cleanupOldMessages(threadInfo.conversationId);
+
+  // Obtenir les statistiques de la conversation
+  const conversationStats = await threadService.getConversationStats(threadInfo.conversationId);
+
+  // Logger l'utilisation de l'API
+  await authService.logApiUsage(
+    userId,
+    'chat-openai',
+    { selectedAgent, messageLength: latestMessage.content.length },
+    Date.now() - startTime
+  );
+
+  console.log(`✅ Chat traité avec succès en ${Date.now() - startTime}ms`);
+
+  return {
+    content: assistantResponse,
+    threadId: threadInfo.threadId,
+    performanceMetrics: {
+      ...pollingResult,
+      conversationStats,
+      assistantUsed: assistantConfig.name
+    }
+  };
+}
+
+/**
+ * Handler principal
+ */
 serve(async (req) => {
-  // Handle CORS preflight requests
+  // Gestion CORS
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const startTime = PerformanceMonitoringService.startMonitoring('chat-openai');
+  let sessionId: string | undefined;
+
   try {
-    console.log('=== CHAT REQUEST START ===');
-    
-    // Get user from JWT token
-    console.log('Step 1: Authenticating user...');
-    const authHeader = req.headers.get('Authorization') ?? '';
-    if (!authHeader) {
-      console.error('ERROR: No authorization header provided');
-      return new Response(JSON.stringify({ 
-        success: false, 
-        error: 'No authorization header provided' 
-      }), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    
-    const userSupabase = createUserClient(authHeader);
-    const { data: { user }, error: authError } = await userSupabase.auth.getUser();
-    
-    if (authError || !user) {
-      console.error('ERROR: Authentication failed:', authError?.message || 'No user found');
-      return new Response(JSON.stringify({ 
-        success: false, 
-        error: 'Authentication failed',
-        details: authError?.message || 'No user found'
-      }), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    console.log('=== DÉBUT REQUÊTE CHAT-OPENAI ===');
+
+    // Validation de l'authentification
+    const authService = new AuthValidationService(supabaseAdmin);
+    const authResult = await authService.validateAuth(
+      req.headers.get('Authorization'),
+      { requireAuth: true, checkRateLimit: true }
+    );
+
+    if (!authResult.success) {
+      return ResponseFormatterService.createHttpResponse(
+        ResponseFormatterService.error(authResult.error!, 'Authentification échouée'),
+        200,
+        corsHeaders
+      );
     }
 
-    console.log('✓ User authenticated successfully:', user.id);
+    // Validation des paramètres de requête
+    const requestData = await req.json();
+    const validation = AuthValidationService.validateRequestParams(
+      requestData,
+      ['messages', 'selectedAgent', 'userSession'],
+      ['hasAttachments']
+    );
 
-    const { messages, selectedAgent, userSession, hasAttachments } = await req.json();
-    
-    console.log(`Step 2: Request data - User: ${user.id}, Agent: ${selectedAgent}, Session: ${userSession}, Has attachments: ${hasAttachments}`);
-    
-    // Get the latest user message for document search
-    const latestUserMessage = messages[messages.length - 1]?.content || '';
-
-    if (!openAIApiKey) {
-      console.error('ERROR: OpenAI API key not configured');
-      return new Response(JSON.stringify({ 
-        success: false, 
-        error: 'OpenAI API key not configured' 
-      }), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    if (!validation.isValid) {
+      return ResponseFormatterService.createHttpResponse(
+        ResponseFormatterService.error(validation.error!, 'Paramètres invalides'),
+        200,
+        corsHeaders
+      );
     }
 
-    console.log('Step 3: OpenAI API key verified');
+    sessionId = validation.cleanedData!.userSession;
 
-    // Assistant IDs mapping
-    const assistantIds = {
-      redacpro: "asst_nVveo2OzbB2h8uHY2oIDpob1",
-      cdspro: "asst_ljWenYnbNEERVydsDaeVSHVl", 
-      arrete: "asst_e4AMY6vpiqgqFwbQuhNCbyeL",
-      prepacds: "asst_MxbbQeTimcxV2mYR0KwAPNsu"
-    };
+    // Traitement principal
+    const result = await processChatRequest(
+      validation.cleanedData!,
+      authResult,
+      startTime
+    );
 
-    const assistantId = assistantIds[selectedAgent as keyof typeof assistantIds] || assistantIds.redacpro;
-    console.log('Step 4: Using assistant:', assistantId);
-
-    // Check if conversation exists for this session and agent
-    console.log('Step 5: Checking for existing conversation...');
-    const { data: existingConversation, error: convError } = await userSupabase
-      .from('conversations')
-      .select('id, thread_id')
-      .eq('user_session', userSession)
-      .eq('agent_type', selectedAgent)
-      .eq('user_id', user.id)
-      .single();
-
-    if (convError && convError.code !== 'PGRST116') {
-      console.error('ERROR: Conversation lookup failed:', convError.message);
-      return new Response(JSON.stringify({ 
-        success: false, 
-        error: 'Database error during conversation lookup',
-        details: convError.message
-      }), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    let threadId: string;
-    let conversationId: string;
-
-    if (existingConversation) {
-      // Use existing thread
-      threadId = existingConversation.thread_id;
-      conversationId = existingConversation.id;
-      
-      console.log(`Using existing thread: ${threadId}`);
-      
-      // Check for active runs on the thread and cancel them if needed
-      try {
-        const runsResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs?limit=1`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${openAIApiKey}`,
-            'OpenAI-Beta': 'assistants=v2'
-          }
-        });
-
-        if (runsResponse.ok) {
-          const runsData = await runsResponse.json();
-          const activeRuns = runsData.data?.filter((run: any) => 
-            ['queued', 'in_progress', 'requires_action'].includes(run.status)
-          ) || [];
-
-          // Cancel any active runs
-          for (const activeRun of activeRuns) {
-            console.log(`Cancelling active run: ${activeRun.id}`);
-            await fetch(`https://api.openai.com/v1/threads/${threadId}/runs/${activeRun.id}/cancel`, {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${openAIApiKey}`,
-                'OpenAI-Beta': 'assistants=v2'
-              }
-            });
-          }
-        }
-      } catch (runCheckError) {
-        console.warn('Error checking/cancelling runs:', runCheckError);
-        // Continue anyway
+    // Enregistrer les métriques de succès
+    const performanceMetrics = PerformanceMonitoringService.recordSuccess(
+      'chat-openai',
+      startTime,
+      {
+        assistantUsed: result.performanceMetrics.assistantUsed,
+        messageCount: result.performanceMetrics.conversationStats.messageCount,
+        pollingAttempts: result.performanceMetrics.attempts
       }
-      
-      // Update conversation timestamp
-      await userSupabase
-        .from('conversations')
-        .update({ updated_at: new Date().toISOString() })
-        .eq('id', conversationId);
-    } else {
-      // Create new thread
-      console.log('Creating new thread...');
-      const threadResponse = await fetch('https://api.openai.com/v1/threads', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${openAIApiKey}`,
-          'Content-Type': 'application/json',
-          'OpenAI-Beta': 'assistants=v2'
+    );
+
+    // Créer la réponse de succès
+    const successResponse = ResponseFormatterService.addPerformanceMetrics(
+      ResponseFormatterService.success(
+        {
+          content: result.content,
+          threadId: result.threadId
         },
-        body: JSON.stringify({})
-      });
-
-      if (!threadResponse.ok) {
-        const errorData = await threadResponse.json();
-        console.error('ERROR: Thread creation failed:', errorData);
-        return new Response(JSON.stringify({ 
-          success: false, 
-          error: 'Thread creation failed',
-          details: errorData.error?.message || 'Unknown OpenAI error'
-        }), {
-          status: 200,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
-      const threadData = await threadResponse.json();
-      threadId = threadData.id;
-      console.log(`Created new thread: ${threadId}`);
-
-      // Create new conversation record
-      const { data: newConversation } = await userSupabase
-        .from('conversations')
-        .insert({
-          thread_id: threadId,
-          user_session: userSession,
-          agent_type: selectedAgent,
-          user_id: user.id
-        })
-        .select('id')
-        .single();
-
-      conversationId = newConversation!.id;
-    }
-
-    // Get latest user message
-    const latestMessage = messages[messages.length - 1];
-    if (!latestMessage || latestMessage.role !== 'user') {
-      throw new Error('No user message found');
-    }
-
-    // Store user message in database
-    await userSupabase
-      .from('conversation_messages')
-      .insert({
-        conversation_id: conversationId,
-        role: 'user',
-        content: latestMessage.content
-      });
-
-    // Use original message content without any modifications
-    const messageContent = latestMessage.content;
-
-    console.log('Adding message to thread...');
-    const messageResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-        'OpenAI-Beta': 'assistants=v2'
-      },
-      body: JSON.stringify({
-        role: 'user',
-        content: messageContent
-      })
-    });
-
-    if (!messageResponse.ok) {
-      const errorData = await messageResponse.json();
-      console.error('ERROR: Message creation failed:', errorData);
-      return new Response(JSON.stringify({ 
-        success: false, 
-        error: 'Message creation failed',
-        details: errorData.error?.message || 'Unknown OpenAI error'
-      }), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Create a run with retry logic
-    console.log('Creating run...');
-    let runResponse;
-    let attempts = 0;
-    const maxRetries = 3;
-
-    while (attempts < maxRetries) {
-      runResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${openAIApiKey}`,
-          'Content-Type': 'application/json',
-          'OpenAI-Beta': 'assistants=v2'
-        },
-        body: JSON.stringify({
-          assistant_id: assistantId
-        })
-      });
-
-      if (runResponse.ok) {
-        break;
-      }
-
-      const errorData = await runResponse.json();
-      if (errorData.error?.message?.includes('already has an active run')) {
-        console.log(`Attempt ${attempts + 1}: Thread has active run, retrying in 2 seconds...`);
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        attempts++;
-      } else {
-        throw new Error(`Run creation error: ${errorData.error?.message || 'Unknown error'}`);
-      }
-    }
-
-    if (!runResponse || !runResponse.ok) {
-      throw new Error('Failed to create run after multiple attempts');
-    }
-
-    const runData = await runResponse.json();
-    const runId = runData.id;
-    console.log(`Created run: ${runId}`);
-
-    // Performance-optimized adaptive polling
-    let runStatus = 'queued';
-    let attempts_poll = 0;
-    const maxAttempts = 80; // Reduced timeout for better performance
-    const startTime = Date.now();
-
-    console.log('Starting performance-optimized polling...');
-    while (runStatus !== 'completed' && runStatus !== 'failed' && attempts_poll < maxAttempts) {
-      // Optimized adaptive polling strategy
-      let pollInterval;
-      if (attempts_poll < 3) {
-        pollInterval = 75; // Ultra-fast initial polling (75ms)
-      } else if (attempts_poll < 10) {
-        pollInterval = 150; // Fast polling (150ms)
-      } else if (attempts_poll < 25) {
-        pollInterval = 300; // Medium polling (300ms)
-      } else {
-        pollInterval = 500; // Conservative polling (500ms)
-      }
-      
-      await new Promise(resolve => setTimeout(resolve, pollInterval));
-      
-      const statusResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs/${runId}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${openAIApiKey}`,
-          'OpenAI-Beta': 'assistants=v2'
+        {
+          status: 'OK',
+          serverSessionId: sessionId,
+          assistantUsed: result.performanceMetrics.assistantUsed,
+          conversationStats: result.performanceMetrics.conversationStats
         }
-      });
-
-      if (statusResponse.ok) {
-        const statusData = await statusResponse.json();
-        runStatus = statusData.status;
-        const elapsedTime = Date.now() - startTime;
-        console.log(`Polling attempt ${attempts_poll + 1}: status=${runStatus}, elapsed=${elapsedTime}ms`);
-        
-        // Handle requires_action status - properly handle tool calls
-        if (runStatus === 'requires_action') {
-          console.log('Run requires action, checking required actions...');
-          if (statusData.required_action?.type === 'submit_tool_outputs') {
-            const toolCalls = statusData.required_action.submit_tool_outputs.tool_calls;
-            console.log(`Found ${toolCalls?.length || 0} tool calls requiring outputs`);
-            
-            // Skip tool calls and continue - assistants should work without external tools
-            const submitResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs/${runId}/submit_tool_outputs`, {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${openAIApiKey}`,
-                'Content-Type': 'application/json',
-                'OpenAI-Beta': 'assistants=v2'
-              },
-              body: JSON.stringify({
-                tool_outputs: []
-              })
-            });
-            
-            if (submitResponse.ok) {
-              console.log('Successfully skipped tool outputs, continuing run...');
-            } else {
-              const errorData = await submitResponse.json();
-              console.error('Failed to submit tool outputs:', errorData);
-              // Don't break the flow, continue polling
-            }
-          }
-        }
-      } else {
-        console.warn(`Polling failed with status ${statusResponse.status}, retrying...`);
+      ),
+      startTime,
+      {
+        pollingTime: result.performanceMetrics.totalTime,
+        pollingAttempts: result.performanceMetrics.attempts
       }
-      
-      attempts_poll++;
-    }
+    );
 
-    if (runStatus !== 'completed') {
-      console.error(`ERROR: Run did not complete. Final status: ${runStatus}, Attempts: ${attempts_poll}/${maxAttempts}`);
-      return new Response(JSON.stringify({ 
-        success: false, 
-        error: 'OpenAI run did not complete',
-        details: `Status: ${runStatus}, polling attempts: ${attempts_poll}/${maxAttempts}`
-      }), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    return ResponseFormatterService.createHttpResponse(successResponse, 200, corsHeaders);
 
-    // Get messages from the thread
-    console.log('Retrieving assistant response...');
-    const messagesResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'OpenAI-Beta': 'assistants=v2'
-      }
-    });
-
-    if (!messagesResponse.ok) {
-      const errorData = await messagesResponse.json();
-      throw new Error(`Messages retrieval error: ${errorData.error?.message || 'Unknown error'}`);
-    }
-
-    const messagesData = await messagesResponse.json();
-    const assistantMessages = messagesData.data.filter((msg: any) => msg.role === 'assistant');
-    
-    if (assistantMessages.length === 0) {
-      throw new Error('No assistant response found');
-    }
-
-    const assistantMessage = assistantMessages[0].content[0].text.value;
-
-    // Store assistant message in database
-    await userSupabase
-      .from('conversation_messages')
-      .insert({
-        conversation_id: conversationId,
-        role: 'assistant',
-        content: assistantMessage
-      });
-
-    // Clean up old messages (keep only last 10 messages per conversation)
-    const { data: messageCount } = await userSupabase
-      .from('conversation_messages')
-      .select('id', { count: 'exact' })
-      .eq('conversation_id', conversationId);
-
-    if (messageCount && messageCount.length > 20) { // 20 = 10 user + 10 assistant messages
-      const { data: oldMessages } = await userSupabase
-        .from('conversation_messages')
-        .select('id')
-        .eq('conversation_id', conversationId)
-        .order('timestamp', { ascending: true })
-        .limit(messageCount.length - 20);
-
-      if (oldMessages && oldMessages.length > 0) {
-        await userSupabase
-          .from('conversation_messages')
-          .delete()
-          .in('id', oldMessages.map(m => m.id));
-      }
-    }
-
-    const elapsedTime = Date.now() - startTime;
-    console.log(`Chat response completed successfully in ${elapsedTime}ms`);
-
-    return new Response(JSON.stringify({ 
-      content: assistantMessage,
-      threadId: threadId
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
   } catch (error) {
-    console.error('CRITICAL ERROR in chat-openai function:', error);
-    console.error('Stack trace:', error.stack);
-    return new Response(JSON.stringify({ 
-      success: false, 
-      error: error.message || 'An unexpected error occurred',
-      details: error.stack || 'No stack trace available'
-    }), {
-      status: 200,  // Changed from 500 to 200 to avoid non-2xx errors
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    console.error('❌ ERREUR CHAT-OPENAI:', error);
+
+    // Enregistrer les métriques d'erreur
+    PerformanceMonitoringService.recordError('chat-openai', startTime, error, {
+      sessionId,
+      errorType: error.constructor.name
     });
+
+    // Créer une réponse d'erreur avec fallback si nécessaire
+    const errorResponse = ResponseFormatterService.addPerformanceMetrics(
+      ResponseFormatterService.error(
+        error.message || 'Erreur inattendue lors du traitement du chat',
+        error.stack || 'Pas de stack trace disponible',
+        {
+          errorType: error.constructor.name,
+          ...(sessionId && { serverSessionId: sessionId })
+        }
+      ),
+      startTime
+    );
+
+    return ResponseFormatterService.createHttpResponse(errorResponse, 200, corsHeaders);
   }
 });
