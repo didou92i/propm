@@ -1,6 +1,8 @@
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL.
 */
+
+@layer base {
   :root {
     --background: 220 27% 18%;
     --foreground: 213 31% 91%;
@@ -126,3 +128,4 @@ All colors MUST be HSL.
     --prepacds-secondary: 25 95% 45%;
     --prepacds-accent: 35 100% 60%;
   }
+}
