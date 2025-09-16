@@ -138,12 +138,12 @@ serve(async (req) => {
       return StreamingService.createSSEResponse({ openAIApiKey, threadId, runId, corsHeaders });
     }
 
-    // Polling optimisé pour la réponse standard
+    // Polling optimisé avec timeout réduit (sécurisé)
     const result = await PollingService.pollForCompletion({
       openAIApiKey,
       threadId,
       runId,
-      maxAttempts: 60
+      maxAttempts: 35  // Réduit de 60 à 35 pour éviter les timeouts >35s
     });
 
     if (result.status === 'completed' && result.content) {

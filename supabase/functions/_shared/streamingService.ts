@@ -23,12 +23,12 @@ export class StreamingService {
           // Feedback immédiat
           this.sendStatusEvent(controller, encoder, 'thinking', 'L\'assistant réfléchit...');
           
-          // Polling avec callbacks SSE
+          // Polling avec callbacks SSE et timeout optimisé
           const result = await PollingService.pollForCompletion({
             openAIApiKey,
             threadId,
             runId,
-            maxAttempts: 70,
+            maxAttempts: 45,  // Réduit de 70 à 45 pour éviter les timeouts excessifs
             isSSE: true
           });
 

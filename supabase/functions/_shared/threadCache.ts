@@ -49,10 +49,14 @@ class ThreadCacheService {
   }
 
   set(cacheKey: string, threadId: string, selectedAgent: string): void {
+    // TTL dynamique basé sur l'agent et la charge
+    const baseTTL = 120 * 60 * 1000; // 2 heures de base
+    const dynamicTTL = this.calculateDynamicTTL(selectedAgent, baseTTL);
+    
     const entry: ThreadCacheEntry = {
       threadId,
       lastUsed: Date.now(),
-      expiry: Date.now() + (120 * 60 * 1000), // 2 heures
+      expiry: Date.now() + dynamicTTL,
       useCount: 1,
       averageResponseTime: 0,
       agentType: selectedAgent
@@ -63,8 +67,40 @@ class ThreadCacheService {
     console.log('thread-cache: set', {
       threadId,
       cacheSize: this.cache.size,
-      selectedAgent
+      selectedAgent,
+      ttlMinutes: Math.round(dynamicTTL / 60000)
     });
+  }
+
+  /**
+   * Calculer TTL dynamique basé sur l'utilisation
+   */
+  private calculateDynamicTTL(selectedAgent: string, baseTTL: number): number {
+    const cacheLoad = this.cache.size;
+    const currentHitRate = this.cacheHitRate;
+    
+    // Ajuster selon la charge du cache
+    let multiplier = 1;
+    if (cacheLoad > 50) multiplier *= 0.8;      // Réduire si surcharge
+    if (currentHitRate > 0.8) multiplier *= 1.5; // Augmenter si efficace
+    if (currentHitRate < 0.3) multiplier *= 0.7; // Réduire si inefficace
+    
+    // Ajuster selon l'agent (certains plus stables)
+    const agentMultipliers: Record<string, number> = {
+      'cdspro': 1.2,      // Plus stable, TTL plus long
+      'prepacds': 1.0,    // Standard
+      'arrete': 0.9,      // Moins prévisible
+      'redacpro': 1.1
+    };
+    
+    multiplier *= agentMultipliers[selectedAgent] || 1;
+    
+    const finalTTL = Math.max(
+      Math.min(baseTTL * multiplier, baseTTL * 2), // Max 4h
+      baseTTL * 0.5  // Min 1h
+    );
+    
+    return Math.round(finalTTL);
   }
 
   updateUsage(cacheKey: string): void {
