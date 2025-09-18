@@ -1,18 +1,17 @@
-@tailwind base;
-@tailwind components; 
-@tailwind utilities;
-
+/* Import CSS modules - Must be first */
 @import './styles/training-overlay.css';
 @import './styles/typewriter-animations.css';
 @import './styles/select-components.css';
-
-/* Import CSS modules for better organization - Zero Impact Refactoring */
 @import './styles/glass-effects.css';
 @import './styles/hover-effects.css';
 @import './styles/performance.css';
 @import './styles/modern-training.css';
 @import './styles/keyframe-animations.css';
 @import './styles/mobile-optimizations.css';
+
+@tailwind base;
+@tailwind components; 
+@tailwind utilities;
 
 @layer base {
   :root {
