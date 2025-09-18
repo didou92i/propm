@@ -1,12 +1,13 @@
+import { VectorStoreIndex, Document } from 'llamaindex';
 import { supabase } from '@/integrations/supabase/client';
-import type { DocumentMetadata, SupabaseDocument, LlamaIndexDocument, IndexManagerInterface } from './types';
+import type { DocumentMetadata, SupabaseDocument, LlamaIndexDocument, IndexManagerInterface } from '@/types/llama';
 
 export class IndexManager implements IndexManagerInterface {
-  private index: any = null;
+  private index: VectorStoreIndex | null = null;
   private queryEngine: any = null;
   private initializationPromise: Promise<void> | null = null;
 
-  async initialize(): Promise<{ index: any; queryEngine: any }> {
+  async initialize(): Promise<{ index: VectorStoreIndex; queryEngine: any }> {
     if (this.initializationPromise) {
       await this.initializationPromise;
       return { index: this.index!, queryEngine: this.queryEngine! };
@@ -24,23 +25,24 @@ export class IndexManager implements IndexManagerInterface {
     }
 
     try {
-      // Ajouter document directement via Supabase
-      const { data: user } = await supabase.auth.getUser();
-      if (!user?.user?.id) throw new Error('Utilisateur non authentifié');
-
-      const { data, error } = await supabase
-        .from('documents')
-        .insert({
-          content,
-          metadata: metadata as any, // Cast pour compatibilité JSON
-          user_id: user.user.id
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
+      // Create LlamaIndex Document object
+      const doc = new Document({
+        text: content,
+        metadata: {
+          id: metadata.id,
+          title: metadata.title || 'Sans titre',
+          source: metadata.source || 'unknown',
+          category: metadata.category || 'general',
+          timestamp: metadata.timestamp || new Date().toISOString(),
+          type: metadata.type || 'document'
+        }
+      });
       
-      console.log('Document ajouté avec succès');
+      // Add to index
+      await this.index!.insertNodes([doc]);
+      
+      // Clear cache after adding document
+      this.clearCache();
     } catch (error) {
       console.error('Erreur lors de l\'ajout de document:', error);
       throw error;
@@ -48,18 +50,21 @@ export class IndexManager implements IndexManagerInterface {
   }
 
   async rebuildIndex(): Promise<void> {
-    console.log('Reconstruction de l\'index simplifié...');
+    console.log('Reconstruction de l\'index LlamaIndex...');
     
     // Reset current state
     this.index = null;
     this.queryEngine = null;
     this.initializationPromise = null;
     
+    // Clear cache
+    this.clearCache();
+    
     // Reinitialize
     await this.initialize();
   }
 
-  getIndex(): any {
+  getIndex(): VectorStoreIndex | null {
     return this.index;
   }
 
@@ -69,67 +74,83 @@ export class IndexManager implements IndexManagerInterface {
 
   private async performInitialization(): Promise<void> {
     try {
-      console.log('Initialisation de l\'index simplifié...');
+      console.log('Initialisation de LlamaIndex...');
       
-      // Index simplifié basé sur Supabase uniquement
-      this.index = { 
-        initialized: true,
-        documentCount: await this.getDocumentCount()
-      };
-      
-      this.queryEngine = { 
-        search: async (query: string) => {
-          return await this.searchInSupabase(query);
-        }
-      };
+      // Récupérer les documents depuis Supabase
+      const documents = await this.fetchDocumentsFromSupabase();
+      console.log(`${documents.length} documents récupérés`);
 
-      console.log('Index simplifié initialisé avec succès');
+      if (documents.length === 0) {
+        console.warn('Aucun document trouvé, création d\'un index vide');
+        // Create empty index
+        this.index = await VectorStoreIndex.fromDocuments([]);
+        this.queryEngine = this.index.asQueryEngine();
+        return;
+      }
+
+      // Créer l'index vectoriel
+      this.index = await VectorStoreIndex.fromDocuments(documents);
+      this.queryEngine = this.index.asQueryEngine();
+      
+      console.log('Index LlamaIndex initialisé avec succès');
     } catch (error) {
-      console.error('Erreur lors de l\'initialisation:', error);
+      console.error('Erreur lors de l\'initialisation de LlamaIndex:', error);
       
       // Fallback: créer un index vide
-      this.index = { initialized: true, documentCount: 0 };
-      this.queryEngine = { 
-        search: async () => [] 
-      };
-      
-      console.log('Index vide créé avec succès');
+      try {
+        console.log('Tentative de création d\'un index vide comme fallback...');
+        this.index = await VectorStoreIndex.fromDocuments([]);
+        this.queryEngine = this.index.asQueryEngine();
+        console.log('Index vide créé avec succès');
+      } catch (fallbackError) {
+        console.error('Impossible de créer même un index vide:', fallbackError);
+        throw new Error('Échec complet de l\'initialisation de LlamaIndex');
+      }
     }
   }
 
-  private async getDocumentCount(): Promise<number> {
+  private async fetchDocumentsFromSupabase(): Promise<LlamaIndexDocument[]> {
     try {
-      const { count, error } = await supabase
-        .from('documents')
-        .select('*', { count: 'exact', head: true });
-
-      if (error) throw error;
-      return count || 0;
-    } catch (error) {
-      console.error('Erreur lors du comptage des documents:', error);
-      return 0;
-    }
-  }
-
-  private async searchInSupabase(query: string): Promise<LlamaIndexDocument[]> {
-    try {
-      // Recherche simple basée sur du texte
       const { data: documents, error } = await supabase
         .from('documents')
         .select('*')
-        .ilike('content', `%${query}%`)
-        .limit(10);
+        .order('created_at', { ascending: false })
+        .limit(1000);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erreur Supabase:', error);
+        return [];
+      }
 
-      return documents?.map((doc: any) => ({
-        id_: doc.id,
-        text: doc.content,
-        metadata: (doc.metadata as DocumentMetadata) || {}
-      })) || [];
+      if (!documents || documents.length === 0) {
+        return [];
+      }
+
+      // Convert to proper LlamaIndex Document objects
+      const llamaDocuments: LlamaIndexDocument[] = documents.map((doc: SupabaseDocument) => {
+        const metadata = doc.metadata as any || {};
+        return new Document({
+          text: doc.content || '',
+          metadata: {
+            id: doc.id,
+            title: metadata.title || 'Sans titre',
+            source: metadata.source || 'unknown',
+            category: metadata.category || 'general',
+            timestamp: new Date().toISOString(),
+            type: metadata.type || 'document'
+          }
+        });
+      });
+
+      return llamaDocuments;
     } catch (error) {
-      console.error('Erreur lors de la recherche:', error);
+      console.error('Erreur lors de la récupération des documents:', error);
       return [];
     }
+  }
+
+  private clearCache(): void {
+    // Clear any caching mechanism if implemented
+    console.log('Cache cleared');
   }
 }

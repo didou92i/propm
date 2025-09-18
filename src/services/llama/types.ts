@@ -1,25 +1,13 @@
-// Types pour la recherche sémantique simplifiée - Sans dépendance LlamaIndex
-export interface DocumentMetadata {
-  id?: string;
-  title?: string;
-  source?: string;
-  type?: string;
-  category?: string;
-  level?: string;
-  timestamp?: string;
-  [key: string]: unknown;
-}
-
-export interface SupabaseDocument {
-  id: string;
-  content: string;
-  metadata: DocumentMetadata;
-  user_id: string;
-}
-
 export interface LlamaSearchResult {
   content: string;
-  metadata: DocumentMetadata;
+  metadata: {
+    title?: string;
+    source?: string;
+    type?: string;
+    timestamp?: string;
+    level?: number;
+    category?: string;
+  };
   score: number;
   relevanceScore?: number;
 }
@@ -31,17 +19,3 @@ export interface LlamaSearchOptions {
 }
 
 export type RetrievalStrategy = 'default' | 'hierarchical' | 'auto_merging';
-
-// Document simplifié pour l'indexation
-export interface LlamaIndexDocument {
-  id_: string;
-  text: string;
-  metadata: DocumentMetadata;
-}
-
-// Interface pour l'index manager
-export interface IndexManagerInterface {
-  initialize(): Promise<{ index: any; queryEngine: any }>;
-  addDocument(content: string, metadata: DocumentMetadata): Promise<void>;
-  rebuildIndex(): Promise<void>;
-}
