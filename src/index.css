@@ -1,9 +1,12 @@
+@tailwind base;
+@tailwind components; 
+@tailwind utilities;
+
 @import './styles/training-overlay.css';
 @import './styles/typewriter-animations.css';
 @import './styles/select-components.css';
 
 /* Import CSS modules for better organization - Zero Impact Refactoring */
-@import './styles/design-system.css';
 @import './styles/glass-effects.css';
 @import './styles/hover-effects.css';
 @import './styles/performance.css';
@@ -11,11 +14,131 @@
 @import './styles/keyframe-animations.css';
 @import './styles/mobile-optimizations.css';
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 @layer base {
+  :root {
+    --background: 220 27% 18%;
+    --foreground: 213 31% 91%;
+
+    --card: 224 24% 14%;
+    --card-foreground: 213 31% 91%;
+
+    --popover: 224 24% 14%;
+    --popover-foreground: 213 31% 91%;
+
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 215 25% 27%;
+    --secondary-foreground: 213 31% 91%;
+
+    --muted: 215 25% 27%;
+    --muted-foreground: 217 10% 64%;
+
+    --accent: 263 70% 50%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 215 25% 27%;
+    --input: 215 25% 27%;
+    --ring: 217 91% 60%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 215 28% 17%;
+    --sidebar-foreground: 213 31% 91%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 215 25% 27%;
+    --sidebar-accent-foreground: 213 31% 91%;
+    --sidebar-border: 215 25% 27%;
+    --sidebar-ring: 217 91% 60%;
+
+    /* Agent specific colors with smooth transitions */
+    --agent-primary: var(--primary);
+    --agent-glow: var(--primary);
+    --agent-accent: var(--accent);
+    
+    /* Animation variables */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    --shadow-glow: 0 0 20px hsl(var(--agent-glow) / 0.3);
+    --shadow-hover: 0 8px 25px hsl(var(--agent-primary) / 0.15);
+    --shadow-active: 0 4px 15px hsl(var(--agent-primary) / 0.25);
+
+    /* Light theme variables */
+    --glass-bg: 255 255 255 / 0.1;
+    --glass-border: 255 255 255 / 0.2;
+    --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+    --neomorphism-light: 255 255 255 / 0.7;
+    --neomorphism-dark: 0 0 0 / 0.1;
+    --gradient-direction: 45deg;
+    --theme-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Dark theme variables */
+  :root[data-theme="dark"] {
+    --glass-bg: 0 0 0 / 0.3;
+    --glass-border: 255 255 255 / 0.1;
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+    --neomorphism-light: 255 255 255 / 0.1;
+    --neomorphism-dark: 0 0 0 / 0.3;
+  }
+
+  /* Agent theme transitions */
+  :root[data-agent="redacpro"] {
+    --agent-primary: 217 91% 60%;
+    --agent-glow: 217 91% 60%;
+    --agent-accent: 210 90% 65%;
+    --gradient-direction: 135deg;
+  }
+
+  :root[data-agent="cdspro"] {
+    --agent-primary: 263 70% 50%;
+    --agent-glow: 263 70% 55%;
+    --agent-accent: 270 75% 60%;
+    --gradient-direction: 45deg;
+  }
+
+  :root[data-agent="arrete"] {
+    --agent-primary: 142 76% 36%;
+    --agent-glow: 142 76% 45%;
+    --agent-accent: 150 80% 40%;
+    --gradient-direction: 90deg;
+  }
+
+  :root[data-agent="salary"] {
+    --agent-primary: 45 93% 58%;
+    --agent-glow: 45 93% 65%;
+    --agent-accent: 50 95% 60%;
+    --gradient-direction: 180deg;
+  }
+
+  :root[data-agent="natif"] {
+    --agent-primary: 188 94% 43%;
+    --agent-glow: 188 94% 50%;
+    --agent-accent: 195 95% 45%;
+    --gradient-direction: 225deg;
+  }
+
+  :root[data-agent="azzabi"] {
+    --agent-primary: 330 81% 60%;
+    --agent-glow: 330 81% 65%;
+    --agent-accent: 340 85% 55%;
+    --gradient-direction: 315deg;
+  }
+
+  :root[data-agent="prepacds"] {
+    --agent-primary: 30 100% 55%;
+    --agent-glow: 35 100% 60%;
+    --agent-accent: 25 95% 50%;
+    --gradient-direction: 135deg;
+    --prepacds-primary: 30 100% 55%;
+    --prepacds-secondary: 25 95% 45%;
+    --prepacds-accent: 35 100% 60%;
+  }
+
   * {
     @apply border-border;
   }
