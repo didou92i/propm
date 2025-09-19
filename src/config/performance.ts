@@ -2,25 +2,25 @@ export const PERFORMANCE_CONFIG = {
   PRODUCTION: {
     maxMessages: 100,
     cleanupThreshold: 0.8,
-    debounceDelay: 200, // Optimized for responsiveness
-    localStorageMaxAge: 7 * 24 * 60 * 60 * 1000, // 7 jours
+    debounceDelay: 150, // Optimisé ultra-réactivité (200ms → 150ms)
+    localStorageMaxAge: 5 * 24 * 60 * 60 * 1000, // 5 jours optimisé (7j → 5j)
     enableDebugLogs: false,
     enableMetrics: true,
-    cacheSize: 50,
-    // Ultra-optimized animation performance settings
-    typewriterSpeed: 1.5, // Ultra-fast for production
-    chunkSize: 4, // Larger chunks for faster display
+    cacheSize: 75, // Cache étendu (50 → 75)
+    // Optimisations ultra-fluides pour production
+    typewriterSpeed: 0.8, // Vitesse optimisée (1.5 → 0.8)
+    chunkSize: 6, // Chunks optimisés (4 → 6)
     disableAnimations: false,
     adaptiveSpeed: true, // Auto-adjust speed based on message length
-    // New performance optimization settings
+    // Optimisations polling ultra-rapides
     pollingOptimization: {
-      initialInterval: 15, // Ultra-fast initial polling
+      initialInterval: 10, // Optimisé ultra-rapide (15ms → 10ms)
       maxInterval: 250, // Conservative maximum
       backoffMultiplier: 1.2, // Gentle backoff
       maxAttempts: 70
     },
     cacheOptimization: {
-      threadCacheDuration: 90 * 60 * 1000, // 90 minutes for production
+      threadCacheDuration: 2 * 60 * 60 * 1000, // 2 heures optimisé (90min → 120min)
       aggressiveCaching: true,
       preloadThreads: true
     },
