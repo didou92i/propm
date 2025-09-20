@@ -138,12 +138,20 @@ serve(async (req) => {
       return StreamingService.createSSEResponse({ openAIApiKey, threadId, runId, corsHeaders });
     }
 
-    // Polling optimisé pour la réponse standard
+    // Polling optimisé pour la réponse standard avec gestion d'erreur améliorée
     const result = await PollingService.pollForCompletion({
       openAIApiKey,
       threadId,
       runId,
-      maxAttempts: 60
+      maxAttempts: 45, // Réduction du nombre de tentatives
+      isSSE: false
+    });
+
+    console.log('chat-openai-stream: polling completed', { 
+      runId, 
+      status: result.status, 
+      attempts: result.attempts,
+      elapsedTime: result.elapsedTime 
     });
 
     if (result.status === 'completed' && result.content) {
@@ -155,7 +163,18 @@ serve(async (req) => {
       });
     }
     
-    throw new Error('Assistant did not complete successfully');
+    // Gestion d'erreur plus gracieuse avec détails
+    if (result.status === 'timeout') {
+      console.error('chat-openai-stream: timeout after', result.attempts, 'attempts');
+      throw new Error(`Assistant request timed out after ${result.attempts} attempts (${Math.round(result.elapsedTime/1000)}s)`);
+    }
+    
+    console.error('chat-openai-stream: completion failed', { 
+      status: result.status, 
+      attempts: result.attempts,
+      hasContent: Boolean(result.content)
+    });
+    throw new Error(`Assistant completion failed with status: ${result.status}`);
 
   } catch (error) {
     console.error('Stream function error:', error);

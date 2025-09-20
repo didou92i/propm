@@ -73,9 +73,12 @@ export class PollingService {
             });
           }
 
-          // Gestion des actions requises
+          // Gestion des actions requises avec logging renforcé
           if (runStatus === 'requires_action') {
+            console.log('polling-service: handling requires_action', { runId, attempts });
             await this.submitToolOutputs(openAIApiKey, threadId, runId);
+            // Attendre un peu après soumission des tool outputs
+            await new Promise(resolve => setTimeout(resolve, 100));
           }
         }
       } catch (error) {
@@ -107,15 +110,51 @@ export class PollingService {
   }
 
   private static async submitToolOutputs(openAIApiKey: string, threadId: string, runId: string): Promise<void> {
-    await fetch(`https://api.openai.com/v1/threads/${threadId}/runs/${runId}/submit_tool_outputs`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-        'OpenAI-Beta': 'assistants=v2'
-      },
-      body: JSON.stringify({ tool_outputs: [] })
-    });
+    try {
+      // Récupérer d'abord les détails du run pour voir les tool calls requis
+      const runDetailsResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs/${runId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'OpenAI-Beta': 'assistants=v2'
+        }
+      });
+
+      if (runDetailsResponse.ok) {
+        const runDetails = await runDetailsResponse.json();
+        console.log('polling-service: tool calls required', { 
+          runId, 
+          toolCallsCount: runDetails.required_action?.submit_tool_outputs?.tool_calls?.length || 0 
+        });
+
+        // Si pas de tool calls requis, ne pas envoyer de tool outputs
+        if (!runDetails.required_action?.submit_tool_outputs?.tool_calls) {
+          console.log('polling-service: no tool calls required, skipping submission');
+          return;
+        }
+
+        // Soumettre des tool outputs vides pour chaque tool call requis (désactivation)
+        const toolCalls = runDetails.required_action.submit_tool_outputs.tool_calls;
+        const toolOutputs = toolCalls.map((toolCall: any) => ({
+          tool_call_id: toolCall.id,
+          output: "Tool calls are currently disabled for this assistant. Please provide the response directly."
+        }));
+
+        await fetch(`https://api.openai.com/v1/threads/${threadId}/runs/${runId}/submit_tool_outputs`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openAIApiKey}`,
+            'Content-Type': 'application/json',
+            'OpenAI-Beta': 'assistants=v2'
+          },
+          body: JSON.stringify({ tool_outputs: toolOutputs })
+        });
+
+        console.log('polling-service: tool outputs submitted', { runId, outputsCount: toolOutputs.length });
+      }
+    } catch (error) {
+      console.error('polling-service: error submitting tool outputs', { runId, error: error.message });
+    }
   }
 
   private static async getAssistantMessage(openAIApiKey: string, threadId: string, runId: string): Promise<string> {
