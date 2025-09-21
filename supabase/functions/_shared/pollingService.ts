@@ -20,30 +20,46 @@ interface PollResult {
 
 export class PollingService {
   static async pollForCompletion(config: PollConfig): Promise<PollResult> {
-    const { openAIApiKey, threadId, runId, maxAttempts = 60, isSSE = false } = config;
+    const { openAIApiKey, threadId, runId, maxAttempts = 20, isSSE = false } = config;
     
     let runStatus = 'queued';
     let attempts = 0;
+    let requiresActionAttempts = 0;
     const startTime = Date.now();
+    const GLOBAL_TIMEOUT = 15000; // 15 secondes maximum
+    const MAX_REQUIRES_ACTION_ATTEMPTS = 3; // Maximum 3 tentatives pour requires_action
     
-    // Intervalles adaptatifs - plus agressifs pour SSE
+    // Intervalles optimisés et plus agressifs
     const getInterval = (attempt: number): number => {
       if (isSSE) {
         return attempt < 2 ? 10 : 
-               attempt < 5 ? 20 :
-               attempt < 12 ? 35 :
-               attempt < 25 ? 60 :
-               attempt < 45 ? 120 : 200;
+               attempt < 5 ? 15 :
+               attempt < 10 ? 25 : 50;
       } else {
-        return attempt < 2 ? 15 :
-               attempt < 5 ? 25 :
-               attempt < 12 ? 40 :
-               attempt < 25 ? 75 :
-               attempt < 40 ? 150 : 250;
+        return attempt < 2 ? 10 :
+               attempt < 5 ? 20 :
+               attempt < 10 ? 30 : 60;
       }
     };
 
+    console.log('polling-service: starting with optimized config', { 
+      runId, 
+      maxAttempts, 
+      globalTimeout: GLOBAL_TIMEOUT,
+      maxRequiresActionAttempts: MAX_REQUIRES_ACTION_ATTEMPTS
+    });
+
     while (runStatus !== 'completed' && runStatus !== 'failed' && attempts < maxAttempts) {
+      // Vérification du timeout global
+      const elapsedTime = Date.now() - startTime;
+      if (elapsedTime > GLOBAL_TIMEOUT) {
+        console.error('polling-service: global timeout exceeded', { runId, elapsedTime, attempts });
+        return {
+          status: 'timeout',
+          attempts,
+          elapsedTime
+        };
+      }
       const pollInterval = getInterval(attempts);
       await new Promise(resolve => setTimeout(resolve, pollInterval));
       
@@ -73,12 +89,79 @@ export class PollingService {
             });
           }
 
-          // Gestion des actions requises avec logging renforcé
+          // Gestion critique des actions requises avec limite de tentatives
           if (runStatus === 'requires_action') {
-            console.log('polling-service: handling requires_action', { runId, attempts });
-            await this.submitToolOutputs(openAIApiKey, threadId, runId);
-            // Attendre un peu après soumission des tool outputs
-            await new Promise(resolve => setTimeout(resolve, 100));
+            requiresActionAttempts++;
+            console.log('polling-service: handling requires_action', { 
+              runId, 
+              attempts, 
+              requiresActionAttempts,
+              maxAllowed: MAX_REQUIRES_ACTION_ATTEMPTS 
+            });
+            
+            // Limitation critique: éviter la boucle infinie de requires_action
+            if (requiresActionAttempts > MAX_REQUIRES_ACTION_ATTEMPTS) {
+              console.error('polling-service: max requires_action attempts exceeded', { 
+                runId, 
+                requiresActionAttempts,
+                totalAttempts: attempts 
+              });
+              return {
+                status: 'failed',
+                attempts,
+                elapsedTime: Date.now() - startTime
+              };
+            }
+            
+            const toolSubmissionSuccess = await this.submitToolOutputs(openAIApiKey, threadId, runId);
+            if (!toolSubmissionSuccess) {
+              console.error('polling-service: tool submission failed, aborting', { runId, attempts });
+              return {
+                status: 'failed',
+                attempts,
+                elapsedTime: Date.now() - startTime
+              };
+            }
+            
+            // Attendre et vérifier le changement de statut
+            await new Promise(resolve => setTimeout(resolve, 200));
+            
+            // Vérification immédiate du nouveau statut après tool submission
+            try {
+              const verifyResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs/${runId}`, {
+                method: 'GET',
+                headers: {
+                  'Authorization': `Bearer ${openAIApiKey}`,
+                  'OpenAI-Beta': 'assistants=v2'
+                }
+              });
+              
+              if (verifyResponse.ok) {
+                const verifyData = await verifyResponse.json();
+                const newStatus = verifyData.status;
+                console.log('polling-service: status after tool submission', { 
+                  runId, 
+                  previousStatus: runStatus,
+                  newStatus,
+                  changed: newStatus !== runStatus
+                });
+                
+                // Si le statut n'a pas changé après tool submission, c'est problématique
+                if (newStatus === 'requires_action' && requiresActionAttempts >= 2) {
+                  console.error('polling-service: status stuck in requires_action, force exit', { 
+                    runId, 
+                    requiresActionAttempts 
+                  });
+                  return {
+                    status: 'failed',
+                    attempts,
+                    elapsedTime: Date.now() - startTime
+                  };
+                }
+              }
+            } catch (verifyError) {
+              console.error('polling-service: error verifying status', { runId, error: verifyError.message });
+            }
           }
         }
       } catch (error) {
@@ -109,7 +192,7 @@ export class PollingService {
     return result;
   }
 
-  private static async submitToolOutputs(openAIApiKey: string, threadId: string, runId: string): Promise<void> {
+  private static async submitToolOutputs(openAIApiKey: string, threadId: string, runId: string): Promise<boolean> {
     try {
       // Récupérer d'abord les détails du run pour voir les tool calls requis
       const runDetailsResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs/${runId}`, {
@@ -150,14 +233,22 @@ export class PollingService {
           body: JSON.stringify({ tool_outputs: toolOutputs })
         });
 
-        console.log('polling-service: tool outputs submitted', { runId, outputsCount: toolOutputs.length });
+        console.log('polling-service: tool outputs submitted successfully', { runId, outputsCount: toolOutputs.length });
+        return true;
+      } else {
+        console.error('polling-service: failed to get run details for tool submission', { 
+          runId, 
+          status: runDetailsResponse.status 
+        });
+        return false;
       }
     } catch (error) {
-      console.error('polling-service: error submitting tool outputs', { runId, error: error.message });
+      console.error('polling-service: critical error submitting tool outputs', { runId, error: error.message });
+      return false;
     }
   }
 
-  private static async getAssistantMessage(openAIApiKey: string, threadId: string, runId: string): Promise<string> {
+  static async getAssistantMessage(openAIApiKey: string, threadId: string, runId: string): Promise<string> {
     const messagesResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
       method: 'GET',
       headers: {
