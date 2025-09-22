@@ -61,8 +61,8 @@ export function useStreamingChat() {
         throw new Error('Session non disponible');
       }
 
-      // Utiliser directement chat-openai-stream pour accès direct aux Assistants OpenAI
-      const { data, error } = await supabase.functions.invoke('chat-openai-stream', {
+      // Utiliser chat-completions-optimized pour une stabilité maximale
+      const { data, error } = await supabase.functions.invoke('chat-completions-optimized', {
         body: {
           messages,
           selectedAgent,
@@ -75,7 +75,7 @@ export function useStreamingChat() {
       }
 
       if (data && data.content) {
-        // Simulate streaming for better UX while keeping direct OpenAI Assistant response
+        // Simulate streaming for better UX with optimized chat completions
         const content = data.content;
         let currentIndex = 0;
         
@@ -103,7 +103,7 @@ export function useStreamingChat() {
                 isTyping: false
               }));
               endSession(sessionId, true);
-              onComplete(content, data.threadId);
+              onComplete(content);
               return;
             }
           }
@@ -121,14 +121,14 @@ export function useStreamingChat() {
         return; // User cancelled, don't show error
       }
       
-      logger.error('Direct OpenAI Assistant error', error, 'useStreamingChat');
+      logger.error('Optimized chat completions error', error, 'useStreamingChat');
       setStreamingState(prev => ({
         ...prev,
         isStreaming: false,
         isTyping: false
       }));
       
-      onError(error instanceof Error ? error.message : 'Erreur de connexion avec les Assistants OpenAI');
+      onError(error instanceof Error ? error.message : 'Erreur de connexion avec l\'API OpenAI');
     }
   }, [startSession, endSession]);
 
