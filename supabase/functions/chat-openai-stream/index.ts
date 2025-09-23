@@ -138,10 +138,10 @@ serve(async (req) => {
       return StreamingService.createSSEResponse({ openAIApiKey, threadId, runId, corsHeaders });
     }
 
-    // Configuration optimisée avec fallback intelligent
+    // Configuration optimisée pour réduire la latence
     const POLLING_CONFIG = {
-      maxAttempts: 20,
-      globalTimeout: 15000,
+      maxAttempts: 15,
+      globalTimeout: 12000,
       isSSE: false
     };
 

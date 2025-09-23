@@ -61,8 +61,8 @@ export function useStreamingChat() {
         throw new Error('Session non disponible');
       }
 
-      // Utiliser chat-completions-optimized pour une stabilité maximale
-      const { data, error } = await supabase.functions.invoke('chat-completions-optimized', {
+      // Utiliser chat-openai-stream pour compatibilité JSON
+      const { data, error } = await supabase.functions.invoke('chat-openai-stream', {
         body: {
           messages,
           selectedAgent,
@@ -121,7 +121,7 @@ export function useStreamingChat() {
         return; // User cancelled, don't show error
       }
       
-      logger.error('Optimized chat completions error', error, 'useStreamingChat');
+      logger.error('Stream function critical error:', error);
       setStreamingState(prev => ({
         ...prev,
         isStreaming: false,

@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useReducer } from 'react';
 import { useStreamingChat } from '@/hooks/useStreamingChat';
+import { useSSEStreamingChat } from '@/hooks/useSSEStreamingChat';
 import { useConversationHistory } from '@/hooks/useConversationHistory';
 import { usePerformanceOptimization } from '@/hooks/usePerformanceOptimization';
 import { Message } from '@/types/chat';
@@ -48,12 +49,15 @@ const initialState: ChatState = {
 
 /**
  * Hook de chat optimisé avec useReducer pour de meilleures performances
- * et une gestion d'état plus prévisible
+ * Support JSON (chat-openai-stream) et SSE (chat-completions-optimized)
  */
-export function useOptimizedChatEngine(agentId: string) {
+export function useOptimizedChatEngine(agentId: string, useSSE: boolean = false) {
   const [state, dispatch] = useReducer(chatReducer, initialState);
   
-  const { streamingState, sendStreamingMessage, cancelStream } = useStreamingChat();
+  // Sélection intelligente du hook de streaming
+  const jsonStreaming = useStreamingChat();
+  const sseStreaming = useSSEStreamingChat();  
+  const { streamingState, sendStreamingMessage, cancelStream } = useSSE ? sseStreaming : jsonStreaming;
   const { 
     updateConversation, 
     getConversation, 
@@ -84,7 +88,7 @@ export function useOptimizedChatEngine(agentId: string) {
     dispatch({ type: 'SET_TYPING', payload: messageId });
   }, []);
 
-  // Fonction d'envoi de message optimisée
+  // Fonction d'envoi de message optimisée avec choix du protocole
   const sendMessage = useCallback(async (
     userSession: any,
     onMessageUpdate: (content: string, isComplete: boolean) => void,
@@ -94,6 +98,8 @@ export function useOptimizedChatEngine(agentId: string) {
     // Optimise les messages avant envoi
     const optimizedMessages = optimizeMessages(state.messages);
     
+    console.log(`Using ${useSSE ? 'SSE' : 'JSON'} streaming for agent: ${agentId}`);
+    
     return sendStreamingMessage(
       optimizedMessages,
       agentId,
@@ -102,7 +108,7 @@ export function useOptimizedChatEngine(agentId: string) {
       onComplete,
       onError
     );
-  }, [optimizeMessages, state.messages, sendStreamingMessage, agentId]);
+  }, [optimizeMessages, state.messages, sendStreamingMessage, agentId, useSSE]);
 
   // Actions optimisées
   const loadConversation = useCallback(() => {
