@@ -28,6 +28,8 @@ serve(async (req) => {
   const acceptHeader = req.headers.get('accept') || '';
   const isStreamingRequest = acceptHeader.includes('text/event-stream');
 
+  const startTime = Date.now();
+
   try {
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openAIApiKey) {
@@ -50,13 +52,19 @@ serve(async (req) => {
     const { messages, selectedAgent, userSession } = await req.json();
     const lastMessage = messages[messages.length - 1];
     
-    console.log('chat-openai-stream: incoming request', {
-      userId: user.id,
-      selectedAgent,
-      contentLength: (lastMessage?.content || '').length,
-      hasThreadId: Boolean(userSession?.threadId),
-      isStreaming: isStreamingRequest
-    });
+    // Configuration optimisée par assistant avec diagnostic
+    const assistantId = AssistantMapper.getAssistantId(selectedAgent);
+    const optimizedConfig = AssistantMapper.getOptimizedConfig(assistantId);
+    
+    console.log(`chat-openai-stream: incoming request {
+  userId: "${user.id}",
+  selectedAgent: "${selectedAgent}",
+  assistantId: "${assistantId}",
+  contentLength: ${(lastMessage?.content || '').length},
+  hasThreadId: ${Boolean(userSession?.threadId)},
+  isStreaming: ${isStreamingRequest},
+  config: ${JSON.stringify(optimizedConfig)}
+}`);
 
     // Gestion intelligente du cache des threads
     const cacheKey = threadCacheService.getCacheKey(user.id, selectedAgent);
@@ -69,7 +77,10 @@ serve(async (req) => {
     }
     
     if (!threadId) {
-      console.log('chat-openai-stream: creating new thread', { userId: user.id, selectedAgent });
+      console.log(`chat-openai-stream: creating new thread {
+  userId: "${user.id}",
+  selectedAgent: "${selectedAgent}"
+}`);
       const threadResponse = await fetch('https://api.openai.com/v1/threads', {
         method: 'POST',
         headers: {
@@ -92,7 +103,6 @@ serve(async (req) => {
     } else {
       // Mise à jour de l'usage du cache
       threadCacheService.updateUsage(cacheKey);
-      console.log('chat-openai-stream: reusing thread', { threadId });
     }
 
     // Add user message to thread
@@ -109,8 +119,7 @@ serve(async (req) => {
       })
     });
 
-    // Configuration de l'assistant avec mapping centralisé
-    const assistantId = AssistantMapper.getAssistantId(selectedAgent);
+    // Configuration de l'assistant avec instructions spécifiques
     const instructions = AssistantMapper.getInstructions(selectedAgent, lastMessage?.content || '');
 
     const runResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs`, {
@@ -133,131 +142,105 @@ serve(async (req) => {
     const runData = await runResponse.json();
     const runId = runData.id;
 
+    console.log(`chat-openai-stream: starting optimized polling {
+  runId: "${runId}",
+  config: { maxAttempts: ${optimizedConfig.maxAttempts}, globalTimeout: ${optimizedConfig.globalTimeout}, isSSE: ${isStreamingRequest} }
+}`);
+
     // Return SSE stream if requested
     if (isStreamingRequest) {
       return StreamingService.createSSEResponse({ openAIApiKey, threadId, runId, corsHeaders });
     }
 
-    // Configuration optimisée pour réduire la latence
-    const POLLING_CONFIG = {
-      maxAttempts: 15,
-      globalTimeout: 12000,
-      isSSE: false
-    };
-
-    console.log('chat-openai-stream: starting optimized polling', { 
-      runId, 
-      config: POLLING_CONFIG 
-    });
-
-    let result;
+    // Polling optimisé avec configuration dynamique
+    let pollingResult;
     try {
-      result = await PollingService.pollForCompletion({
+      pollingResult = await PollingService.pollForCompletion({
         openAIApiKey,
         threadId,
         runId,
-        ...POLLING_CONFIG
+        maxAttempts: optimizedConfig.maxAttempts,
+        globalTimeout: optimizedConfig.globalTimeout + 3000, // PollingService a besoin de plus de temps
+        maxRequiresActionAttempts: 3
       });
-    } catch (pollingError) {
-      console.error('chat-openai-stream: polling threw exception', { 
-        runId, 
-        error: pollingError.message 
-      });
-      
-      // Fallback: essayer de récupérer une réponse partielle
-      try {
-        const fallbackContent = await PollingService.getAssistantMessage(openAIApiKey, threadId, runId);
-        if (fallbackContent && fallbackContent !== 'Aucune réponse générée.') {
-          console.log('chat-openai-stream: fallback content retrieved', { runId, contentLength: fallbackContent.length });
-          return new Response(JSON.stringify({ 
-            content: fallbackContent,
-            threadId: threadId,
-            warning: 'Réponse récupérée en mode fallback'
-          }), { 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          });
-        }
-      } catch (fallbackError) {
-        console.error('chat-openai-stream: fallback also failed', { runId, error: fallbackError.message });
-      }
-      
+    } catch (pollingError: any) {
+      console.error(`chat-openai-stream: polling exception { runId: "${runId}", error: "${pollingError?.message || pollingError}" }`);
       throw pollingError;
     }
 
-    console.log('chat-openai-stream: polling completed', { 
-      runId, 
-      status: result.status, 
-      attempts: result.attempts,
-      elapsedTime: result.elapsedTime,
-      hasContent: Boolean(result.content)
-    });
+    const responseTime = Date.now() - startTime;
+    
+    console.log(`chat-openai-stream: polling completed {
+  runId: "${runId}",
+  status: "${pollingResult.status}",
+  attempts: ${pollingResult.attempts},
+  elapsedTime: ${pollingResult.elapsedTime},
+  hasContent: ${Boolean(pollingResult.messageContent)},
+  responseTime: ${responseTime}
+}`);
 
-    // Gestion réussie
-    if (result.status === 'completed' && result.content) {
-      console.log('chat-openai-stream: success', { runId, contentLength: result.content.length });
+    // Gestion des résultats avec diagnostic et fallback
+    if (pollingResult.status === 'completed' && pollingResult.messageContent) {
+      // Enregistrer le succès pour l'assistant
+      AssistantMapper.recordSuccess(assistantId, responseTime);
       
-      return new Response(JSON.stringify({ 
-        content: result.content,
-        threadId: threadId 
-      }), { 
+      console.log(`chat-openai-stream: success { runId: "${runId}", contentLength: ${pollingResult.messageContent.length} }`);
+      
+      return new Response(JSON.stringify({
+        content: pollingResult.messageContent,
+        threadId: threadId
+      }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
-    }
-    
-    // Gestion intelligente des timeouts avec réponse de secours
-    if (result.status === 'timeout') {
-      console.error('chat-openai-stream: timeout, attempting emergency response', { 
-        runId, 
-        attempts: result.attempts,
-        elapsedTime: result.elapsedTime
-      });
+    } else {
+      // Enregistrer l'échec pour l'assistant
+      AssistantMapper.recordFailure(assistantId);
       
-      // Réponse de secours en cas de timeout
-      const emergencyResponse = `Je m'excuse, la réponse prend plus de temps que prévu. Votre demande a été enregistrée (ID: ${runId.slice(-8)}). Pouvez-vous reformuler votre question pour une réponse plus rapide ?`;
+      console.error(`chat-openai-stream: completion failed, generating fallback { status: "${pollingResult.status}", attempts: ${pollingResult.attempts}, hasContent: ${Boolean(pollingResult.messageContent)} }`);
       
-      return new Response(JSON.stringify({ 
-        content: emergencyResponse,
+      // Si ce n'est pas déjà le fallback, informer l'utilisateur
+      if (assistantId !== "asst_ljWenYnbNEERVydsDaeVSHVl") {
+        console.log(`chat-openai-stream: assistant ${selectedAgent} défaillant, utilisation du système de fallback`);
+        
+        // Message d'information pour l'utilisateur avec tentative de récupération automatique
+        const fallbackMessage = `Je rencontre des difficultés avec l'assistant ${selectedAgent}. Le système va automatiquement utiliser un assistant de secours pour vos prochaines demandes. Pouvez-vous reformuler votre question ?`;
+        
+        return new Response(JSON.stringify({
+          content: fallbackMessage,
+          threadId: threadId,
+          fallback: true,
+          originalAgent: selectedAgent,
+          diagnostics: AssistantMapper.getDiagnostics()
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      
+      // Réponse de fallback final
+      return new Response(JSON.stringify({
+        content: "Je rencontre des difficultés techniques temporaires. Veuillez réessayer dans quelques instants ou reformuler votre demande.",
         threadId: threadId,
-        warning: 'Réponse générée en mode urgence suite à un timeout'
-      }), { 
+        fallback: true,
+        criticalFailure: true
+      }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
-    
-    // Gestion des échecs avec fallback intelligent
-    console.error('chat-openai-stream: completion failed, generating fallback', { 
-      status: result.status, 
-      attempts: result.attempts,
-      hasContent: Boolean(result.content)
-    });
-    
-    // Réponse de fallback pour éviter l'erreur 500
-    const fallbackResponse = `Je rencontre actuellement des difficultés techniques. Votre demande a été enregistrée (ID: ${runId.slice(-8)}). Pouvez-vous essayer de reformuler votre question ?`;
-    
-    return new Response(JSON.stringify({ 
-      content: fallbackResponse,
-      threadId: threadId,
-      warning: `Réponse de fallback - statut: ${result.status}`
-    }), { 
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200 // Toujours retourner 200 pour éviter l'erreur 500
-    });
 
-  } catch (error) {
-    console.error('Stream function critical error:', error);
+  } catch (error: any) {
+    console.error('chat-openai-stream: critical error:', error);
     
-    // Gestion d'erreur ultra-robuste pour éviter absolument l'erreur 500
+    // Gestion d'erreur ultra-robuste pour éviter l'erreur 500
     const criticalErrorResponse = `Je rencontre une difficulté technique inattendue. Votre demande a été enregistrée pour investigation. Pouvez-vous réessayer dans quelques instants ?`;
     
     return new Response(JSON.stringify({ 
       content: criticalErrorResponse,
-      warning: `Erreur critique: ${error.message}`,
-      timestamp: new Date().toISOString()
+      error: error?.message || 'Unknown error',
+      timestamp: new Date().toISOString(),
+      fallback: true
     }), {
       status: 200, // JAMAIS 500 - toujours retourner 200
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 });
-
-// Note: streamAssistantResponse is now handled by StreamingService.createSSEResponse

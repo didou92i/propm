@@ -8,26 +8,29 @@ interface PollConfig {
   threadId: string;
   runId: string;
   maxAttempts?: number;
+  globalTimeout?: number;
+  maxRequiresActionAttempts?: number;
   isSSE?: boolean;
 }
 
 interface PollResult {
   status: 'completed' | 'failed' | 'timeout';
   content?: string;
+  messageContent?: string;
   attempts: number;
   elapsedTime: number;
 }
 
 export class PollingService {
   static async pollForCompletion(config: PollConfig): Promise<PollResult> {
-    const { openAIApiKey, threadId, runId, maxAttempts = 20, isSSE = false } = config;
+    const { openAIApiKey, threadId, runId, maxAttempts = 20, globalTimeout, maxRequiresActionAttempts, isSSE = false } = config;
     
     let runStatus = 'queued';
     let attempts = 0;
     let requiresActionAttempts = 0;
     const startTime = Date.now();
-    const GLOBAL_TIMEOUT = 15000; // 15 secondes maximum
-    const MAX_REQUIRES_ACTION_ATTEMPTS = 3; // Maximum 3 tentatives pour requires_action
+    const GLOBAL_TIMEOUT = globalTimeout || 15000; // 15 secondes par défaut
+    const MAX_REQUIRES_ACTION_ATTEMPTS = maxRequiresActionAttempts || 3; // Maximum 3 tentatives pour requires_action
     
     // Intervalles optimisés et plus agressifs
     const getInterval = (attempt: number): number => {
@@ -159,13 +162,13 @@ export class PollingService {
                   };
                 }
               }
-            } catch (verifyError) {
-              console.error('polling-service: error verifying status', { runId, error: verifyError.message });
+            } catch (verifyError: any) {
+              console.error('polling-service: error verifying status', { runId, error: verifyError?.message || verifyError });
             }
           }
         }
-      } catch (error) {
-        console.error('polling-service: error', { runId, attempts, error: error.message });
+      } catch (error: any) {
+        console.error('polling-service: error', { runId, attempts, error: error?.message || error });
       }
       
       attempts++;
@@ -182,9 +185,10 @@ export class PollingService {
       try {
         const content = await this.getAssistantMessage(openAIApiKey, threadId, runId);
         result.content = content;
+        result.messageContent = content;
         console.log('polling-service: completed', { runId, contentLength: content?.length || 0 });
-      } catch (error) {
-        console.error('polling-service: failed to get content', { runId, error: error.message });
+      } catch (error: any) {
+        console.error('polling-service: failed to get content', { runId, error: error?.message || error });
         result.status = 'failed';
       }
     }
@@ -213,7 +217,7 @@ export class PollingService {
         // Si pas de tool calls requis, ne pas envoyer de tool outputs
         if (!runDetails.required_action?.submit_tool_outputs?.tool_calls) {
           console.log('polling-service: no tool calls required, skipping submission');
-          return;
+          return false;
         }
 
         // Soumettre des tool outputs vides pour chaque tool call requis (désactivation)
@@ -242,8 +246,8 @@ export class PollingService {
         });
         return false;
       }
-    } catch (error) {
-      console.error('polling-service: critical error submitting tool outputs', { runId, error: error.message });
+    } catch (error: any) {
+      console.error('polling-service: critical error submitting tool outputs', { runId, error: error?.message || error });
       return false;
     }
   }
@@ -259,7 +263,7 @@ export class PollingService {
 
     if (messagesResponse.ok) {
       const messagesData = await messagesResponse.json();
-      const assistantMessage = messagesData.data.find(msg => msg.role === 'assistant' && msg.run_id === runId);
+      const assistantMessage = messagesData.data.find((msg: any) => msg.role === 'assistant' && msg.run_id === runId);
       return assistantMessage?.content[0]?.text?.value || 'Aucune réponse générée.';
     }
     
