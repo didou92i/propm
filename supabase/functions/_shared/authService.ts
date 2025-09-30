@@ -2,6 +2,8 @@
  * Service d'authentification pour les Edge Functions
  */
 
+import { getErrorMessage } from './errorHelpers.ts';
+
 export interface AuthResult {
   user: any;
   error?: string;
@@ -24,7 +26,7 @@ export class AuthService {
 
       return { user };
     } catch (error) {
-      return { user: null, error: `Authentication failed: ${error.message}` };
+      return { user: null, error: `Authentication failed: ${getErrorMessage(error)}` };
     }
   }
 

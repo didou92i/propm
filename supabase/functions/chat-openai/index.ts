@@ -450,11 +450,13 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error('CRITICAL ERROR in chat-openai function:', error);
-    console.error('Stack trace:', error.stack);
+    const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+    const errorStack = error instanceof Error ? error.stack || 'No stack trace available' : 'No stack trace available';
+    console.error('Stack trace:', errorStack);
     return new Response(JSON.stringify({ 
       success: false, 
-      error: error.message || 'An unexpected error occurred',
-      details: error.stack || 'No stack trace available'
+      error: errorMessage,
+      details: errorStack
     }), {
       status: 200,  // Changed from 500 to 200 to avoid non-2xx errors
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

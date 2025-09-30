@@ -6,6 +6,7 @@ import { StreamProcessor } from '../_shared/streamProcessor.ts';
 import { AuthService } from '../_shared/authService.ts';
 import { corsHeaders, handleCorsPreflightRequest, createStreamHeaders } from '../_shared/corsConfig.ts';
 import { PerformanceTracker } from '../_shared/performanceTracker.ts';
+import { getErrorMessage } from '../_shared/errorHelpers.ts';
 
 const supabaseAdmin = createClient(
   Deno.env.get('SUPABASE_URL') ?? '',
@@ -86,6 +87,6 @@ serve(async (req) => {
     console.error('chat-completions-stream error:', error);
     const responseTime = Date.now() - startTime;
     
-    return StreamProcessor.createErrorStream(error.message, responseTime, corsHeaders);
+    return StreamProcessor.createErrorStream(getErrorMessage(error), responseTime, corsHeaders);
   }
 });

@@ -2,6 +2,8 @@
  * Service de traitement des flux SSE pour OpenAI
  */
 
+import { getErrorMessage } from './errorHelpers.ts';
+
 export interface StreamMetrics {
   totalTime: number;
   firstTokenLatency: number;
@@ -55,7 +57,7 @@ export class StreamProcessor {
       }
     } catch (error) {
       console.error('Streaming error:', error);
-      this.sendEvent(controller, 'error', { error: error.message });
+      this.sendEvent(controller, 'error', { error: getErrorMessage(error) });
     } finally {
       reader.releaseLock();
       controller.close();

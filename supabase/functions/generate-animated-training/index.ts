@@ -241,9 +241,17 @@ serve(async (req) => {
       throw new Error(`Type d'entraînement non supporté: ${trainingType}. Types disponibles: ${Object.keys(TRAINING_TEMPLATES).join(', ')}`);
     }
     
+    // Extraction sécurisée du nombre d'items selon le type de template
+    const getItemCount = (tmpl: typeof template): number | string => {
+      if ('questionCount' in tmpl) return tmpl.questionCount;
+      if ('stepCount' in tmpl) return tmpl.stepCount;
+      if ('phaseCount' in tmpl) return tmpl.phaseCount;
+      return 'N/A';
+    };
+    
     console.log(`Template trouvé pour ${trainingType}:`, { 
       systemPromptLength: template.systemPrompt.length,
-      questionCount: template.questionCount || template.stepCount || template.phaseCount || 'N/A'
+      itemCount: getItemCount(template)
     });
 
     // Construire le prompt contextuel avec tokens réduits

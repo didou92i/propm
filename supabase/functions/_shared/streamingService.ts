@@ -4,6 +4,7 @@
  */
 
 import { PollingService } from './pollingService.ts';
+import { getErrorMessage } from './errorHelpers.ts';
 
 interface StreamingConfig {
   openAIApiKey: string;
@@ -21,7 +22,7 @@ export class StreamingService {
       async start(controller) {
         try {
           // Feedback immédiat
-          this.sendStatusEvent(controller, encoder, 'thinking', 'L\'assistant réfléchit...');
+          StreamingService.sendStatusEvent(controller, encoder, 'thinking', 'L\'assistant réfléchit...');
           
           // Polling avec callbacks SSE
           const result = await PollingService.pollForCompletion({
@@ -33,14 +34,14 @@ export class StreamingService {
           });
 
           if (result.status === 'completed' && result.content) {
-            this.sendCompleteEvent(controller, encoder, result.content, threadId);
+            StreamingService.sendCompleteEvent(controller, encoder, result.content, threadId);
           } else {
-            this.sendErrorEvent(controller, encoder, 'Assistant did not complete successfully');
+            StreamingService.sendErrorEvent(controller, encoder, 'Assistant did not complete successfully');
           }
           
         } catch (error) {
           console.error('streaming-service: error', error);
-          this.sendErrorEvent(controller, encoder, error.message);
+          StreamingService.sendErrorEvent(controller, encoder, getErrorMessage(error));
         } finally {
           controller.close();
         }
