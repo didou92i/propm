@@ -1,5 +1,6 @@
 import { VectorStoreIndex, Document } from 'llamaindex';
 import { supabase } from '@/integrations/supabase/client';
+import { supabaseVectorStore } from './supabaseVectorStore';
 import type { DocumentMetadata, SupabaseDocument, LlamaIndexDocument, IndexManagerInterface } from '@/types/llama';
 
 export class IndexManager implements IndexManagerInterface {
@@ -25,8 +26,8 @@ export class IndexManager implements IndexManagerInterface {
     }
 
     try {
-      // Create LlamaIndex Document object
-      const doc = new Document({
+      // Add to Supabase Vector Store (uses optimized HNSW index)
+      await supabaseVectorStore.addDocuments([{
         text: content,
         metadata: {
           id: metadata.id,
@@ -34,12 +35,12 @@ export class IndexManager implements IndexManagerInterface {
           source: metadata.source || 'unknown',
           category: metadata.category || 'general',
           timestamp: metadata.timestamp || new Date().toISOString(),
-          type: metadata.type || 'document'
+          type: metadata.type || 'document',
+          doc_id: metadata.id
         }
-      });
+      }]);
       
-      // Add to index
-      await this.index!.insertNodes([doc]);
+      console.log('✅ Document added to Supabase vector store with HNSW index');
       
       // Clear cache after adding document
       this.clearCache();
@@ -74,25 +75,30 @@ export class IndexManager implements IndexManagerInterface {
 
   private async performInitialization(): Promise<void> {
     try {
-      console.log('Initialisation de LlamaIndex...');
+      console.log('Initialisation de LlamaIndex avec Supabase Vector Store...');
       
+      // Get stats about existing documents in Supabase
+      const stats = await supabaseVectorStore.getStats();
+      console.log(`📊 Documents dans Supabase: ${stats.totalDocuments} (dont ${stats.indexedByLlama} indexés par LlamaIndex)`);
+
       // Récupérer les documents depuis Supabase
       const documents = await this.fetchDocumentsFromSupabase();
-      console.log(`${documents.length} documents récupérés`);
+      console.log(`${documents.length} documents récupérés pour l'index en mémoire`);
 
       if (documents.length === 0) {
         console.warn('Aucun document trouvé, création d\'un index vide');
-        // Create empty index
+        // Create empty index (queries will use Supabase directly)
         this.index = await VectorStoreIndex.fromDocuments([]);
         this.queryEngine = this.index.asQueryEngine();
         return;
       }
 
-      // Créer l'index vectoriel
+      // Créer l'index vectoriel en mémoire (pour compatibilité LlamaIndex)
+      // Les requêtes principales utiliseront Supabase directement via supabaseVectorStore
       this.index = await VectorStoreIndex.fromDocuments(documents);
       this.queryEngine = this.index.asQueryEngine();
       
-      console.log('Index LlamaIndex initialisé avec succès');
+      console.log('✅ Index LlamaIndex initialisé (hybride: mémoire + Supabase HNSW)');
     } catch (error) {
       console.error('Erreur lors de l\'initialisation de LlamaIndex:', error);
       
