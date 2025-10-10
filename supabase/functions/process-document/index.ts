@@ -2,6 +2,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.2';
+import { SupabaseVectorStoreService } from '../_shared/supabaseVectorStore.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -424,9 +425,14 @@ Taille: ${Math.round(file.size / 1024)} KB`;
     const embeddingResults = await Promise.all(embeddingPromises);
     console.log(`Generated ${embeddingResults.length} embeddings with ${embeddingResults[0].embedding.length} dimensions each`);
 
-    // Store each chunk as a separate document in the database
-    const documentInserts = embeddingResults.map((result, index) => {
-      const metadata = {
+    // Initialize SupabaseVectorStore for optimized HNSW indexing
+    console.log('🚀 Using SupabaseVectorStore with HNSW index optimization...');
+    const vectorStore = new SupabaseVectorStoreService(supabase, openAIApiKey);
+
+    // Prepare documents for vector store
+    const documentsForStore = embeddingResults.map((result) => ({
+      text: result.chunk,
+      metadata: {
         filename: file.name,
         filesize: file.size,
         filetype: file.type,
@@ -437,37 +443,25 @@ Taille: ${Math.round(file.size / 1024)} KB`;
                           file.type.includes('wordprocessingml') ? 'word_text_extraction' : 'unsupported',
         chunk_index: result.chunkIndex,
         total_chunks: embeddingResults.length,
-        is_chunk: embeddingResults.length > 1
-      };
+        is_chunk: embeddingResults.length > 1,
+        user_id: user.id
+      }
+    }));
 
-      return {
-        content: result.chunk,
-        embedding: result.embedding,
-        user_id: user.id,
-        metadata: metadata
-      };
-    });
+    // Store documents using HNSW-optimized vector store
+    console.log(`📥 Indexing ${documentsForStore.length} chunks with HNSW index...`);
+    const documentIds = await vectorStore.addDocuments(documentsForStore);
 
-    console.log(`Storing ${documentInserts.length} document chunks in database...`);
-    const { data: documents, error: insertError } = await supabase
-      .from('documents')
-      .insert(documentInserts)
-      .select();
-
-    if (insertError) {
-      console.error('Database insert error:', insertError);
-      throw new Error(`Failed to store document chunks: ${insertError.message}`);
-    }
-
-    console.log(`${documents.length} document chunks stored successfully`);
+    console.log(`✅ ${documentIds.length} document chunks indexed successfully with HNSW`);
 
     return new Response(JSON.stringify({
       success: true,
-      documentIds: documents.map(doc => doc.id),
+      documentIds: documentIds,
       extractedText: extractedText,
       extractedTextLength: extractedText.length,
       chunksCount: embeddingResults.length,
-      metadata: documentInserts[0]?.metadata
+      indexingMethod: 'hnsw_optimized',
+      metadata: documentsForStore[0]?.metadata
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
