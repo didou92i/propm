@@ -208,22 +208,48 @@ serve(async (req) => {
       
       console.error(`chat-openai-stream: completion failed, generating fallback { status: "${pollingResult.status}", attempts: ${pollingResult.attempts}, hasContent: ${Boolean(pollingResult.messageContent)} }`);
       
-      // Si ce n'est pas déjà le fallback, informer l'utilisateur
+      // Si ce n'est pas déjà le fallback, utiliser une completion directe
       if (assistantId !== "asst_ljWenYnbNEERVydsDaeVSHVl") {
-        console.log(`chat-openai-stream: assistant ${selectedAgent} défaillant, utilisation du système de fallback`);
+        console.log(`chat-openai-stream: assistant ${selectedAgent} timeout, using direct GPT completion`);
         
-        // Message d'information pour l'utilisateur avec tentative de récupération automatique
-        const fallbackMessage = `Je rencontre des difficultés avec l'assistant ${selectedAgent}. Le système va automatiquement utiliser un assistant de secours pour vos prochaines demandes. Pouvez-vous reformuler votre question ?`;
-        
-        return new Response(JSON.stringify({
-          content: fallbackMessage,
-          threadId: threadId,
-          fallback: true,
-          originalAgent: selectedAgent,
-          diagnostics: AssistantMapper.getDiagnostics()
-        }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+        try {
+          // Appel direct GPT-4o-mini pour réponse rapide
+          const directResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${openAIApiKey}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              model: 'gpt-4o-mini',
+              messages: [
+                { 
+                  role: 'system', 
+                  content: `Tu es ${selectedAgent}, assistant spécialisé en rédaction juridique et administrative. Réponds de manière concise et professionnelle en français.` 
+                },
+                { role: 'user', content: messageContent }
+              ],
+              max_tokens: 1500,
+              temperature: 0.7
+            })
+          });
+          
+          if (directResponse.ok) {
+            const directData = await directResponse.json();
+            const fallbackContent = directData.choices[0].message.content;
+            
+            return new Response(JSON.stringify({
+              content: `⚠️ **Mode performance optimisé activé**\n\n${fallbackContent}\n\n_Note : Pour des analyses plus approfondies, veuillez réessayer dans quelques instants._`,
+              threadId: threadId,
+              fallback: true,
+              originalAgent: selectedAgent
+            }), {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+          }
+        } catch (fallbackError) {
+          console.error('Direct completion failed:', fallbackError);
+        }
       }
       
       // Réponse de fallback final

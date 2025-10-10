@@ -38,12 +38,21 @@ export class AssistantMapper {
       return this.FALLBACK_ASSISTANT;
     }
 
+    // Réinitialiser les diagnostics périmés
+    this.resetDiagnosticIfStale(originalId);
+    
     // Vérifier le diagnostic de l'assistant
     const diagnostic = this.diagnostics.get(originalId);
-    const shouldUseFallback = diagnostic && !diagnostic.isWorking && diagnostic.failureCount >= 2;
+    
+    // Seuil à 3 échecs ET vérifier si récent
+    const isRecentFailure = diagnostic && (Date.now() - diagnostic.lastTested < 60000); // < 1 min
+    const shouldUseFallback = diagnostic && 
+                             !diagnostic.isWorking && 
+                             diagnostic.failureCount >= 3 &&  // De 2 à 3
+                             isRecentFailure;
     
     if (shouldUseFallback) {
-      console.warn(`assistant-mapper: utilisation du fallback pour '${selectedAgent}' (${diagnostic.failureCount} échecs)`);
+      console.warn(`assistant-mapper: utilisation du fallback pour '${selectedAgent}' (${diagnostic.failureCount} échecs récents)`);
       return this.FALLBACK_ASSISTANT;
     }
 
@@ -99,21 +108,57 @@ export class AssistantMapper {
     console.error(`assistant-mapper: échec pour ${assistantId} (${diagnostic.failureCount} échecs total)`);
   }
 
+  static resetDiagnosticIfStale(assistantId: string): void {
+    const diagnostic = this.diagnostics.get(assistantId);
+    
+    // Réinitialiser si aucun échec depuis 5 minutes
+    if (diagnostic && (Date.now() - diagnostic.lastTested > 300000)) {
+      console.log(`assistant-mapper: resetting stale diagnostic for ${assistantId}`);
+      
+      diagnostic.failureCount = 0;
+      diagnostic.isWorking = true;
+      this.diagnostics.set(assistantId, diagnostic);
+    }
+  }
+
   static getOptimizedConfig(assistantId: string): { maxAttempts: number; globalTimeout: number } {
     const diagnostic = this.diagnostics.get(assistantId);
     
-    // Configuration réduite pour les assistants problématiques
-    if (diagnostic && diagnostic.failureCount > 0) {
+    // Configuration par assistant selon leur complexité
+    const assistantConfigs: Record<string, { maxAttempts: number; globalTimeout: number }> = {
+      'asst_nVveo2OzbB2h8uHY2oIDpob1': { // RedacPro (documents juridiques longs)
+        maxAttempts: 25,
+        globalTimeout: 30000  // 30 secondes
+      },
+      'asst_e4AMY6vpiqgqFwbQuhNCbyeL': { // Arrete (génération complexe)
+        maxAttempts: 20,
+        globalTimeout: 25000  // 25 secondes
+      },
+      'asst_ljWenYnbNEERVydsDaeVSHVl': { // CDS Pro (fallback fiable)
+        maxAttempts: 15,
+        globalTimeout: 18000  // 18 secondes
+      },
+      'asst_MxbbQeTimcxV2mYR0KwAPNsu': { // PrepaCDS (questions rapides)
+        maxAttempts: 12,
+        globalTimeout: 15000  // 15 secondes
+      }
+    };
+    
+    // Utiliser la config spécifique ou fallback
+    const specificConfig = assistantConfigs[assistantId];
+    if (specificConfig) return specificConfig;
+    
+    // Config générique pour assistants inconnus
+    if (diagnostic && diagnostic.failureCount >= 3) {  // Seuil relevé de 0 à 3
       return {
-        maxAttempts: 8,        // Réduit de 15 à 8
-        globalTimeout: 8000    // Réduit de 12s à 8s
+        maxAttempts: 10,
+        globalTimeout: 12000
       };
     }
     
-    // Configuration standard pour les assistants fiables
     return {
       maxAttempts: 15,
-      globalTimeout: 12000
+      globalTimeout: 18000  // De 12s à 18s par défaut
     };
   }
 
