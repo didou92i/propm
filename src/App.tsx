@@ -23,6 +23,7 @@ const JobManagePage = lazy(() => import("./pages/JobManage"));
 const Training = lazy(() => import("./pages/Training"));
 const TrainingWelcome = lazy(() => import("./pages/TrainingWelcome"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
+const LegalImport = lazy(() => import("./pages/LegalImport"));
 
 const queryClient = new QueryClient();
 
@@ -78,6 +79,11 @@ const App = () => (
             <Route path="/diagnostics" element={
               <ProtectedRoute>
                 <Diagnostics />
+              </ProtectedRoute>
+            } />
+            <Route path="/import-legal" element={
+              <ProtectedRoute>
+                <LegalImport />
               </ProtectedRoute>
             } />
             <Route path="/training" element={
