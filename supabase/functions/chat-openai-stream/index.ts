@@ -152,6 +152,14 @@ serve(async (req) => {
     const runData = await runResponse.json();
     const runId = runData.id;
 
+    console.log(`chat-openai-stream: using dynamic config for ${selectedAgent}`, {
+      assistantId,
+      maxAttempts: optimizedConfig.maxAttempts,
+      globalTimeout: optimizedConfig.globalTimeout,
+      isSSE: isStreamingRequest,
+      source: 'AssistantMapper.getOptimizedConfig'
+    });
+    
     console.log(`chat-openai-stream: starting optimized polling {
   runId: "${runId}",
   config: { maxAttempts: ${optimizedConfig.maxAttempts}, globalTimeout: ${optimizedConfig.globalTimeout}, isSSE: ${isStreamingRequest} }
@@ -170,7 +178,7 @@ serve(async (req) => {
         threadId,
         runId,
         maxAttempts: optimizedConfig.maxAttempts,
-        globalTimeout: optimizedConfig.globalTimeout + 3000, // PollingService a besoin de plus de temps
+        globalTimeout: optimizedConfig.globalTimeout,
         maxRequiresActionAttempts: 3
       });
     } catch (pollingError: any) {

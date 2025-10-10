@@ -134,10 +134,10 @@ export class AssistantMapper {
         maxAttempts: 20,
         globalTimeout: 25000  // 25 secondes
       },
-      'asst_ljWenYnbNEERVydsDaeVSHVl': { // CDS Pro (fallback fiable)
-        maxAttempts: 15,
-        globalTimeout: 18000  // 18 secondes
-      },
+    'asst_ljWenYnbNEERVydsDaeVSHVl': { // CDS Pro (fallback fiable)
+      maxAttempts: 18,
+      globalTimeout: 22000  // 22 secondes
+    },
       'asst_MxbbQeTimcxV2mYR0KwAPNsu': { // PrepaCDS (questions rapides)
         maxAttempts: 12,
         globalTimeout: 15000  // 15 secondes
