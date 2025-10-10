@@ -17,11 +17,13 @@ import {
   TrendingUp,
   Calendar,
   Play,
-  Settings
+  Settings,
+  RefreshCw
 } from 'lucide-react';
 import { useTrainingStats } from '@/hooks/training/useTrainingStats';
 import { ResponsiveGrid, ResponsiveCardContainer } from '@/components/ui/responsive-grid';
 import { EnhancedButton } from '@/components/ui/enhanced-mobile-support';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface SimplifiedTrainingDashboardProps {
   onStartTraining?: () => Promise<void>;
@@ -32,12 +34,16 @@ export const SimplifiedTrainingDashboard: React.FC<SimplifiedTrainingDashboardPr
   onStartTraining,
   onShowConfiguration
 }) => {
-  const { metrics, chartData, achievements, isLoading } = useTrainingStats();
+  const { metrics, chartData, achievements, isLoading, refreshSessionData } = useTrainingStats();
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="space-y-4 p-4 sm:p-6 max-w-6xl mx-auto">
+        <Skeleton className="h-24 w-full" />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-24" />)}
+        </div>
+        <Skeleton className="h-64 w-full" />
       </div>
     );
   }
@@ -50,13 +56,24 @@ export const SimplifiedTrainingDashboard: React.FC<SimplifiedTrainingDashboardPr
     >
       {/* Header avec action principale */}
       <div className="flex flex-col gap-4">
-        <div className="text-center sm:text-left">
-          <h1 className="text-xl sm:text-2xl font-bold text-foreground">
-            Dashboard Formation
-          </h1>
-          <p className="text-sm sm:text-base text-muted-foreground">
-            Suivez votre progression et continuez votre entraînement
-          </p>
+        <div className="flex items-center justify-between">
+          <div className="text-center sm:text-left flex-1">
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">
+              Dashboard Formation
+            </h1>
+            <p className="text-sm sm:text-base text-muted-foreground">
+              Suivez votre progression et continuez votre entraînement
+            </p>
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={refreshSessionData}
+            disabled={isLoading}
+            className="glass-subtle"
+          >
+            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+          </Button>
         </div>
         
         <div className="flex flex-col gap-3">
@@ -118,7 +135,7 @@ export const SimplifiedTrainingDashboard: React.FC<SimplifiedTrainingDashboardPr
               <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0" />
               <div className="min-w-0">
                 <p className="text-xs sm:text-sm text-muted-foreground">Temps Total</p>
-                <p className="text-lg sm:text-2xl font-bold truncate">{Math.round(((metrics as any).totalTimeMinutes || 0) / 60)}h</p>
+                <p className="text-lg sm:text-2xl font-bold truncate">{Math.round((metrics.totalTimeMinutes || 0) / 60)}h</p>
               </div>
             </div>
           </CardContent>

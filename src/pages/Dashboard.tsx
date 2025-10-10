@@ -5,6 +5,8 @@ import { ArrowLeft, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { BetaIndicator } from '@/components/common/BetaIndicator';
+import { ErrorBoundary } from 'react-error-boundary';
+import { ErrorFallback } from '@/components/layout/ErrorFallback';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -45,7 +47,9 @@ const Dashboard = () => {
           </div>
 
           {/* Monitoring Dashboard */}
-          <MonitoringDashboard />
+          <ErrorBoundary FallbackComponent={ErrorFallback}>
+            <MonitoringDashboard />
+          </ErrorBoundary>
         </div>
       </motion.div>
     </div>

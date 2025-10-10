@@ -1,76 +1,64 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { MonitoringStats, HealthStatus } from '@/components/monitoring/types';
+import { supabase } from '@/integrations/supabase/client';
 
 export function useMonitoringStats() {
   const [stats, setStats] = useState<MonitoringStats>({
     openai: {
-      tokensUsed: 125_430,
-      requestsCount: 1_254,
-      averageResponseTime: 2.3,
-      successRate: 98.5,
-      errors: [
-        { timestamp: '2024-01-15 14:30:00', error: 'Rate limit exceeded', severity: 'medium' },
-        { timestamp: '2024-01-15 13:45:00', error: 'Timeout error', severity: 'low' },
-        { timestamp: '2024-01-15 12:15:00', error: 'Invalid request format', severity: 'high' }
-      ]
+      tokensUsed: 0,
+      requestsCount: 0,
+      averageResponseTime: 0,
+      successRate: 100,
+      errors: []
     },
     edgeFunctions: {
-      totalCalls: 5_421,
-      averageLatency: 450,
-      errorRate: 2.1,
-      recentErrors: [
-        { function: 'chat-openai-stream', timestamp: '2024-01-15 15:20:00', error: 'Database connection timeout', severity: 'high' },
-        { function: 'process-document', timestamp: '2024-01-15 14:55:00', error: 'File parsing error', severity: 'medium' },
-        { function: 'generate-embedding', timestamp: '2024-01-15 14:30:00', error: 'OpenAI API error', severity: 'low' }
-      ]
+      totalCalls: 0,
+      averageLatency: 0,
+      errorRate: 0,
+      recentErrors: []
     },
     documents: {
-      totalProcessed: 2_156,
-      processingQueue: 12,
-      averageProcessingTime: 3.8,
-      failureRate: 1.2
+      totalProcessed: 0,
+      processingQueue: 0,
+      averageProcessingTime: 0,
+      failureRate: 0
     },
     system: {
-      uptime: 99.8,
-      activeUsers: 47,
-      conversationsToday: 284,
-      memoryUsage: 68
+      uptime: 100,
+      activeUsers: 0,
+      conversationsToday: 0,
+      memoryUsage: 0
     }
   });
 
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
   const refreshStats = useCallback(async () => {
-    // Production: removed debug logging
+    if (isRefreshing) return;
     
-    // Simulation de l'actualisation des données
-    setStats(prevStats => ({
-      ...prevStats,
-      openai: {
-        ...prevStats.openai,
-        tokensUsed: prevStats.openai.tokensUsed + Math.floor(Math.random() * 100),
-        requestsCount: prevStats.openai.requestsCount + Math.floor(Math.random() * 10),
-        averageResponseTime: +(prevStats.openai.averageResponseTime + (Math.random() - 0.5) * 0.2).toFixed(1),
-        successRate: +(Math.max(95, Math.min(100, prevStats.openai.successRate + (Math.random() - 0.5) * 2))).toFixed(1)
-      },
-      edgeFunctions: {
-        ...prevStats.edgeFunctions,
-        totalCalls: prevStats.edgeFunctions.totalCalls + Math.floor(Math.random() * 20),
-        averageLatency: Math.floor(prevStats.edgeFunctions.averageLatency + (Math.random() - 0.5) * 50),
-        errorRate: +(Math.max(0, Math.min(10, prevStats.edgeFunctions.errorRate + (Math.random() - 0.5) * 0.5))).toFixed(1)
-      },
-      documents: {
-        ...prevStats.documents,
-        totalProcessed: prevStats.documents.totalProcessed + Math.floor(Math.random() * 5),
-        processingQueue: Math.max(0, prevStats.documents.processingQueue + Math.floor((Math.random() - 0.7) * 5)),
-        averageProcessingTime: +(prevStats.documents.averageProcessingTime + (Math.random() - 0.5) * 0.3).toFixed(1)
-      },
-      system: {
-        ...prevStats.system,
-        activeUsers: Math.max(0, prevStats.system.activeUsers + Math.floor((Math.random() - 0.5) * 10)),
-        conversationsToday: prevStats.system.conversationsToday + Math.floor(Math.random() * 3),
-        memoryUsage: Math.max(30, Math.min(90, prevStats.system.memoryUsage + Math.floor((Math.random() - 0.5) * 10)))
+    setIsRefreshing(true);
+    console.log('useMonitoringStats: fetching real data from Edge Function');
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('get-monitoring-stats', {
+        method: 'GET'
+      });
+
+      if (error) {
+        console.error('useMonitoringStats: error fetching stats', error);
+        return;
       }
-    }));
-  }, []);
+
+      if (data) {
+        console.log('useMonitoringStats: received real stats', data);
+        setStats(data);
+      }
+    } catch (error) {
+      console.error('useMonitoringStats: exception', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [isRefreshing]);
 
   const getHealthStatus = useCallback((): HealthStatus => {
     const issues: string[] = [];
@@ -134,9 +122,51 @@ export function useMonitoringStats() {
     }
   }, []);
 
+  // Charger les stats au montage
   useEffect(() => {
-    const interval = setInterval(refreshStats, 30000); // Auto-refresh every 30 seconds
-    return () => clearInterval(interval);
+    refreshStats();
+  }, []);
+
+  // Auto-refresh intelligent avec pause si tab inactive
+  useEffect(() => {
+    const refreshInterval = import.meta.env.PROD ? 60000 : 30000; // 1min en prod, 30s en dev
+    let interval: NodeJS.Timeout | null = null;
+
+    const startRefresh = () => {
+      if (interval) return;
+      interval = setInterval(refreshStats, refreshInterval);
+    };
+
+    const stopRefresh = () => {
+      if (interval) {
+        clearInterval(interval);
+        interval = null;
+      }
+    };
+
+    // Gérer la visibilité de la page
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        console.log('useMonitoringStats: pausing auto-refresh (tab inactive)');
+        stopRefresh();
+      } else {
+        console.log('useMonitoringStats: resuming auto-refresh (tab active)');
+        refreshStats(); // Refresh immédiat au retour
+        startRefresh();
+      }
+    };
+
+    // Démarrer auto-refresh si la page est visible
+    if (!document.hidden) {
+      startRefresh();
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      stopRefresh();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [refreshStats]);
 
   return {

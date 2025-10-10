@@ -82,12 +82,12 @@ const App = () => (
             } />
             <Route path="/training" element={
               <ProtectedRoute>
-                <TrainingWelcome />
+                <Training />
               </ProtectedRoute>
             } />
             <Route path="/training/dashboard" element={
               <ProtectedRoute>
-                <Training />
+                <Dashboard />
               </ProtectedRoute>
             } />
             <Route path="/dashboard" element={

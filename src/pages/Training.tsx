@@ -12,6 +12,8 @@ import { useAgentTheme } from "@/hooks/useAgentTheme";
 import { useTrainingPage } from '@/hooks/useTrainingPage';
 import { createTestTrainingData } from '@/utils/createTestTrainingData';
 import { DEFAULT_TRAINING_CONFIG } from '@/config/training';
+import { ErrorBoundary } from 'react-error-boundary';
+import { ErrorFallback } from '@/components/layout/ErrorFallback';
 
 const Training = () => {
   const [selectedAgent, setSelectedAgent] = useState("prepacds");
@@ -82,10 +84,12 @@ const Training = () => {
       >
         {/* DASHBOARD SIMPLIFIÉ */}
         {!showConfiguration && (
+          <ErrorBoundary FallbackComponent={ErrorFallback}>
             <SimplifiedTrainingDashboard 
               onStartTraining={handleStartTraining}
               onShowConfiguration={handleShowConfiguration}
             />
+          </ErrorBoundary>
         )}
 
         {/* Configuration Section */}
@@ -99,17 +103,19 @@ const Training = () => {
         )}
 
         {/* DEBUG PANEL (Développement uniquement) */}
-        <DebugPanel
-          sessionData={sessionData}
-          isEmpty={isEmpty}
-          user={user}
-          configuration={configuration}
-          isTrainingActive={isTrainingActive}
-          showConfiguration={showConfiguration}
-          isLoading={isLoading}
-          onRefresh={refreshSessionData}
-          onCreateTestData={handleCreateTestData}
-        />
+        {import.meta.env.DEV && (
+          <DebugPanel
+            sessionData={sessionData}
+            isEmpty={isEmpty}
+            user={user}
+            configuration={configuration}
+            isTrainingActive={isTrainingActive}
+            showConfiguration={showConfiguration}
+            isLoading={isLoading}
+            onRefresh={refreshSessionData}
+            onCreateTestData={handleCreateTestData}
+          />
+        )}
       </TrainingLayout>
     </ProtectedTrainingRoute>
   );
