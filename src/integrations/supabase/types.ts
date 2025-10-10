@@ -501,6 +501,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      get_index_performance: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       get_security_monitoring_data: {
         Args: Record<PropertyKey, never>
         Returns: Json
