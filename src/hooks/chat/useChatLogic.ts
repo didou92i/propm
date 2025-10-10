@@ -219,10 +219,19 @@ export function useChatLogic(selectedAgent: string) {
         };
       }
 
+      console.log('📎 Document processing:', {
+        originalContent: content,
+        enrichedContent: messageContent,
+        attachmentsCount: processedAttachments.length,
+        hasEnrichment: messageContent !== content
+      });
+
+      // Send the streaming message with enriched content
       await sendStreamingMessage(
         messagesToSend,
         selectedAgent,
         userSession,
+        messageContent, // Pass enriched content with attachments
         // onMessageUpdate
         (content: string) => {
           onMessagesUpdate(prev => prev.map(msg => 

@@ -100,10 +100,12 @@ export function useOptimizedChatEngine(agentId: string, useSSE: boolean = false)
     
     console.log(`Using ${useSSE ? 'SSE' : 'JSON'} streaming for agent: ${agentId}`);
     
+    // Pass empty enrichedContent as this hook doesn't handle attachments
     return sendStreamingMessage(
       optimizedMessages,
       agentId,
       userSession,
+      '', // enrichedContent - empty for generic hook
       onMessageUpdate,
       onComplete,
       onError

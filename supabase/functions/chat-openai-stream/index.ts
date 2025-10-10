@@ -49,8 +49,18 @@ serve(async (req) => {
       throw new Error('User not authenticated');
     }
 
-    const { messages, selectedAgent, userSession } = await req.json();
+    const { messages, selectedAgent, userSession, enrichedContent } = await req.json();
     const lastMessage = messages[messages.length - 1];
+    
+    // Use enriched content (with attachments) if provided, otherwise use original message
+    const messageContent = enrichedContent || lastMessage.content;
+    
+    console.log('📨 Sending to OpenAI:', {
+      contentLength: messageContent.length,
+      hasAttachments: lastMessage.attachments?.length > 0,
+      hasEnrichment: !!enrichedContent,
+      enrichedContentSample: messageContent.substring(0, 200)
+    });
     
     // Configuration optimisée par assistant avec diagnostic
     const assistantId = AssistantMapper.getAssistantId(selectedAgent);
@@ -105,7 +115,7 @@ serve(async (req) => {
       threadCacheService.updateUsage(cacheKey);
     }
 
-    // Add user message to thread
+    // Add user message to thread (with enriched content including attachments)
     await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
       method: 'POST',
       headers: {
@@ -115,7 +125,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         role: 'user',
-        content: lastMessage.content
+        content: messageContent
       })
     });
 

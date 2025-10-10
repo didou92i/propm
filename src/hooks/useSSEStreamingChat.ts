@@ -33,6 +33,7 @@ export function useSSEStreamingChat() {
     messages: Message[],
     selectedAgent: string,
     userSession: any,
+    enrichedContent: string,
     onMessageUpdate: (content: string, isComplete: boolean) => void,
     onComplete: (content: string, threadId?: string) => void,
     onError: (error: string) => void

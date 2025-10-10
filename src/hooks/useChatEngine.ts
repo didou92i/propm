@@ -28,10 +28,12 @@ export function useChatEngine(agentId: string) {
     // Optimise les messages avant envoi
     const optimizedMessages = optimizeMessages(messages);
     
+    // Pass empty enrichedContent as this hook doesn't handle attachments
     return sendStreamingMessage(
       optimizedMessages,
       agentId,
       userSession,
+      '', // enrichedContent - empty for generic hook
       onMessageUpdate,
       onComplete,
       onError
