@@ -91,7 +91,7 @@ class HierarchicalEmbeddingService {
   }
 
   /**
-   * Perform hierarchical search with score fusion
+   * Perform hierarchical search with score fusion using optimized HNSW index
    */
   async hierarchicalSearch(
     query: string,
@@ -105,6 +105,8 @@ class HierarchicalEmbeddingService {
       };
     } = {}
   ): Promise<SearchResult[]> {
+    const searchStart = performance.now();
+    
     const { 
       maxResults = 10, 
       threshold = 0.3,
@@ -112,10 +114,12 @@ class HierarchicalEmbeddingService {
     } = options;
 
     try {
+      console.log(`🔍 [HierarchicalSearch] Starting hierarchical search: "${query.substring(0, 50)}..."`);
+      
       // Generate query embedding
       const queryEmbedding = await this.getCachedEmbedding(query);
 
-      // Search at different levels
+      // Search at different levels using HNSW-optimized RPC
       const [titleResults, paragraphResults, documentResults] = await Promise.all([
         this.searchAtLevel(queryEmbedding, 'title', maxResults * 2),
         this.searchAtLevel(queryEmbedding, 'paragraph', maxResults * 2),
@@ -131,12 +135,18 @@ class HierarchicalEmbeddingService {
       );
 
       // Filter by threshold and limit results
-      return fusedResults
+      const filteredResults = fusedResults
         .filter(result => result.hierarchicalScores.fusedScore >= threshold)
         .slice(0, maxResults);
 
+      const totalTime = performance.now() - searchStart;
+      console.log(`✅ [HierarchicalSearch] Completed in ${totalTime.toFixed(0)}ms with HNSW index (${filteredResults.length} results)`);
+
+      return filteredResults;
+
     } catch (error) {
-      console.error('Error in hierarchical search:', error);
+      const totalTime = performance.now() - searchStart;
+      console.error(`❌ [HierarchicalSearch] Error after ${totalTime.toFixed(0)}ms:`, error);
       return [];
     }
   }
@@ -213,30 +223,37 @@ class HierarchicalEmbeddingService {
   }
 
   /**
-   * Search at a specific hierarchical level
+   * Search at a specific hierarchical level using optimized HNSW index
    */
   private async searchAtLevel(
     queryEmbedding: number[],
     level: 'title' | 'paragraph' | 'document',
     maxResults: number
   ): Promise<any[]> {
+    const searchStart = performance.now();
+    
     try {
-      const { data, error } = await supabase
-        .from('documents')
-        .select('id, content, metadata, embedding')
-        .limit(maxResults);
+      console.log(`🔍 [HierarchicalSearch] Searching at level: ${level} (HNSW index)`);
+      
+      // Use optimized match_documents_hierarchical RPC function with HNSW index
+      const { data, error } = await supabase.rpc('match_documents_hierarchical', {
+        query_embedding: `[${queryEmbedding.join(',')}]`,
+        match_count: maxResults,
+        level_filter: level
+      });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ [HierarchicalSearch] RPC error:', error);
+        throw error;
+      }
 
-      // Calculate similarities manually for now
-      const results = (data || []).map(doc => ({
-        ...doc,
-        similarity: Math.random() * 0.5 + 0.5 // Temporary similarity calculation
-      }));
+      const searchTime = performance.now() - searchStart;
+      console.log(`✅ [HierarchicalSearch] Level ${level} search completed in ${searchTime.toFixed(0)}ms using HNSW (${data?.length || 0} results)`);
 
-      return results;
+      return data || [];
     } catch (error) {
-      console.error('Search error:', error);
+      const searchTime = performance.now() - searchStart;
+      console.error(`❌ [HierarchicalSearch] Search error at level ${level} (${searchTime.toFixed(0)}ms):`, error);
       return [];
     }
   }

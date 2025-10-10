@@ -49,7 +49,7 @@ export const useLlamaSearch = (options: UseLlamaSearchOptions = {}) => {
   }, []);
 
   /**
-   * Perform enhanced semantic search
+   * Perform enhanced semantic search with performance logging
    */
   const search = useCallback(async (
     query: string,
@@ -57,10 +57,13 @@ export const useLlamaSearch = (options: UseLlamaSearchOptions = {}) => {
   ): Promise<LlamaSearchResult[]> => {
     if (!query.trim()) return [];
 
+    const searchStart = performance.now();
     setIsSearching(true);
     setError(null);
 
     try {
+      console.log(`🔍 [LlamaSearch] Starting search: "${query.substring(0, 50)}..."`);
+      
       const mergedOptions = { ...defaultOptions, ...searchOptions };
       const results = await llamaIndexService.search(query, mergedOptions);
 
@@ -72,9 +75,13 @@ export const useLlamaSearch = (options: UseLlamaSearchOptions = {}) => {
         return updated.slice(0, 15); // Keep last 15 searches
       });
 
+      const searchTime = performance.now() - searchStart;
+      console.log(`✅ [LlamaSearch] Completed in ${searchTime.toFixed(0)}ms (${results.length} results)`);
+
       return results;
     } catch (error) {
-      logger.error('LlamaIndex search error', error, 'useLlamaSearch');
+      const searchTime = performance.now() - searchStart;
+      logger.error(`LlamaIndex search error after ${searchTime.toFixed(0)}ms`, error, 'useLlamaSearch');
       setError(error instanceof Error ? error.message : 'Search failed');
       return [];
     } finally {

@@ -61,17 +61,26 @@ export const useSemanticSearch = () => {
   ): Promise<SearchResult[]> => {
     if (!query.trim()) return [];
 
+    const searchStart = performance.now();
     setIsSearching(true);
+    
     try {
+      console.log(`🔍 [SemanticSearch] Starting semantic search: "${query.substring(0, 50)}..."`);
+      
       // Generate embedding for the search query
       const queryEmbedding = await generateEmbedding(query);
 
-      // Search for similar documents using the existing function
-      const { data: results } = await supabase.rpc('match_documents', {
+      // Search for similar documents using optimized HNSW index
+      const { data: results, error: searchError } = await supabase.rpc('match_documents', {
         query_embedding: `[${queryEmbedding.join(',')}]`,
         match_count: options.maxResults || 10,
         filter: options.boostTitles ? { boost_titles: true } : {}
       });
+
+      if (searchError) {
+        console.error('❌ [SemanticSearch] RPC error:', searchError);
+        throw searchError;
+      }
 
       if (results) {
         // Enhanced scoring with multiple factors
@@ -96,12 +105,16 @@ export const useSemanticSearch = () => {
           return updated.slice(0, 10); // Keep last 10 searches
         });
 
+        const searchTime = performance.now() - searchStart;
+        console.log(`✅ [SemanticSearch] Completed in ${searchTime.toFixed(0)}ms using HNSW index (${enhancedResults.length} results)`);
+
         return enhancedResults;
       }
 
       return [];
     } catch (error) {
-      console.error('Semantic search error:', error);
+      const searchTime = performance.now() - searchStart;
+      console.error(`❌ [SemanticSearch] Error after ${searchTime.toFixed(0)}ms:`, error);
       return [];
     } finally {
       setIsSearching(false);
@@ -153,20 +166,42 @@ export const useSemanticSearch = () => {
   }, [searchHistory]);
 
   const findSimilarDocuments = useCallback(async (documentId: string): Promise<SearchResult[]> => {
+    const searchStart = performance.now();
+    
     try {
-      const { data: document } = await supabase
+      console.log(`🔍 [SemanticSearch] Finding similar documents for ID: ${documentId}`);
+      
+      // First, get the document's embedding using RPC
+      const { data: document, error: docError } = await supabase
         .from('documents')
         .select('embedding, content')
         .eq('id', documentId)
         .single();
 
-      if (!document?.embedding) return [];
+      if (docError) {
+        console.error('❌ [SemanticSearch] Error fetching document:', docError);
+        return [];
+      }
 
-      const { data: similar } = await supabase.rpc('match_documents', {
+      if (!document?.embedding) {
+        console.warn('⚠️ [SemanticSearch] No embedding found for document');
+        return [];
+      }
+
+      // Use optimized HNSW index to find similar documents
+      const { data: similar, error: similarError } = await supabase.rpc('match_documents', {
         query_embedding: document.embedding,
         match_count: 5,
         filter: { exclude_id: documentId }
       });
+
+      if (similarError) {
+        console.error('❌ [SemanticSearch] RPC error:', similarError);
+        throw similarError;
+      }
+
+      const searchTime = performance.now() - searchStart;
+      console.log(`✅ [SemanticSearch] Found ${similar?.length || 0} similar documents in ${searchTime.toFixed(0)}ms using HNSW`);
 
       if (similar) {
         return similar.map((result: any) => ({
@@ -180,7 +215,8 @@ export const useSemanticSearch = () => {
 
       return [];
     } catch (error) {
-      console.error('Error finding similar documents:', error);
+      const searchTime = performance.now() - searchStart;
+      console.error(`❌ [SemanticSearch] Error finding similar documents (${searchTime.toFixed(0)}ms):`, error);
       return [];
     }
   }, []);

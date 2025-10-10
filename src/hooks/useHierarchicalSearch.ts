@@ -24,8 +24,12 @@ export const useHierarchicalSearch = () => {
   ): Promise<SearchResult[]> => {
     if (!query.trim()) return [];
 
+    const searchStart = performance.now();
     setIsSearching(true);
+    
     try {
+      console.log(`🔍 [HierarchicalSearch Hook] Starting hierarchical search: "${query.substring(0, 50)}..."`);
+      
       const results = await hierarchicalEmbeddingService.hierarchicalSearch(
         query,
         {
@@ -48,9 +52,13 @@ export const useHierarchicalSearch = () => {
         setCacheStats(hierarchicalEmbeddingService.getCacheStats());
       }
 
+      const searchTime = performance.now() - searchStart;
+      console.log(`✅ [HierarchicalSearch Hook] Completed in ${searchTime.toFixed(0)}ms (${results.length} results)`);
+
       return results;
     } catch (error) {
-      console.error('Hierarchical search error:', error);
+      const searchTime = performance.now() - searchStart;
+      console.error(`❌ [HierarchicalSearch Hook] Error after ${searchTime.toFixed(0)}ms:`, error);
       return [];
     } finally {
       setIsSearching(false);
