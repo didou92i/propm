@@ -39,6 +39,9 @@ verify_jwt = true
 [functions.chat-openai-stream]
 verify_jwt = true
 
+[functions.chat-direct-openai]
+verify_jwt = true
+
 [functions.chat-completions-stream]
 verify_jwt = true
 

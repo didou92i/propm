@@ -22,6 +22,22 @@ interface PollResult {
 }
 
 export class PollingService {
+  // Optimized configs per assistant
+  private static getOptimizedConfig(assistantId: string): { maxAttempts: number; globalTimeout: number } {
+    const assistantConfigs: Record<string, { maxAttempts: number; globalTimeout: number }> = {
+      'asst_ljWenYnbNEERVydsDaeVSHVl': { // CDS Pro - needs more time for searches
+        maxAttempts: 30,
+        globalTimeout: 45000
+      },
+      'asst_CtHWn8zs3eLcmEXbBU8J4x0w': { // RedacPro
+        maxAttempts: 25,
+        globalTimeout: 35000
+      }
+    };
+    
+    return assistantConfigs[assistantId] || { maxAttempts: 20, globalTimeout: 25000 };
+  }
+
   static async pollForCompletion(config: PollConfig): Promise<PollResult> {
     const { openAIApiKey, threadId, runId, maxAttempts = 20, globalTimeout, maxRequiresActionAttempts, isSSE = false } = config;
     
@@ -79,25 +95,8 @@ export class PollingService {
           const statusData = await statusResponse.json();
           runStatus = statusData.status;
           
-          // Retry intelligent pour runs bloqués
-          if (runStatus === 'in_progress' && attempts === Math.floor(maxAttempts / 2)) {
-            console.warn(`polling-service: run stuck in_progress, restarting { runId: "${runId}", attempts: ${attempts} }`);
-            
-            try {
-              await fetch(`https://api.openai.com/v1/threads/${threadId}/runs/${runId}/cancel`, {
-                method: 'POST',
-                headers: {
-                  'Authorization': `Bearer ${openAIApiKey}`,
-                  'OpenAI-Beta': 'assistants=v2'
-                }
-              });
-              
-              // Attendre 1 seconde puis reprendre
-              await new Promise(resolve => setTimeout(resolve, 1000));
-            } catch (cancelError) {
-              console.error('Failed to cancel stuck run:', cancelError);
-            }
-          }
+          // Allow more time for complex queries - don't restart stuck runs
+          // The assistant needs time to process, especially for CDS Pro searches
           
           // Log de progression intelligent
           if (attempts % 5 === 0 || attempts < 5) {

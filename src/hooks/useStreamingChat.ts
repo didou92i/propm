@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Message } from '@/types/chat';
 import { logger } from '@/utils/logger';
 import { usePerformanceMonitor } from '@/hooks/performance/usePerformanceMonitor';
+import { getAgentSystemPrompt, supportsDirectAPI } from '@/config/prompts';
 
 interface StreamingState {
   isStreaming: boolean;
@@ -40,6 +41,9 @@ export function useStreamingChat() {
     // Start performance monitoring
     const optimizedParams = startSession(sessionId, messageLength, selectedAgent);
     
+    // Mode Direct API activé pour les agents compatibles
+    const USE_DIRECT_API = supportsDirectAPI(selectedAgent);
+    
     try {
       setStreamingState({
         isStreaming: true,
@@ -62,15 +66,38 @@ export function useStreamingChat() {
         throw new Error('Session non disponible');
       }
 
-      // Utiliser chat-openai-stream pour compatibilité JSON
-      const { data, error } = await supabase.functions.invoke('chat-openai-stream', {
-        body: {
-          messages,
-          selectedAgent,
-          userSession,
-          enrichedContent
-        }
-      });
+      let data, error;
+
+      if (USE_DIRECT_API) {
+        // Mode Direct : appel direct à OpenAI Chat Completions
+        logger.info(`Using Direct API mode for ${selectedAgent}`);
+        
+        const result = await supabase.functions.invoke('chat-direct-openai', {
+          body: {
+            messages,
+            selectedAgent,
+            systemPrompt: getAgentSystemPrompt(selectedAgent)
+          }
+        });
+        
+        data = result.data;
+        error = result.error;
+      } else {
+        // Mode Assistant classique
+        logger.info(`Using Assistant API mode for ${selectedAgent}`);
+        
+        const result = await supabase.functions.invoke('chat-openai-stream', {
+          body: {
+            messages,
+            selectedAgent,
+            userSession,
+            enrichedContent
+          }
+        });
+        
+        data = result.data;
+        error = result.error;
+      }
 
       if (error) {
         throw new Error(`Erreur: ${error.message}`);
