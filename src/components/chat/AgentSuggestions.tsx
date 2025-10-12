@@ -15,12 +15,12 @@ export function AgentSuggestions({ agentId, onSuggestionClick }: AgentSuggestion
   }
 
   return (
-    <div className="w-full">
-      <div className="max-w-4xl mx-auto px-2 sm:px-4">
-        <h3 className="text-base sm:text-lg font-medium text-center mb-4 sm:mb-6 text-muted-foreground">
+    <div className="w-full max-w-full overflow-x-hidden">
+      <div className="max-w-4xl mx-auto px-3 sm:px-4 w-full">
+        <h3 className="text-sm sm:text-base lg:text-lg font-medium text-center mb-3 sm:mb-4 lg:mb-6 text-muted-foreground px-2">
           Suggestions pour vous aider à commencer
         </h3>
-        <div className="grid gap-2 sm:gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-2 sm:gap-3 w-full grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {suggestions.map((suggestion, index) => (
             <EnhancedButton
               key={index}

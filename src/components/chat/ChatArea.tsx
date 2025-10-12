@@ -4,6 +4,7 @@ import { useAgent } from "@/hooks/useAgent";
 import { useConversationHistory } from "@/hooks/useConversationHistory";
 import { useChatLogic } from "@/hooks/chat/useChatLogic";
 import { useCdsProEnhancements } from "@/hooks/chat/useCdsProEnhancements";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Message } from "@/types/chat";
 import { logger } from '@/utils/logger';
 import { toast } from "sonner";
@@ -165,13 +166,15 @@ export function ChatArea({
   const currentAgent = useAgent(selectedAgent);
   const agentInfoData = agentInfo[selectedAgent as keyof typeof agentInfo];
 
+  const isMobile = useIsMobile();
+  
   return (
-    <div className="flex flex-col h-full max-w-[min(95vw,4xl)] mx-auto w-full">
+    <div className={`flex flex-col h-full mx-auto w-full ${isMobile ? 'max-w-full px-0' : 'max-w-[min(95vw,4xl)]'}`}>
       {/* Contenu principal */}
       <div className="flex-1 flex flex-col h-full">
         {/* Suggestions de l'assistant pour tous les agents */}
         {messages.length === 0 && (
-          <div className="px-3 sm:px-6 py-4 sm:py-8 flex-shrink-0">
+          <div className={`flex-shrink-0 ${isMobile ? 'px-2 py-3' : 'px-3 sm:px-6 py-4 sm:py-8'}`}>
             <AgentSuggestions
               agentId={selectedAgent}
               onSuggestionClick={(suggestion) => setInput(suggestion)}

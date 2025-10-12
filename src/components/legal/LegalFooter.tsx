@@ -8,12 +8,12 @@ export function LegalFooter() {
   const isMobile = useIsMobile();
 
   return (
-    <footer className={isMobile 
-      ? 'relative border-t bg-background/95 backdrop-blur pb-safe-area-inset-bottom' 
-      : 'fixed bottom-0 left-0 right-0 border-t bg-background/95 backdrop-blur z-20'
+    <footer className={`border-t bg-background/95 backdrop-blur transition-transform duration-300 ${isMobile 
+      ? 'relative w-full overflow-x-hidden pb-safe-area-inset-bottom' 
+      : 'fixed bottom-0 left-0 right-0 z-20'}`
     }>
-      <div className={`max-w-7xl mx-auto ${isMobile ? 'px-3 py-1' : 'px-6 py-2'}`}>
-        <div className={`flex ${isMobile ? 'flex-col gap-1' : 'flex-wrap items-center justify-between gap-4'}`}>
+      <div className={`max-w-7xl mx-auto ${isMobile ? 'px-2 py-2 w-full' : 'px-6 py-2'}`}>
+        <div className={`flex w-full ${isMobile ? 'flex-col gap-2 items-center' : 'flex-wrap items-center justify-between gap-4'}`}>
           <div className={`text-xs text-muted-foreground ${isMobile ? 'text-center' : ''}`}>
             <span>© 2024 RedacPro. Tous droits réservés.</span>
           </div>

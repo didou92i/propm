@@ -67,7 +67,7 @@ export function MobileNavigationTabBar() {
     <motion.div
       initial={{ y: 100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      className="fixed bottom-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-t border-border/40 px-2 py-2 safe-area-bottom"
+      className="fixed bottom-0 left-0 right-0 z-50 w-full max-w-full bg-background/95 backdrop-blur-xl border-t border-border/40 px-2 pb-safe-area-inset-bottom pt-2 shadow-[0_-4px_12px_rgba(0,0,0,0.1)]"
     >
       <div className="flex items-center justify-around max-w-md mx-auto">
         {navigationItems.map((item) => {

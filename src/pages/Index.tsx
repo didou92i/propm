@@ -88,7 +88,7 @@ const Index = () => {
   return (
     <ParallaxBackground className="min-h-screen">
       <SidebarProvider defaultOpen={!isMobile}>
-        <div className="flex min-h-screen w-full theme-transition">
+        <div className="flex min-h-screen w-full max-w-full overflow-x-hidden theme-transition">
           <AppSidebar 
             selectedAgent={selectedAgent} 
             onAgentSelect={handleAgentSelect} 
@@ -115,7 +115,7 @@ const Index = () => {
             </header>
 
             {/* Main Chat Area */}
-            <main className={`flex-1 overflow-auto ${isMobile ? 'pb-20' : 'pb-16'}`}>
+            <main className={`flex-1 overflow-auto w-full max-w-full ${isMobile ? 'pb-24 px-0' : 'pb-16'}`}>
               <ChatArea key={chatKey} selectedAgent={selectedAgent} sharedContext={sharedContext} />
             </main>
           </div>
