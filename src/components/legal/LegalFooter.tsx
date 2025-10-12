@@ -7,68 +7,54 @@ export function LegalFooter() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
 
+  // Ne pas afficher du tout sur mobile
+  if (isMobile) {
+    return null;
+  }
+
   return (
-    <footer className={`border-t bg-background/95 backdrop-blur transition-transform duration-300 ${isMobile 
-      ? 'relative w-full overflow-x-hidden pb-safe-area-inset-bottom' 
-      : 'fixed bottom-0 left-0 right-0 z-20'}`
-    }>
-      <div className={`max-w-7xl mx-auto ${isMobile ? 'px-2 py-2 w-full' : 'px-6 py-2'}`}>
-        <div className={`flex w-full ${isMobile ? 'flex-col gap-2 items-center' : 'flex-wrap items-center justify-between gap-4'}`}>
-          <div className={`text-xs text-muted-foreground ${isMobile ? 'text-center' : ''}`}>
+    <footer className="fixed bottom-0 left-0 right-0 z-30 border-t bg-background/95 backdrop-blur-xl shadow-lg transition-transform duration-300">
+      <div className="max-w-7xl mx-auto px-6 py-2">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="text-xs text-muted-foreground">
             <span>© 2024 RedacPro. Tous droits réservés.</span>
           </div>
           
-          <div className={`flex ${isMobile ? 'justify-center gap-2 text-xs' : 'flex-wrap items-center gap-4 text-xs'} text-muted-foreground`}>
+          <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
             <button 
               onClick={() => navigate('/legal')}
-              className="hover:text-foreground transition-colors underline-offset-4 hover:underline touch-target"
+              className="hover:text-foreground transition-colors underline-offset-4 hover:underline"
             >
-              {isMobile ? 'Légal' : 'Mentions légales'}
+              Mentions légales
             </button>
             
             <span className="text-muted-foreground/40">•</span>
             
             <button 
               onClick={() => navigate('/privacy')}
-              className="hover:text-foreground transition-colors underline-offset-4 hover:underline touch-target"
+              className="hover:text-foreground transition-colors underline-offset-4 hover:underline"
             >
-              {isMobile ? 'RGPD' : 'Confidentialité'}
+              Confidentialité
             </button>
             
             <span className="text-muted-foreground/40">•</span>
             
             <button 
               onClick={() => navigate('/terms')}
-              className="hover:text-foreground transition-colors underline-offset-4 hover:underline touch-target"
+              className="hover:text-foreground transition-colors underline-offset-4 hover:underline"
             >
               CGU
             </button>
             
-            {!isMobile && (
-              <>
-                <span className="text-muted-foreground/40">•</span>
-                <CookiePreferences />
-                <span className="text-muted-foreground/40">•</span>
-                <button 
-                  onClick={() => navigate('/my-data')}
-                  className="hover:text-foreground transition-colors underline-offset-4 hover:underline"
-                >
-                  Mes données
-                </button>
-              </>
-            )}
-            
-            {isMobile && (
-              <>
-                <span className="text-muted-foreground/40">•</span>
-                <button 
-                  onClick={() => navigate('/my-data')}
-                  className="hover:text-foreground transition-colors underline-offset-4 hover:underline touch-target"
-                >
-                  Données
-                </button>
-              </>
-            )}
+            <span className="text-muted-foreground/40">•</span>
+            <CookiePreferences />
+            <span className="text-muted-foreground/40">•</span>
+            <button 
+              onClick={() => navigate('/my-data')}
+              className="hover:text-foreground transition-colors underline-offset-4 hover:underline"
+            >
+              Mes données
+            </button>
           </div>
         </div>
       </div>

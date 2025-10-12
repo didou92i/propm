@@ -118,10 +118,10 @@ const Index = () => {
             <main className={`flex-1 overflow-auto w-full max-w-full ${isMobile ? 'pb-24 px-0' : 'pb-16'}`}>
               <ChatArea key={chatKey} selectedAgent={selectedAgent} sharedContext={sharedContext} />
             </main>
+
+            {/* Legal Footer - Desktop Only */}
+            {!isMobile && <LegalFooter />}
           </div>
-          
-          {/* Legal Footer - Fixed */}
-          <LegalFooter />
           
           {/* Enhanced Floating Action Buttons - Adjusted for mobile */}
           <FloatingActionButton 
