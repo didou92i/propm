@@ -39,14 +39,12 @@ FORMAT REQUIS:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5-2025-08-07', // GPT-5 pour cas juridiques complexes
+        model: 'gpt-4o',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: `Niveau: ${level}, Domaine: ${domain}, Type: ${scenarioType}` }
         ],
-        reasoning: { effort: 'high' }, // ✅ Syntaxe correcte GPT-5
-        text: { verbosity: 'high' },   // ✅ Explications détaillées
-        max_completion_tokens: 3000,
+        temperature: 0.7,
       }),
     });
 

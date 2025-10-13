@@ -279,7 +279,7 @@ IMPORTANT: Réponds UNIQUEMENT avec du JSON valide, sans texte additionnel.`;
 
     console.log('🤖 [API_CALL] Appel OpenAI avec assistant PrepaCDS:', {
       sessionId,
-      model: prepaCdsAssistantId ? 'gpt-5-with-assistant' : 'gpt-5-standard',
+      model: prepaCdsAssistantId ? 'gpt-5-with-assistant' : 'gpt-4.1-standard',
       assistantId: prepaCdsAssistantId,
       trainingType,
       timestamp: new Date().toISOString(),
@@ -297,7 +297,7 @@ IMPORTANT: Réponds UNIQUEMENT avec du JSON valide, sans texte additionnel.`;
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-5-2025-08-07', // GPT-5 pour contenu pédagogique complexe
+          model: 'gpt-4.1-2025-04-14',
           messages: [
             { 
               role: 'system', 
@@ -308,8 +308,6 @@ IMPORTANT: Réponds UNIQUEMENT avec du JSON valide, sans texte additionnel.`;
               content: `Génère maintenant le contenu pour un entraînement ${trainingType} de niveau ${level} en ${domain}.` 
             }
           ],
-          reasoning: { effort: 'medium' }, // ✅ Syntaxe correcte GPT-5
-          text: { verbosity: 'high' },     // ✅ Explications détaillées
           max_completion_tokens: 2500,
           response_format: { type: "json_object" }
         }),
@@ -323,7 +321,7 @@ IMPORTANT: Réponds UNIQUEMENT avec du JSON valide, sans texte additionnel.`;
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-5-2025-08-07', // GPT-5 pour contenu pédagogique
+          model: 'gpt-4.1-2025-04-14',
           messages: [
             { 
               role: 'system', 
@@ -334,8 +332,6 @@ IMPORTANT: Réponds UNIQUEMENT avec du JSON valide, sans texte additionnel.`;
               content: `Génère maintenant le contenu pour un entraînement ${trainingType} de niveau ${level} en ${domain}.` 
             }
           ],
-          reasoning: { effort: 'medium' }, // ✅ Syntaxe correcte GPT-5
-          text: { verbosity: 'high' },     // ✅ Explications détaillées
           max_completion_tokens: 2500,
           response_format: { type: "json_object" }
         }),

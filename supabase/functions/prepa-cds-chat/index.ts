@@ -92,7 +92,7 @@ Réponds de manière structurée et pédagogique.`;
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5-2025-08-07', // GPT-5 pour contenu pédagogique
+        model: 'gpt-4o',
         messages: [
           { 
             role: 'system', 
@@ -103,9 +103,7 @@ Réponds de manière structurée et pédagogique.`;
             content: prompt 
           }
         ],
-        reasoning: { effort: 'medium' }, // ✅ Syntaxe correcte GPT-5
-        text: { verbosity: 'medium' },   // ✅ Réponses équilibrées
-        max_completion_tokens: 2000,
+        max_tokens: 2000,
       }),
     });
 

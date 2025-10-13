@@ -229,7 +229,7 @@ serve(async (req) => {
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-              model: 'gpt-5-2025-08-07', // GPT-5 pour fallback timeout
+              model: 'gpt-4o-mini',
               messages: [
                 { 
                   role: 'system', 
@@ -237,9 +237,8 @@ serve(async (req) => {
                 },
                 { role: 'user', content: messageContent }
               ],
-              reasoning: { effort: 'medium' }, // ✅ Syntaxe correcte GPT-5
-              text: { verbosity: 'medium' },   // ✅ Réponses équilibrées
-              max_completion_tokens: 1500
+              max_tokens: 1500,
+              temperature: 0.7
             })
           });
           
