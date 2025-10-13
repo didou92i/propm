@@ -34,7 +34,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: 'gpt-5-2025-08-07', // GPT-5 pour chat complexe
         messages: [
           { 
             role: 'system', 
@@ -42,14 +42,21 @@ serve(async (req) => {
           },
           ...messages.map((m: any) => ({ role: m.role, content: m.content }))
         ],
-        temperature: 0.7,
-        max_tokens: 2000,
+        reasoning_effort: 'medium', // Équilibre qualité/rapidité
+        max_completion_tokens: 2000, // Nouveau paramètre GPT-5
         stream: false
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
+      
+      // Détecter erreurs paramètres GPT-5 incompatibles
+      if (errorText.includes('temperature') || errorText.includes('top_p') || errorText.includes('max_tokens')) {
+        console.error('chat-direct-openai: Paramètre GPT-5 incompatible détecté', errorText);
+        throw new Error('Configuration GPT-5 invalide - vérifier les paramètres');
+      }
+      
       console.error('chat-direct-openai: OpenAI API error', { status: response.status, error: errorText });
       throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
     }
@@ -65,7 +72,7 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({ 
       content,
-      model: 'gpt-4o',
+      model: 'gpt-5-2025-08-07',
       directAPI: true,
       usage: data.usage
     }), {

@@ -167,7 +167,7 @@ serve(async (req) => {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              model: 'gpt-4.1-2025-04-14',
+              model: 'gpt-5-mini-2025-08-07', // GPT-5 Mini pour extraction de texte simple
               messages: [
                 {
                   role: 'system',
@@ -177,9 +177,11 @@ serve(async (req) => {
                   role: 'user',
                   content: `Extrayez tout le contenu textuel de ce document PDF. Conservez la structure, les titres et les paragraphes.
 
-Document PDF (base64): ${base64.substring(0, 150000)}` // Augmenté à 150k pour GPT-4.1
+Document PDF (base64): ${base64.substring(0, 150000)}` // Augmenté à 150k pour GPT-5 Mini
                 }
               ],
+              reasoning_effort: 'low', // Tâche d'extraction basique
+              verbosity: 'low', // Réponse concise (texte structuré)
               max_completion_tokens: 4000
             }),
           });
