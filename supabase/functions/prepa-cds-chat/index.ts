@@ -103,8 +103,8 @@ Réponds de manière structurée et pédagogique.`;
             content: prompt 
           }
         ],
-        reasoning_effort: 'medium', // Raisonnement pour structurer le contenu
-        verbosity: 'medium', // Réponses détaillées mais concises
+        reasoning: { effort: 'medium' }, // ✅ Syntaxe correcte GPT-5
+        text: { verbosity: 'medium' },   // ✅ Réponses équilibrées
         max_completion_tokens: 2000,
       }),
     });

@@ -308,8 +308,8 @@ IMPORTANT: Réponds UNIQUEMENT avec du JSON valide, sans texte additionnel.`;
               content: `Génère maintenant le contenu pour un entraînement ${trainingType} de niveau ${level} en ${domain}.` 
             }
           ],
-          reasoning_effort: 'medium', // Raisonnement pour structurer le contenu
-          verbosity: 'high', // Explications détaillées pour formation
+          reasoning: { effort: 'medium' }, // ✅ Syntaxe correcte GPT-5
+          text: { verbosity: 'high' },     // ✅ Explications détaillées
           max_completion_tokens: 2500,
           response_format: { type: "json_object" }
         }),
@@ -334,8 +334,8 @@ IMPORTANT: Réponds UNIQUEMENT avec du JSON valide, sans texte additionnel.`;
               content: `Génère maintenant le contenu pour un entraînement ${trainingType} de niveau ${level} en ${domain}.` 
             }
           ],
-          reasoning_effort: 'medium', // Raisonnement pour structurer le contenu
-          verbosity: 'high', // Explications détaillées pour formation
+          reasoning: { effort: 'medium' }, // ✅ Syntaxe correcte GPT-5
+          text: { verbosity: 'high' },     // ✅ Explications détaillées
           max_completion_tokens: 2500,
           response_format: { type: "json_object" }
         }),

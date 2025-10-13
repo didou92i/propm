@@ -44,8 +44,8 @@ FORMAT REQUIS:
           { role: 'system', content: systemPrompt },
           { role: 'user', content: `Niveau: ${level}, Domaine: ${domain}, Type: ${scenarioType}` }
         ],
-        reasoning_effort: 'high', // Raisonnement approfondi pour analyse juridique
-        verbosity: 'high', // Explications détaillées
+        reasoning: { effort: 'high' }, // ✅ Syntaxe correcte GPT-5
+        text: { verbosity: 'high' },   // ✅ Explications détaillées
         max_completion_tokens: 3000,
       }),
     });

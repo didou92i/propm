@@ -180,8 +180,8 @@ serve(async (req) => {
 Document PDF (base64): ${base64.substring(0, 150000)}` // Augmenté à 150k pour GPT-5 Mini
                 }
               ],
-              reasoning_effort: 'low', // Tâche d'extraction basique
-              verbosity: 'low', // Réponse concise (texte structuré)
+              reasoning: { effort: 'low' },  // ✅ Syntaxe correcte GPT-5
+              text: { verbosity: 'low' },     // ✅ Réponse concise
               max_completion_tokens: 4000
             }),
           });

@@ -42,8 +42,9 @@ serve(async (req) => {
           },
           ...messages.map((m: any) => ({ role: m.role, content: m.content }))
         ],
-        reasoning_effort: 'medium', // Équilibre qualité/rapidité
-        max_completion_tokens: 2000, // Nouveau paramètre GPT-5
+        reasoning: { effort: 'medium' }, // ✅ Syntaxe correcte GPT-5
+        text: { verbosity: 'medium' },   // ✅ Contrôle de verbosité
+        max_completion_tokens: 2000,
         stream: false
       }),
     });

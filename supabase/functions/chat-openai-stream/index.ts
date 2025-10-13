@@ -237,7 +237,8 @@ serve(async (req) => {
                 },
                 { role: 'user', content: messageContent }
               ],
-              reasoning_effort: 'medium', // Équilibre qualité/rapidité
+              reasoning: { effort: 'medium' }, // ✅ Syntaxe correcte GPT-5
+              text: { verbosity: 'medium' },   // ✅ Réponses équilibrées
               max_completion_tokens: 1500
             })
           });
