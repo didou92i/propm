@@ -53,8 +53,8 @@ export const useTrainingContent = () => {
       lastRequestId: requestId
     }));
 
-    // Timeout de 30 secondes avec fallback automatique
-    const TIMEOUT_MS = 30000;
+    // Timeout de 60 secondes avec fallback automatique (GPT-5 peut prendre du temps)
+    const TIMEOUT_MS = 60000;
     let timeoutId: NodeJS.Timeout;
 
     const timeoutPromise = new Promise<never>((_, reject) => {
