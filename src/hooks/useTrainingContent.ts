@@ -53,13 +53,29 @@ export const useTrainingContent = () => {
       lastRequestId: requestId
     }));
 
+    // Timeout de 30 secondes avec fallback automatique
+    const TIMEOUT_MS = 30000;
+    let timeoutId: NodeJS.Timeout;
+
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timeoutId = setTimeout(() => {
+        reject(new Error('Timeout: génération trop longue'));
+      }, TIMEOUT_MS);
+    });
+
     try {
-      const result = await trainingContentService.generateContent(
-        trainingType,
-        level,
-        domain,
-        options
-      );
+      // Course entre la génération et le timeout
+      const result = await Promise.race([
+        trainingContentService.generateContent(
+          trainingType,
+          level,
+          domain,
+          options
+        ),
+        timeoutPromise
+      ]);
+
+      clearTimeout(timeoutId!);
 
       setState({
         isLoading: false,
@@ -83,26 +99,68 @@ export const useTrainingContent = () => {
       return result.content;
 
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+      clearTimeout(timeoutId!);
       
-      setState({
-        isLoading: false,
-        content: null,
-        error: errorMessage,
-        source: null,
-        lastRequestId: requestId
-      });
+      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+      const isTimeout = errorMessage.includes('Timeout');
+      
+      console.warn(`[useTrainingContent] Erreur (${isTimeout ? 'timeout' : 'autre'}):`, errorMessage);
+      
+      // Fallback automatique vers le contenu statique si timeout ou erreur
+      try {
+        console.log(`[useTrainingContent] Fallback vers contenu statique...`);
+        
+        // Importer le service de contenu statique
+        const { contentLoader } = await import('@/services/training/contentLoader');
+        const fallbackContent = await contentLoader.generateContent(
+          trainingType,
+          domain,
+          level,
+          options
+        );
 
-      // Mise à jour des métriques
-      setMetrics(trainingContentService.getMetrics());
+        setState({
+          isLoading: false,
+          content: fallbackContent,
+          error: null,
+          source: 'fallback',
+          lastRequestId: requestId
+        });
 
-      // Toast d'erreur
-      toast.error('Erreur de génération', {
-        description: errorMessage,
-        duration: 5000
-      });
+        // Toast d'info pour le fallback
+        toast.info(
+          isTimeout ? 'Génération trop longue, contenu statique utilisé' : 'Contenu statique utilisé',
+          {
+            description: `${trainingType} • ${level} • ${domain}`,
+            duration: 4000
+          }
+        );
 
-      throw error;
+        return fallbackContent;
+
+      } catch (fallbackError) {
+        // Si même le fallback échoue, on affiche l'erreur
+        console.error('[useTrainingContent] Fallback échoué:', fallbackError);
+        
+        setState({
+          isLoading: false,
+          content: null,
+          error: errorMessage,
+          source: null,
+          lastRequestId: requestId
+        });
+
+        // Mise à jour des métriques
+        setMetrics(trainingContentService.getMetrics());
+
+        // Toast d'erreur finale
+        toast.error('Impossible de générer du contenu', {
+          description: errorMessage,
+          duration: 5000
+        });
+
+        throw error;
+      }
     }
   }, []);
 

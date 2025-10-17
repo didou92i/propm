@@ -162,8 +162,8 @@ function setCachedContent(key: string, data: any, ttl: number = CACHE_TTL) {
   console.log(`[CACHE] Contenu mis en cache: ${key} (TTL: ${ttl}ms)`);
 }
 
-// Fonction pour appeler l'Assistant PrepaCDS avec retry et backoff
-async function callPrepaCDSAssistantWithRetry(
+// Fonction pour appeler GPT-5 directement avec retry et backoff
+async function callGPT5WithRetry(
   prompt: string, 
   trainingType: TrainingType,
   level: UserLevel,
@@ -171,39 +171,15 @@ async function callPrepaCDSAssistantWithRetry(
   retries: number = 3
 ): Promise<string> {
   const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
-  const assistantId = Deno.env.get('PREPACDS_ASSISTANT_ID');
   
   if (!openAIApiKey) {
     throw new Error('OpenAI API key not configured');
   }
-  
-  if (!assistantId) {
-    throw new Error('PrepaCDS Assistant ID not configured');
-  }
 
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      console.log(`[PrepaCDS Assistant] Tentative ${attempt}/${retries}`);
+      console.log(`[GPT-5 Direct] Tentative ${attempt}/${retries}`);
       
-      // 1. Créer un thread
-      const threadResponse = await fetch('https://api.openai.com/v1/threads', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${openAIApiKey}`,
-          'Content-Type': 'application/json',
-          'OpenAI-Beta': 'assistants=v2'
-        },
-        body: JSON.stringify({})
-      });
-
-      if (!threadResponse.ok) {
-        throw new Error(`Failed to create thread: ${threadResponse.status}`);
-      }
-
-      const thread = await threadResponse.json();
-      console.log(`[PrepaCDS Assistant] Thread créé: ${thread.id}`);
-
-      // 2. Ajouter le message au thread
       const messageBody = `DEMANDE DE GÉNÉRATION D'ENTRAÎNEMENT PREPACDS
 
 Type d'entraînement: ${trainingType}
@@ -214,112 +190,61 @@ ${prompt}
 
 IMPORTANT: Réponds UNIQUEMENT avec le JSON demandé, sans texte supplémentaire.`;
 
-      const messageResponse = await fetch(`https://api.openai.com/v1/threads/${thread.id}/messages`, {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${openAIApiKey}`,
           'Content-Type': 'application/json',
-          'OpenAI-Beta': 'assistants=v2'
         },
         body: JSON.stringify({
-          role: 'user',
-          content: messageBody
+          model: 'gpt-5-2025-08-07',
+          messages: [
+            {
+              role: 'system',
+              content: `Tu es un expert PrepaCDS spécialisé dans la génération de contenu d'entraînement pour les concours administratifs et de police municipale. Génère du contenu de qualité professionnelle en respectant exactement le format JSON demandé. Tu es reconnu pour la diversité et l'originalité de tes questions.`
+            },
+            {
+              role: 'user',
+              content: messageBody
+            }
+          ],
+          reasoning: { effort: 'medium' },
+          text: { verbosity: 'high' },
+          max_completion_tokens: 4000
         })
       });
 
-      if (!messageResponse.ok) {
-        throw new Error(`Failed to add message: ${messageResponse.status}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`GPT-5 API error: ${response.status} - ${errorText}`);
       }
 
-      // 3. Lancer le run avec l'assistant PrepaCDS
-      const runResponse = await fetch(`https://api.openai.com/v1/threads/${thread.id}/runs`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${openAIApiKey}`,
-          'Content-Type': 'application/json',
-          'OpenAI-Beta': 'assistants=v2'
-        },
-        body: JSON.stringify({
-          assistant_id: assistantId,
-          instructions: `Tu es l'assistant PrepaCDS spécialisé dans la génération de contenu d'entraînement pour les concours administratifs et de police municipale. Génère du contenu de qualité professionnelle en respectant exactement le format JSON demandé.`
-        })
-      });
-
-      if (!runResponse.ok) {
-        throw new Error(`Failed to create run: ${runResponse.status}`);
-      }
-
-      const run = await runResponse.json();
-      console.log(`[PrepaCDS Assistant] Run créé: ${run.id}`);
-
-      // 4. Attendre que le run soit complété
-      let runStatus = run.status;
-      let maxWaitTime = 60000; // 60 secondes max
-      let waitTime = 0;
-      const pollInterval = 1000; // 1 seconde
-
-      while (runStatus !== 'completed' && runStatus !== 'failed' && runStatus !== 'cancelled' && waitTime < maxWaitTime) {
-        await new Promise(resolve => setTimeout(resolve, pollInterval));
-        waitTime += pollInterval;
-
-        const statusResponse = await fetch(`https://api.openai.com/v1/threads/${thread.id}/runs/${run.id}`, {
-          headers: {
-            'Authorization': `Bearer ${openAIApiKey}`,
-            'OpenAI-Beta': 'assistants=v2'
-          }
-        });
-
-        if (statusResponse.ok) {
-          const statusData = await statusResponse.json();
-          runStatus = statusData.status;
-          console.log(`[PrepaCDS Assistant] Status: ${runStatus}`);
-        }
-      }
-
-      if (runStatus !== 'completed') {
-        throw new Error(`Run failed or timed out. Status: ${runStatus}`);
-      }
-
-      // 5. Récupérer les messages du thread
-      const messagesResponse = await fetch(`https://api.openai.com/v1/threads/${thread.id}/messages`, {
-        headers: {
-          'Authorization': `Bearer ${openAIApiKey}`,
-          'OpenAI-Beta': 'assistants=v2'
-        }
-      });
-
-      if (!messagesResponse.ok) {
-        throw new Error(`Failed to get messages: ${messagesResponse.status}`);
-      }
-
-      const messages = await messagesResponse.json();
+      const data = await response.json();
       
-      // Trouver la réponse de l'assistant
-      const assistantMessage = messages.data.find((msg: any) => msg.role === 'assistant');
-      
-      if (!assistantMessage?.content?.[0]?.text?.value) {
-        throw new Error('No response from PrepaCDS Assistant');
+      if (!data.choices?.[0]?.message?.content) {
+        throw new Error('Réponse GPT-5 vide ou invalide');
       }
 
-      const responseText = assistantMessage.content[0].text.value;
-      console.log(`[PrepaCDS Assistant] Réponse reçue`);
+      const responseText = data.choices[0].message.content;
+      console.log(`[GPT-5 Direct] Réponse reçue (${responseText.length} caractères)`);
 
       return responseText;
 
     } catch (error) {
-      console.error(`[PrepaCDS Assistant] Erreur tentative ${attempt}:`, error);
+      console.error(`[GPT-5 Direct] Erreur tentative ${attempt}:`, error);
       
       if (attempt === retries) {
         throw error;
       }
       
-      // Attendre avant le prochain retry
+      // Attendre avant le prochain retry (exponential backoff)
       const delay = Math.pow(2, attempt) * 1000 + Math.random() * 1000;
+      console.log(`[GPT-5 Direct] Attente de ${Math.round(delay)}ms avant retry...`);
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
 
-  throw new Error('Toutes les tentatives PrepaCDS Assistant ont échoué');
+  throw new Error('Toutes les tentatives GPT-5 ont échoué');
 }
 
 // Fonction principale de génération
@@ -378,7 +303,7 @@ INSTRUCTIONS CRITIQUES:
 8. VARIATION OBLIGATOIRE : Change les angles d'approche, exemples concrets, et formulations`;
 
   const content = await queueRequest(() => 
-    callPrepaCDSAssistantWithRetry(contextualPrompt, trainingType, level, domain)
+    callGPT5WithRetry(contextualPrompt, trainingType, level, domain)
   );
 
   // Parser et valider le contenu (nettoyer le texte si nécessaire)
@@ -403,11 +328,11 @@ INSTRUCTIONS CRITIQUES:
     }
     
     parsedContent = JSON.parse(cleanContent);
-    console.log(`[PrepaCDS Assistant] JSON parsé avec succès`);
+    console.log(`[GPT-5 Direct] JSON parsé avec succès`);
   } catch (error) {
     console.error('[PARSING] Erreur parsing JSON:', error);
     console.error('[PARSING] Contenu reçu:', content);
-    throw new Error('Contenu généré par PrepaCDS Assistant invalide (JSON malformé)');
+    throw new Error('Contenu généré par GPT-5 invalide (JSON malformé)');
   }
 
   // Validation basique
@@ -426,7 +351,7 @@ INSTRUCTIONS CRITIQUES:
     ...parsedContent,
     sessionInfo: {
       id: sessionId || `session-${Date.now()}`,
-      source: 'prepacds_assistant',
+      source: 'gpt5_direct',
       trainingType,
       level,
       domain,
@@ -438,7 +363,7 @@ INSTRUCTIONS CRITIQUES:
   // Mettre en cache
   setCachedContent(cacheKey, finalContent, CACHE_TTL);
   
-  console.log(`[PrepaCDS Assistant] Succès pour: ${trainingType} - ${level} - ${domain}`);
+  console.log(`[GPT-5 Direct] Succès pour: ${trainingType} - ${level} - ${domain}`);
   
   return finalContent;
 }
