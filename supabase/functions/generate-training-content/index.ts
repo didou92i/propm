@@ -208,7 +208,6 @@ IMPORTANT: Réponds UNIQUEMENT avec le JSON demandé, sans texte supplémentaire
               content: messageBody
             }
           ],
-          reasoning_effort: 'medium',
           max_completion_tokens: 4000
         })
       });
