@@ -24,6 +24,8 @@ const Training = lazy(() => import("./pages/Training"));
 const TrainingWelcome = lazy(() => import("./pages/TrainingWelcome"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const LegalImport = lazy(() => import("./pages/LegalImport"));
+const GPTClone = lazy(() => import("./pages/GPTClone"));
+const GPTSettings = lazy(() => import("./pages/GPTSettings"));
 
 const queryClient = new QueryClient();
 
@@ -99,6 +101,16 @@ const App = () => (
             <Route path="/dashboard" element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/gpt-clone" element={
+              <ProtectedRoute>
+                <GPTClone />
+              </ProtectedRoute>
+            } />
+            <Route path="/gpt-clone/settings" element={
+              <ProtectedRoute>
+                <GPTSettings />
               </ProtectedRoute>
             } />
 
