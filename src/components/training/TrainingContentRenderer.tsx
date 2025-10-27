@@ -26,7 +26,64 @@ export function TrainingContentRenderer({
   onComplete,
   onExit
 }: TrainingContentRendererProps) {
+  // 🔍 DEBUG: Logger le contenu reçu
+  console.log('🎯 TrainingContentRenderer - Content reçu:', {
+    trainingType,
+    hasContent: !!content,
+    contentKeys: content ? Object.keys(content) : [],
+    questionsCount: content?.questions?.length || 0,
+    fullContent: content
+  });
+
   const supportedTypes = ['qcm', 'vrai_faux', 'cas_pratique', 'question_ouverte'];
+
+  // Validation du contenu
+  if (!content) {
+    console.error('❌ TrainingContentRenderer - Aucun contenu reçu');
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Card className="max-w-md">
+          <CardHeader>
+            <CardTitle>Aucun contenu disponible</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">Le contenu n'a pas pu être chargé.</p>
+            <Button onClick={onExit} className="w-full mt-4">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Retour
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!content.questions || content.questions.length === 0) {
+    console.error('❌ TrainingContentRenderer - Aucune question trouvée:', content);
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Card className="max-w-md">
+          <CardHeader>
+            <CardTitle>Aucune question disponible</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-muted-foreground">
+              Le contenu a été reçu mais ne contient aucune question.
+            </p>
+            <div className="text-xs font-mono bg-muted p-2 rounded">
+              {JSON.stringify(content, null, 2)}
+            </div>
+            <Button onClick={onExit} className="w-full">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Retour
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  console.log('✅ TrainingContentRenderer - Rendu avec', content.questions.length, 'questions');
 
   // Rendu pour les types supportés
   if (supportedTypes.includes(trainingType)) {

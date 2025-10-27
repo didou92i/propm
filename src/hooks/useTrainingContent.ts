@@ -77,6 +77,16 @@ export const useTrainingContent = () => {
 
       clearTimeout(timeoutId!);
 
+      // 🔍 DEBUG: Logger le contenu reçu de l'API
+      console.log('📡 useTrainingContent - Réponse API reçue:', {
+        hasResult: !!result,
+        source: result.source,
+        hasContent: !!result.content,
+        contentKeys: result.content ? Object.keys(result.content) : [],
+        questionsCount: result.content?.questions?.length || 0,
+        fullResult: result
+      });
+
       setState({
         isLoading: false,
         content: result.content,
@@ -84,6 +94,8 @@ export const useTrainingContent = () => {
         source: result.source,
         lastRequestId: requestId
       });
+
+      console.log('✅ useTrainingContent - State mis à jour avec le contenu');
 
       // Mise à jour des métriques depuis le service
       setMetrics(trainingContentService.getMetrics());

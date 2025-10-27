@@ -54,12 +54,16 @@ export function SimpleTrainingPlayer({
 
   // Charger le contenu au montage
   useEffect(() => {
-    // Production: removed debug logging
+    console.log('🎬 SimpleTrainingPlayer - Début chargement contenu:', {
+      trainingType,
+      level,
+      domain,
+      sessionId
+    });
     
     const loadContent = async () => {
       try {
         await generateContent(trainingType, level, domain, { sessionId });
-        setIsActive(true);
       } catch (error) {
         logger.error('Échec génération primaire', error, 'SimpleTrainingPlayer');
         
@@ -93,6 +97,34 @@ export function SimpleTrainingPlayer({
 
     loadContent();
   }, [trainingType, level, domain, sessionId, generateContent]);
+
+  // Monitorer le contenu une fois chargé et activer le player
+  useEffect(() => {
+    if (!isLoading && hasContent && content?.questions && content.questions.length > 0) {
+      console.log('📦 SimpleTrainingPlayer - Contenu détecté:', {
+        hasContent,
+        isFromAI,
+        isFromCache,
+        isFromFallback,
+        source,
+        contentKeys: Object.keys(content),
+        questionsCount: content.questions.length,
+        firstQuestion: content.questions[0]
+      });
+      
+      if (!isActive) {
+        setIsActive(true);
+        console.log('✅ SimpleTrainingPlayer - Player activé avec', content.questions.length, 'questions');
+      }
+    } else if (!isLoading && hasContent && (!content?.questions || content.questions.length === 0)) {
+      console.error('⚠️ SimpleTrainingPlayer - Contenu reçu mais aucune question:', {
+        hasContent,
+        content,
+        contentType: typeof content,
+        contentKeys: content ? Object.keys(content) : []
+      });
+    }
+  }, [isLoading, hasContent, content, isFromAI, isFromCache, isFromFallback, source, isActive]);
 
   // Timer pour mesurer le temps d'entraînement
   useEffect(() => {
