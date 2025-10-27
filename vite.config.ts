@@ -20,7 +20,8 @@ export default defineConfig(({ mode }) => ({
     },
   },
   build: {
-    target: 'es2015',
+    // ES2020 pour éliminer les polyfills inutiles (Object.assign, Object.is, etc.)
+    target: 'es2020',
     minify: 'esbuild',
     cssCodeSplit: true,
     rollupOptions: {
