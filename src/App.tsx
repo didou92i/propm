@@ -5,10 +5,12 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { CookieConsent } from "@/components/legal";
-import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import { Suspense, lazy } from "react";
-import Index from "./pages/Index";
+
+// Lazy load ALL pages including critical ones pour réduire le FID
+const Index = lazy(() => import("./pages/Index"));
+const Auth = lazy(() => import("./pages/Auth"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const Terms = lazy(() => import("./pages/Terms"));
 const Legal = lazy(() => import("./pages/Legal"));
@@ -25,7 +27,19 @@ const TrainingWelcome = lazy(() => import("./pages/TrainingWelcome"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const LegalImport = lazy(() => import("./pages/LegalImport"));
 
-const queryClient = new QueryClient();
+// QueryClient optimisé pour réduire les tâches main thread
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
+      retry: 1,
+      refetchOnWindowFocus: false,
+      // Réduire les recomputations pendant le chargement initial
+      notifyOnChangeProps: ['data', 'error'],
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -34,7 +48,12 @@ const App = () => (
       <Sonner />
       <CookieConsent />
       <BrowserRouter>
-        <Suspense fallback={<div className="flex items-center justify-center py-10 text-muted-foreground">Chargement…</div>}>
+        {/* Suspense avec fallback optimisé pour réduire le FID */}
+        <Suspense fallback={
+          <div className="flex items-center justify-center min-h-screen">
+            <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full" />
+          </div>
+        }>
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/privacy" element={<Privacy />} />
