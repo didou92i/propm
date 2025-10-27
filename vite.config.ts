@@ -20,30 +20,43 @@ export default defineConfig(({ mode }) => ({
     },
   },
   build: {
-    // Optimisations pour améliorer LCP et FCP
     target: 'es2015',
-    minify: 'esbuild', // esbuild est plus rapide et inclus par défaut
+    minify: 'esbuild',
     cssCodeSplit: true,
     rollupOptions: {
       output: {
-        // Code splitting pour réduire le bundle initial
+        // Code splitting ultra-agressif pour réduire le bundle de 3MB
         manualChunks: (id) => {
+          // Split node_modules par package individuel
           if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom')) {
-              return 'react-vendor';
-            }
-            if (id.includes('framer-motion')) {
-              return 'animation';
-            }
-            if (id.includes('@supabase')) {
-              return 'supabase';
-            }
-            if (id.includes('lucide-react')) {
-              return 'icons';
-            }
-            return 'vendor';
+            if (id.includes('react-dom')) return 'react-dom';
+            if (id.includes('react/')) return 'react';
+            if (id.includes('framer-motion')) return 'framer-motion';
+            if (id.includes('@supabase/supabase-js')) return 'supabase-client';
+            if (id.includes('@supabase')) return 'supabase-helpers';
+            if (id.includes('@tanstack/react-query')) return 'react-query';
+            if (id.includes('lucide-react')) return 'lucide-icons';
+            if (id.includes('@radix-ui')) return 'radix-ui';
+            if (id.includes('recharts')) return 'recharts';
+            if (id.includes('react-markdown')) return 'markdown';
+            if (id.includes('llamaindex')) return 'llamaindex';
+            if (id.includes('three')) return 'three';
+            if (id.includes('@react-three')) return 'react-three';
+            if (id.includes('jspdf')) return 'jspdf';
+            return 'vendor-misc';
           }
+          // Split modules internes volumineux
+          if (id.includes('/src/components/training/')) return 'training-components';
+          if (id.includes('/src/components/document/')) return 'document-components';
+          if (id.includes('/src/components/monitoring/')) return 'monitoring-components';
+          if (id.includes('/src/services/training/')) return 'training-services';
+          if (id.includes('/src/services/llama/')) return 'llama-services';
+          if (id.includes('/src/services/prepacds/')) return 'prepacds-services';
         },
+        // Nommage prévisible pour meilleur cache
+        chunkFileNames: 'assets/[name]-[hash].js',
+        entryFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]',
       },
     },
     chunkSizeWarningLimit: 500,
