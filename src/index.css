@@ -1,3 +1,14 @@
+/* Import CSS modules FIRST - before all other CSS */
+@import './styles/glass-effects.css';
+@import './styles/hover-effects.css';
+@import './styles/performance.css';
+@import './styles/modern-training.css';
+@import './styles/keyframe-animations.css';
+@import './styles/mobile-optimizations.css';
+@import './styles/training-overlay.css';
+@import './styles/typewriter-animations.css';
+@import './styles/select-components.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -118,17 +129,6 @@
     --ring: 217 91% 60%;
   }
 }
-
-/* Import CSS modules AFTER Tailwind directives and base layer */
-@import './styles/glass-effects.css';
-@import './styles/hover-effects.css';
-@import './styles/performance.css';
-@import './styles/modern-training.css';
-@import './styles/keyframe-animations.css';
-@import './styles/mobile-optimizations.css';
-@import './styles/training-overlay.css';
-@import './styles/typewriter-animations.css';
-@import './styles/select-components.css';
 
 @layer base {
   * {
