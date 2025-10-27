@@ -20,10 +20,14 @@ export default defineConfig(({ mode }) => ({
     },
   },
   build: {
-    // ES2020 pour éliminer les polyfills inutiles (Object.assign, Object.is, etc.)
-    target: 'es2020',
+    // ES2022 pour éliminer tous les polyfills modernes et réduire TBT
+    target: ['es2022', 'edge89', 'firefox89', 'chrome89', 'safari15'],
     minify: 'esbuild',
     cssCodeSplit: true,
+    // Optimisations supplémentaires pour réduire le parse/execute time
+    modulePreload: {
+      polyfill: false, // Désactiver le polyfill pour modulePreload
+    },
     rollupOptions: {
       output: {
         // Code splitting ultra-agressif pour réduire le bundle de 3MB et éliminer 570KB unused
