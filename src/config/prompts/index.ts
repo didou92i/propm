@@ -71,7 +71,8 @@ const AGENT_PROMPTS: Record<string, AgentPrompt> = {
     ],
     language: 'fr',
     version: '2.0.0',
-    lastUpdated: '2025-01-11'
+    lastUpdated: '2025-01-11',
+    usesChatbase: true
   },
   redacpro: {
     systemPrompt: AGENT_SYSTEM_PROMPTS.redacpro,
@@ -168,10 +169,16 @@ export function hasAgentPrompt(agentId: string): boolean {
  * Liste des agents supportant le mode Direct API
  */
 export const DIRECT_API_AGENTS = [
-  'cdspro',
   'redacpro',
   'arrete',
   'azzabi'
+];
+
+/**
+ * Liste des agents utilisant l'API Chatbase
+ */
+export const CHATBASE_AGENTS = [
+  'cdspro'
 ];
 
 /**
@@ -179,4 +186,11 @@ export const DIRECT_API_AGENTS = [
  */
 export function supportsDirectAPI(agentId: string): boolean {
   return DIRECT_API_AGENTS.includes(agentId);
+}
+
+/**
+ * Vérifie si un agent utilise l'API Chatbase
+ */
+export function usesChatbase(agentId: string): boolean {
+  return CHATBASE_AGENTS.includes(agentId);
 }

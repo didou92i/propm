@@ -42,6 +42,9 @@ verify_jwt = true
 [functions.chat-direct-openai]
 verify_jwt = true
 
+[functions.chat-chatbase-cdspro]
+verify_jwt = true
+
 [functions.chat-completions-stream]
 verify_jwt = true
 

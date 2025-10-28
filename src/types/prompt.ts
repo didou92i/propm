@@ -23,6 +23,9 @@ export interface AgentPrompt {
   
   /** Date de dernière mise à jour */
   lastUpdated: string;
+  
+  /** Indique si cet agent utilise l'API Chatbase au lieu d'OpenAI */
+  usesChatbase?: boolean;
 }
 
 export interface AgentPromptConfig {

@@ -41,9 +41,6 @@ export function useStreamingChat() {
     // Start performance monitoring
     const optimizedParams = startSession(sessionId, messageLength, selectedAgent);
     
-    // Mode Direct API activé pour les agents compatibles
-    const USE_DIRECT_API = supportsDirectAPI(selectedAgent);
-    
     try {
       setStreamingState({
         isStreaming: true,
@@ -68,8 +65,19 @@ export function useStreamingChat() {
 
       let data, error;
 
-      if (USE_DIRECT_API) {
-        // Mode Direct : appel direct à OpenAI Chat Completions
+      // Mode Chatbase pour CDS Pro
+      if (selectedAgent === 'cdspro') {
+        logger.info('Using Chatbase API for CDS Pro');
+        
+        const result = await supabase.functions.invoke('chat-chatbase-cdspro', {
+          body: { messages }
+        });
+        
+        data = result.data;
+        error = result.error;
+      } 
+      // Mode Direct API pour les autres agents compatibles
+      else if (supportsDirectAPI(selectedAgent)) {
         logger.info(`Using Direct API mode for ${selectedAgent}`);
         
         const result = await supabase.functions.invoke('chat-direct-openai', {
@@ -82,8 +90,9 @@ export function useStreamingChat() {
         
         data = result.data;
         error = result.error;
-      } else {
-        // Mode Assistant classique
+      } 
+      // Mode Assistant classique
+      else {
         logger.info(`Using Assistant API mode for ${selectedAgent}`);
         
         const result = await supabase.functions.invoke('chat-openai-stream', {
