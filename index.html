@@ -59,8 +59,19 @@
     <script>
       // Cache le loader dès que React monte
       window.addEventListener('DOMContentLoaded',()=>{
-        setTimeout(()=>document.body.classList.add('app-loaded'),100)
+        setTimeout(()=>{
+          document.body.classList.add('app-loaded')
+          console.log('React app loaded')
+        },100)
       })
+      
+      // Timeout de sécurité : forcer le masquage du loader après 5s
+      setTimeout(()=>{
+        if(!document.body.classList.contains('app-loaded')){
+          document.body.classList.add('app-loaded')
+          console.warn('Loader forcé à se masquer après timeout')
+        }
+      },5000)
     </script>
   </body>
 </html>

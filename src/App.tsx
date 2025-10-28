@@ -1,20 +1,21 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { CookieConsent } from "@/components/legal";
 import NotFound from "./pages/NotFound";
 import { Suspense, lazy } from "react";
 
-// Lazy load ALL pages including critical ones pour réduire le FID
+// Import direct des pages critiques (non protégées) pour affichage immédiat
+import Auth from "./pages/Auth";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
+import Legal from "./pages/Legal";
+import Cookies from "./pages/Cookies";
+
+// Lazy load uniquement des pages protégées
 const Index = lazy(() => import("./pages/Index"));
-const Auth = lazy(() => import("./pages/Auth"));
-const Privacy = lazy(() => import("./pages/Privacy"));
-const Terms = lazy(() => import("./pages/Terms"));
-const Legal = lazy(() => import("./pages/Legal"));
-const Cookies = lazy(() => import("./pages/Cookies"));
 const UserDataManagement = lazy(() => import("./pages/UserDataManagement"));
 const Diagnostics = lazy(() => import("./pages/Diagnostics"));
 const SimulateurSalaire = lazy(() => import("./pages/SimulateurSalaire"));
@@ -27,23 +28,8 @@ const TrainingWelcome = lazy(() => import("./pages/TrainingWelcome"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const LegalImport = lazy(() => import("./pages/LegalImport"));
 
-// QueryClient optimisé pour réduire les tâches main thread
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000,
-      gcTime: 10 * 60 * 1000,
-      retry: 1,
-      refetchOnWindowFocus: false,
-      // Réduire les recomputations pendant le chargement initial
-      notifyOnChangeProps: ['data', 'error'],
-    },
-  },
-});
-
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
+  <TooltipProvider>
       <Toaster />
       <Sonner />
       <CookieConsent />
@@ -127,7 +113,6 @@ const App = () => (
         </Suspense>
       </BrowserRouter>
     </TooltipProvider>
-  </QueryClientProvider>
 );
 
 export default App;
